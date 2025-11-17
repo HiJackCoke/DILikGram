@@ -1,0 +1,6 @@
+{
+   "extends": "@dilikgram/tsconfig/react.json",
+   "display": "dilikgram",
+   "include": ["**/*.ts", "**/*.tsx"],
+   "exclude": ["node_modules", "dist"]
+}
