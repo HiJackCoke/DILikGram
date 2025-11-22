@@ -36,6 +36,17 @@ export type EndNodeData = {
 
 export type EndNodeProps = NodeProps<EndNodeData>;
 
-export type WorkflowNodeType = "start" | "end";
+export type TaskNodeData = BaseNodeData & {
+  assignee?: string;
+  estimatedTime?: number;
+  metadata?: Record<string, string>;
+};
 
-export type WorkflowNode = Node<StartNodeData | EndNodeData, WorkflowNodeType>;
+export type TaskNodeProps = NodeProps<TaskNodeData>;
+
+export type WorkflowNodeType = "start" | "end" | "task";
+
+export type WorkflowNode = Node<
+  StartNodeData | EndNodeData | TaskNodeData,
+  WorkflowNodeType
+>;
