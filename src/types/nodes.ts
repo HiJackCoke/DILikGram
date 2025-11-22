@@ -52,9 +52,29 @@ export type DecisionNodeData = {
 
 export type DecisionNodeProps = NodeProps<DecisionNodeData>;
 
-export type WorkflowNodeType = "start" | "end" | "task" | "decision";
+export type ServiceType = "api" | "database" | "email" | "webhook" | "custom";
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+export type ServiceNodeData = BaseNodeData & {
+  serviceType?: ServiceType;
+  method?: HttpMethod;
+  endpoint?: string;
+};
+
+export type ServiceNodeProps = NodeProps<ServiceNodeData>;
+
+export type WorkflowNodeType =
+  | "start"
+  | "end"
+  | "task"
+  | "decision"
+  | "service";
 
 export type WorkflowNode = Node<
-  StartNodeData | EndNodeData | TaskNodeData | DecisionNodeData,
+  | StartNodeData
+  | EndNodeData
+  | TaskNodeData
+  | DecisionNodeData
+  | ServiceNodeData,
   WorkflowNodeType
 >;

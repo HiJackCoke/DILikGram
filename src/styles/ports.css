@@ -68,3 +68,13 @@
 .decision-node .react-diagram__port:hover {
   background-color: #facc15; /* yellow-400 */
 }
+
+/* Service Node - 보라색 포트 */
+.service-node .react-diagram__port {
+  background-color: #8b5cf6; /* purple-500 */
+  border-color: #7c3aed; /* purple-600 */
+}
+
+.service-node .react-diagram__port:hover {
+  background-color: #a78bfa; /* purple-400 */
+}

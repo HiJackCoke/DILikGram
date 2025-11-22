@@ -4,6 +4,7 @@ import { StartNode } from "./StartNode";
 import { EndNode } from "./EndNode";
 import { TaskNode } from "./TaskNode";
 import { DecisionNode } from "./DecisionNode";
+import { ServiceNode } from "./ServiceNode";
 
 // Node Types for ReactDiagram
 export const nodeTypes = {
@@ -11,4 +12,5 @@ export const nodeTypes = {
   end: EndNode,
   task: TaskNode,
   decision: DecisionNode,
+  service: ServiceNode,
 } as const;
