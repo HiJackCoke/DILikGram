@@ -58,3 +58,13 @@
 .task-node .react-diagram__port:hover {
   background-color: #60a5fa; /* blue-400 */
 }
+
+/* Decision Node - 노란색 포트 */
+.decision-node .react-diagram__port {
+  background-color: #eab308; /* yellow-500 */
+  border-color: #ca8a04; /* yellow-600 */
+}
+
+.decision-node .react-diagram__port:hover {
+  background-color: #facc15; /* yellow-400 */
+}

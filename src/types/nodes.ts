@@ -44,9 +44,17 @@ export type TaskNodeData = BaseNodeData & {
 
 export type TaskNodeProps = NodeProps<TaskNodeData>;
 
-export type WorkflowNodeType = "start" | "end" | "task";
+export type DecisionNodeData = {
+  title: string;
+  condition?: string;
+  ports?: NodePort[];
+};
+
+export type DecisionNodeProps = NodeProps<DecisionNodeData>;
+
+export type WorkflowNodeType = "start" | "end" | "task" | "decision";
 
 export type WorkflowNode = Node<
-  StartNodeData | EndNodeData | TaskNodeData,
+  StartNodeData | EndNodeData | TaskNodeData | DecisionNodeData,
   WorkflowNodeType
 >;
