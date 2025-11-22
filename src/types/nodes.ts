@@ -26,6 +26,16 @@ export type StartNodeData = {
 
 export type StartNodeProps = NodeProps<StartNodeData>;
 
-export type WorkflowNodeType = "start";
+export type EndNodeStatus = "success" | "failure" | "neutral";
 
-export type WorkflowNode = Node<StartNodeData, WorkflowNodeType>;
+export type EndNodeData = {
+  title?: string;
+  status?: EndNodeStatus;
+  ports?: NodePort[];
+};
+
+export type EndNodeProps = NodeProps<EndNodeData>;
+
+export type WorkflowNodeType = "start" | "end";
+
+export type WorkflowNode = Node<StartNodeData | EndNodeData, WorkflowNodeType>;

@@ -38,3 +38,13 @@
 .start-node .react-diagram__port:hover {
   background-color: #dcfce7; /* green-100 */
 }
+
+/* End Node - 흰색 포트 */
+.end-node .react-diagram__port {
+  background-color: #ffffff;
+  border-color: #4b5563; /* gray-600 */
+}
+
+.end-node .react-diagram__port:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
