@@ -22,23 +22,20 @@
   filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));
 }
 
-.react-diagram__edge marker path {
-  fill: #64748b; /* slate-500 */
+.react-diagram__edge[data-edge-type="default"] marker path {
+  fill: theme("colors.palette.neutral.color");
 }
 
-/* Success 엣지 마커 */
 .react-diagram__edge[data-edge-type="success"] marker path {
-  fill: #22c55e;
+  fill: theme("colors.palette.success.color");
 }
 
-/* Error 엣지 마커 */
 .react-diagram__edge[data-edge-type="error"] marker path {
-  fill: #ef4444;
+  fill: theme("colors.palette.danger.color");
 }
 
-/* Warning 엣지 마커 */
 .react-diagram__edge[data-edge-type="warning"] marker path {
-  fill: #eab308;
+  fill: theme("colors.palette.warning.color");
 }
 
 .react-diagram__edge text {

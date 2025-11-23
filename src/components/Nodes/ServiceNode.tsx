@@ -30,12 +30,20 @@ const statusConfig: Record<
   idle: { icon: Circle, color: "text-gray-400", bg: "bg-gray-100" },
   running: {
     icon: Loader2,
-    color: "text-purple-500",
+    color: "text-palette-secondary-bg",
     bg: "bg-purple-50",
     animate: "animate-spin",
   },
-  completed: { icon: CheckCircle, color: "text-green-500", bg: "bg-green-50" },
-  error: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
+  completed: {
+    icon: CheckCircle,
+    color: "text-palette-success-bg",
+    bg: "bg-green-50",
+  },
+  error: {
+    icon: AlertCircle,
+    color: "text-palette-danger-bg",
+    bg: "bg-red-50",
+  },
 };
 
 const serviceIcons: Record<ServiceType, typeof Globe> = {
@@ -73,7 +81,7 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
         overflow-hidden
         ${
           selected
-            ? "border-purple-500 shadow-purple-200 shadow-xl scale-105"
+            ? "border-palette-secondary-bg shadow-purple-200 shadow-xl scale-105"
             : "border-gray-200 hover:border-gray-300 hover:shadow-xl"
         }
       `}
@@ -89,7 +97,7 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
       ))}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2">
+      <div className="bg-gradient-to-r from-palette-secondary-bg to-palette-secondary-border px-4 py-2">
         <div className="flex items-center gap-2">
           <span className="text-white">
             {data.icon || <ServiceIcon className="w-4 h-4" />}

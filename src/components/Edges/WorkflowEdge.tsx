@@ -1,28 +1,7 @@
-import type { WorkflowEdgeProps, WorkflowEdgeType } from "@/types/edges";
 import { getStepPath } from "react-cosmos-diagram";
+import { getEdgePaletteColor } from "./utils";
 
-// 엣지 타입별 색상 설정
-const edgeColors: Record<
-  WorkflowEdgeType,
-  { stroke: string; gradient: [string, string] }
-> = {
-  default: {
-    stroke: "#94a3b8", // slate-400
-    gradient: ["#64748b", "#94a3b8"], // slate-500 -> slate-400
-  },
-  success: {
-    stroke: "#22c55e", // green-500
-    gradient: ["#16a34a", "#4ade80"], // green-600 -> green-400
-  },
-  error: {
-    stroke: "#ef4444", // red-500
-    gradient: ["#dc2626", "#f87171"], // red-600 -> red-400
-  },
-  warning: {
-    stroke: "#eab308", // yellow-500
-    gradient: ["#ca8a04", "#facc15"], // yellow-600 -> yellow-400
-  },
-};
+import type { WorkflowEdgeProps } from "@/types/edges";
 
 export default function WorkflowEdge({
   id,
@@ -41,7 +20,7 @@ export default function WorkflowEdge({
   const edgeType = data?.edgeType || "default";
   const isAnimated = data?.animated ?? false;
 
-  const colors = edgeColors[edgeType];
+  const COLORS = getEdgePaletteColor(edgeType);
 
   // Smooth step path 사용 (더 깔끔한 직각 연결)
   const [edgePath, labelX, labelY] = getStepPath({
@@ -61,8 +40,8 @@ export default function WorkflowEdge({
       {/* Gradient 정의 */}
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={colors.gradient[0]} />
-          <stop offset="100%" stopColor={colors.gradient[1]} />
+          <stop offset="0%" stopColor={COLORS.bg} />
+          <stop offset="100%" stopColor={COLORS.color} />
         </linearGradient>
       </defs>
 
@@ -101,7 +80,7 @@ export default function WorkflowEdge({
             height={20}
             rx={4}
             fill="white"
-            stroke={colors.stroke}
+            stroke={COLORS.color}
             strokeWidth={1}
             filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
           />

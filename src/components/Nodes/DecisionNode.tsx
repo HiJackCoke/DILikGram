@@ -24,13 +24,13 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
         <div
           className={`
             absolute inset-0 transform rotate-45
-            bg-gradient-to-br from-yellow-400 to-amber-500
+            bg-gradient-to-br from-palette-warning-bg to-palette-warning-border
             rounded-lg shadow-lg
             border-2 transition-all duration-200
             ${
               selected
-                ? "border-yellow-600 shadow-yellow-200 shadow-xl"
-                : "border-yellow-500 hover:shadow-xl"
+                ? "border-palette-warning-border shadow-yellow-200 shadow-xl"
+                : "border-palette-warning-bg hover:shadow-xl"
             }
           `}
         />
@@ -66,27 +66,24 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
         .filter((p) => p.label)
         .map((port) => {
           const labelPositions: Record<Position, string> = {
-            [Position.Right]:
-              "right-[8px] top-1/2 translate-x-full -translate-y-1/2 ml-2",
-            [Position.Bottom]:
-              "bottom-[8px] left-1/2 translate-y-full -translate-x-1/2 mt-2",
-            [Position.Left]:
-              "left-[8px] top-1/2 -translate-x-full -translate-y-1/2 mr-2",
-            [Position.Top]:
-              "top-[8px] left-1/2 -translate-y-full -translate-x-1/2 mb-2",
+            [Position.Right]: `-right-[6px] top-1/2 ${selected ? "translate-x-1/2" : ""} -translate-y-1/2 ml-2`,
+            [Position.Bottom]: `-bottom-[6px] left-1/2 -translate-x-1/2  ${selected ? "translate-y-1/2" : ""} mt-2`,
+            [Position.Left]: `-left-[6px] top-1/2 ${selected ? "-translate-x-1/2" : ""} -translate-y-1/2 mr-2`,
+            [Position.Top]: `-top-[6px] left-1/2 -translate-x-1/2  ${selected ? "-translate-y-1/2" : ""} mb-2`,
           };
 
           return (
             <span
               key={`label-${port.id}`}
               className={`
+              transition-all duration-200
               absolute text-xs font-medium px-2 py-0.5 rounded-full
+              ${labelPositions[port.position] || ""}
               ${
                 port.id === "yes"
                   ? "bg-green-100 text-green-700"
                   : "bg-red-100 text-red-700"
               }
-              ${labelPositions[port.position] || ""}
             `}
             >
               {port.label}

@@ -12,19 +12,19 @@ const statusStyles: Record<
   }
 > = {
   success: {
-    gradient: "from-green-500 to-emerald-600",
+    gradient: "from-palette-success-bg to-palette-success-border",
     ring: "ring-green-300",
     shadow: "shadow-green-200",
     Icon: CheckCircle,
   },
   failure: {
-    gradient: "from-red-500 to-rose-600",
+    gradient: "from-palette-danger-bg to-palette-danger-border",
     ring: "ring-red-300",
     shadow: "shadow-red-200",
     Icon: XCircle,
   },
   neutral: {
-    gradient: "from-gray-500 to-slate-600",
+    gradient: "from-palette-neutral-bg to-palette-neutral-border",
     ring: "ring-gray-300",
     shadow: "shadow-gray-200",
     Icon: Square,

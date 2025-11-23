@@ -13,7 +13,7 @@ export function StartNode({ data, selected }: StartNodeProps) {
       className={`
         start-node
         relative w-24 h-24 rounded-full 
-        bg-gradient-to-br from-green-400 to-green-600
+        bg-gradient-to-br from-palette-success-bg to-palette-success-border
         flex items-center justify-center 
         shadow-lg transition-all duration-200 cursor-pointer
         ${

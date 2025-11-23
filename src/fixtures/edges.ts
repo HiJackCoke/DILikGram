@@ -1,6 +1,7 @@
-import { EDGE_COLORS } from "@/constants/edges";
-import type { WorkflowEdge } from "@/types/edges";
 import { MarkerType } from "react-cosmos-diagram";
+import { getEdgePaletteColor } from "@/components/Edges";
+
+import type { WorkflowEdge } from "@/types/edges";
 
 export const initialEdges: WorkflowEdge[] = [
   {
@@ -11,7 +12,10 @@ export const initialEdges: WorkflowEdge[] = [
     targetPort: "input",
     type: "workflow",
     data: { edgeType: "default", animated: false },
-    markerEnd: { type: MarkerType.Arrow, color: EDGE_COLORS["default"] },
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: getEdgePaletteColor("default").color,
+    },
   },
   {
     id: "e-task1-decision",
@@ -21,7 +25,10 @@ export const initialEdges: WorkflowEdge[] = [
     targetPort: "input",
     type: "workflow",
     data: { edgeType: "success", animated: true },
-    markerEnd: { type: MarkerType.Arrow, color: EDGE_COLORS["success"] },
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: getEdgePaletteColor("success").color,
+    },
   },
   {
     id: "e-decision-service",
@@ -32,7 +39,10 @@ export const initialEdges: WorkflowEdge[] = [
     type: "workflow",
     label: "Yes",
     data: { edgeType: "success" },
-    markerEnd: { type: MarkerType.Arrow, color: EDGE_COLORS["success"] },
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: getEdgePaletteColor("success").color,
+    },
   },
   {
     id: "e-decision-task2",
@@ -43,7 +53,10 @@ export const initialEdges: WorkflowEdge[] = [
     type: "workflow",
     label: "No",
     data: { edgeType: "error" },
-    markerEnd: { type: MarkerType.Arrow, color: EDGE_COLORS["error"] },
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: getEdgePaletteColor("error").color,
+    },
   },
   {
     id: "e-service-end",
@@ -53,7 +66,10 @@ export const initialEdges: WorkflowEdge[] = [
     targetPort: "input",
     type: "workflow",
     data: { edgeType: "success", animated: true },
-    markerEnd: { type: MarkerType.Arrow, color: EDGE_COLORS["success"] },
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: getEdgePaletteColor("success").color,
+    },
   },
   {
     id: "e-task2-end",
@@ -63,7 +79,10 @@ export const initialEdges: WorkflowEdge[] = [
     targetPort: "input",
     type: "workflow",
     data: { edgeType: "error" },
-    markerEnd: { type: MarkerType.Arrow, color: EDGE_COLORS["error"] },
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: getEdgePaletteColor("error").color,
+    },
   },
 ];
 

@@ -1,80 +1,15 @@
 .react-diagram__port {
-  /* width: 12px; */
-  /* height: 12px; */
-  /* border-radius: 50%; */
-  /* border: 2px solid; */
-  transition: all 0.2s ease;
-  cursor: crosshair;
+  width: 12px;
+  height: 12px;
+  border-color: transparent;
+  background-color: transparent;
 }
 
-.react-diagram__port:hover {
-  transform: scale(1.25);
-}
-
-.react-diagram__port {
-  background-color: #3b82f6; /* blue-500 */
-  border-color: #2563eb; /* blue-600 */
-}
-
-.react-diagram__port:hover {
-  background-color: #60a5fa; /* blue-400 */
-}
-
-.react-diagram__port[data-type="target"] {
-  background-color: #9ca3af; /* gray-400 */
-  border-color: #6b7280; /* gray-500 */
-}
-
-.react-diagram__port[data-type="target"]:hover {
-  background-color: #d1d5db; /* gray-300 */
-}
-
-/* Start Node - 초록색 포트 */
-.start-node .react-diagram__port {
-  background-color: #ffffff;
-  border-color: #16a34a; /* green-600 */
-}
-
-.start-node .react-diagram__port:hover {
-  background-color: #dcfce7; /* green-100 */
-}
-
-/* End Node - 흰색 포트 */
-.end-node .react-diagram__port {
-  background-color: #ffffff;
-  border-color: #4b5563; /* gray-600 */
-}
-
-.end-node .react-diagram__port:hover {
-  background-color: #f3f4f6; /* gray-100 */
-}
-
-/* Task Node - 파란색 포트 (기본값과 동일) */
-.task-node .react-diagram__port {
-  background-color: #3b82f6; /* blue-500 */
-  border-color: #2563eb; /* blue-600 */
-}
-
-.task-node .react-diagram__port:hover {
-  background-color: #60a5fa; /* blue-400 */
-}
-
-/* Decision Node - 노란색 포트 */
 .decision-node .react-diagram__port {
-  background-color: #eab308; /* yellow-500 */
-  border-color: #ca8a04; /* yellow-600 */
+  background-color: theme("colors.palette.warning.bg"); /* yellow-500 */
+  border-color: theme("colors.palette.warning.border"); /* yellow-600 */
 }
 
 .decision-node .react-diagram__port:hover {
-  background-color: #facc15; /* yellow-400 */
-}
-
-/* Service Node - 보라색 포트 */
-.service-node .react-diagram__port {
-  background-color: #8b5cf6; /* purple-500 */
-  border-color: #7c3aed; /* purple-600 */
-}
-
-.service-node .react-diagram__port:hover {
-  background-color: #a78bfa; /* purple-400 */
+  background-color: theme("colors.palette.warning.color"); /* yellow-400 */
 }

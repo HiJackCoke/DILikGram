@@ -20,12 +20,20 @@ const statusConfig: Record<
   idle: { icon: Circle, color: "text-gray-400", bg: "bg-gray-100" },
   running: {
     icon: Loader2,
-    color: "text-blue-500",
+    color: "text-palette-primary-bg",
     bg: "bg-blue-50",
     animate: "animate-spin",
   },
-  completed: { icon: CheckCircle, color: "text-green-500", bg: "bg-green-50" },
-  error: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
+  completed: {
+    icon: CheckCircle,
+    color: "text-palette-success-bg",
+    bg: "bg-green-50",
+  },
+  error: {
+    icon: AlertCircle,
+    color: "text-palette-danger-bg",
+    bg: "bg-red-50",
+  },
 };
 
 export function TaskNode({ data, selected }: TaskNodeProps) {
@@ -47,7 +55,7 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
         overflow-hidden
         ${
           selected
-            ? "border-blue-500 shadow-blue-200 shadow-xl scale-105"
+            ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105"
             : "border-gray-200 hover:border-gray-300 hover:shadow-xl"
         }
       `}
@@ -63,7 +71,7 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
       ))}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 ">
+      <div className="bg-gradient-to-r from-palette-primary-bg to-palette-primary-border px-4 py-2">
         <div className="flex items-center gap-2">
           <span className="text-white">
             {data.icon || <ClipboardList className="w-4 h-4" />}
@@ -111,7 +119,7 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
               </span>
             )}
             {data.estimatedTime && (
-              <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs">
+              <span className="px-2 py-1 bg-blue-50 text-palette-primary-bg rounded-full text-xs">
                 ⏱ {data.estimatedTime}분
               </span>
             )}
