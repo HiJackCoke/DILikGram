@@ -1,7 +1,7 @@
 
 commit_message_file="$1"
 commit_message=$(cat "$commit_message_file")
-commit_type="(Feat|Fix|Docs|Style|Refactor|Test|Chore|Design|Add|Rename|Remove|Clean|Type): (.*)"
+commit_type="(Feat|Fix|Docs|Style|Refactor|Test|Chore|Design|Add|Rename|Remove|Clean|Type|Example): (.*)"
 
 
 if ! [[ "$commit_message" =~ $commit_type ]]; then
