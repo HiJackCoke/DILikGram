@@ -58,6 +58,8 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
             ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105"
             : "border-gray-200 hover:border-gray-300 hover:shadow-xl"
         }
+        ${data.highlighted ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105 ring-2 ring-blue-300" : ""}
+        ${data.dimmed ? "opacity-30" : ""}
       `}
     >
       {/* Ports */}

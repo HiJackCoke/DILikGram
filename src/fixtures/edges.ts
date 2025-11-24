@@ -85,5 +85,3 @@ export const initialEdges: WorkflowEdge[] = [
     },
   },
 ];
-
-console.log(MarkerType.Arrow);

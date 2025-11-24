@@ -21,6 +21,8 @@ export function StartNode({ data, selected }: StartNodeProps) {
             ? "ring-4 ring-green-300 scale-110 shadow-green-200 shadow-xl"
             : "hover:scale-105 hover:shadow-xl"
         }
+        ${data.highlighted ? "ring-4 ring-green-400 scale-110" : ""}
+        ${data.dimmed ? "opacity-30" : ""}
       `}
     >
       {/* Ports */}

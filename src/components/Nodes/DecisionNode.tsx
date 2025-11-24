@@ -18,6 +18,8 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
           relative w-36 h-36
           transition-all duration-200
           ${selected ? "scale-110" : "hover:scale-105"}
+          ${data.highlighted ? "scale-110" : ""}
+          ${data.dimmed ? "opacity-30" : ""}
         `}
       >
         {/* Diamond Background */}
@@ -32,6 +34,7 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
                 ? "border-palette-warning-border shadow-yellow-200 shadow-xl"
                 : "border-palette-warning-bg hover:shadow-xl"
             }
+            ${data.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
           `}
         />
 

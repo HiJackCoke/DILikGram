@@ -16,6 +16,7 @@ export const initialNodes: WorkflowNode[] = [
   {
     id: "task-1",
     type: "task",
+    parentNode: "start-1",
     data: {
       title: "데이터 수집",
       description: "외부 API에서 데이터를 가져옵니다",
@@ -36,6 +37,7 @@ export const initialNodes: WorkflowNode[] = [
   {
     id: "decision-1",
     type: "decision",
+    parentNode: "task-1",
     data: {
       title: "데이터 검증",
       condition: "isValid?",
@@ -60,6 +62,7 @@ export const initialNodes: WorkflowNode[] = [
   {
     id: "service-1",
     type: "service",
+    parentNode: "decision-1",
     data: {
       title: "API 호출",
       description: "처리된 데이터를 서버에 전송합니다",
@@ -77,6 +80,7 @@ export const initialNodes: WorkflowNode[] = [
   {
     id: "task-2",
     type: "task",
+    parentNode: "decision-1",
     data: {
       title: "에러 로깅",
       description: "실패한 요청을 기록합니다",
@@ -95,6 +99,7 @@ export const initialNodes: WorkflowNode[] = [
   {
     id: "end-success",
     type: "end",
+    parentNode: "service-1",
     data: {
       title: "완료",
       status: "success" as const,
@@ -105,6 +110,7 @@ export const initialNodes: WorkflowNode[] = [
   {
     id: "end-failure",
     type: "end",
+    parentNode: "task-2",
     data: {
       title: "실패",
       status: "failure" as const,

@@ -84,6 +84,8 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
             ? "border-palette-secondary-bg shadow-purple-200 shadow-xl scale-105"
             : "border-gray-200 hover:border-gray-300 hover:shadow-xl"
         }
+        ${data.highlighted ? "border-palette-secondary-bg shadow-purple-200 shadow-xl scale-105 ring-2 ring-purple-300" : ""}
+        ${data.dimmed ? "opacity-30" : ""}
       `}
     >
       {/* Ports */}
