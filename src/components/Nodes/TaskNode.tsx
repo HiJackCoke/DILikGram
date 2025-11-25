@@ -46,6 +46,13 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
+  // 실행 상태에 따른 스타일
+  const executionStyles = {
+    executing: "ring-4 ring-palette-primary-color animate-pulse scale-105",
+    executed: "ring-2 ring-palette-primary-color",
+    idle: "",
+  };
+
   return (
     <div
       className={`
@@ -60,6 +67,7 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
         }
         ${data.highlighted ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105 ring-2 ring-blue-300" : ""}
         ${data.dimmed ? "opacity-30" : ""}
+        ${executionStyles[data.executionState || "idle"]}
       `}
     >
       {/* Ports */}

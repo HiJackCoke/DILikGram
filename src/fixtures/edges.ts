@@ -24,7 +24,7 @@ export const initialEdges: WorkflowEdge[] = [
     target: "decision-1",
     targetPort: "input",
     type: "workflow",
-    data: { edgeType: "success", animated: true },
+    data: { edgeType: "success", animated: false },
     markerEnd: {
       type: MarkerType.Arrow,
       color: getEdgePaletteColor("success").color,
@@ -65,7 +65,7 @@ export const initialEdges: WorkflowEdge[] = [
     target: "end-success",
     targetPort: "input",
     type: "workflow",
-    data: { edgeType: "success", animated: true },
+    data: { edgeType: "success", animated: false },
     markerEnd: {
       type: MarkerType.Arrow,
       color: getEdgePaletteColor("success").color,

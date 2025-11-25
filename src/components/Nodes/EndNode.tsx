@@ -40,6 +40,13 @@ export function EndNode({ data, selected }: EndNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
+  // 실행 상태에 따른 스타일
+  const executionStyles = {
+    executing: `ring-4 ${status === "success" ? "ring-palette-success-color" : "ring-palette-danger-color"} animate-pulse scale-110`,
+    executed: `ring-2 ${status === "success" ? "ring-palette-success-color" : "ring-palette-danger-color"} scale-110`,
+    idle: "",
+  };
+
   return (
     <div
       className={`
@@ -55,6 +62,7 @@ export function EndNode({ data, selected }: EndNodeProps) {
         }
         ${data.highlighted ? `ring-4 ${ring} scale-110` : ""}
         ${data.dimmed ? "opacity-30" : ""}
+        ${executionStyles[data.executionState || "idle"]}
       `}
     >
       {/* Ports */}

@@ -10,6 +10,19 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
+  // 실행 상태에 따른 스타일
+  const executionStyles = {
+    executing: "scale-125 animate-pulse",
+    executed: "scale-115",
+    idle: "",
+  };
+
+  const executionRingStyles = {
+    executing: "ring-4 ring-palette-warning-color",
+    executed: "ring-2 ring-palette-warning-color ",
+    idle: "",
+  };
+
   return (
     <div className="decision-node relative">
       {/* Diamond Shape Container */}
@@ -20,6 +33,7 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
           ${selected ? "scale-110" : "hover:scale-105"}
           ${data.highlighted ? "scale-110" : ""}
           ${data.dimmed ? "opacity-30" : ""}
+          ${executionStyles[data.executionState || "idle"]}
         `}
       >
         {/* Diamond Background */}
@@ -35,6 +49,7 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
                 : "border-palette-warning-bg hover:shadow-xl"
             }
             ${data.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
+            ${executionRingStyles[data.executionState || "idle"]}
           `}
         />
 

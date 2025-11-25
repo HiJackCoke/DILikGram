@@ -14,7 +14,12 @@ export type NodePort = {
 // ============================================
 // 노드 타입 키
 // ============================================
-// export type NodeTypeKey = "start" | "end" | "task" | "decision" | "service";
+export type WorkflowNodeType =
+  | "start"
+  | "end"
+  | "task"
+  | "decision"
+  | "service";
 
 // ============================================
 // 노드 상태
@@ -22,17 +27,23 @@ export type NodePort = {
 export type NodeStatus = "idle" | "running" | "completed" | "error";
 
 // ============================================
-// 노드 공통 데이터 (하이라이트 상태)
+// 노드 실행 상태
 // ============================================
-export type NodeCommonData = {
+export type WorkflowNodeExecutionState = "idle" | "executing" | "executed";
+
+// ============================================
+// 노드 공통 데이터 (하이라이트 상태 + 실행 상태)
+// ============================================
+export type WorkflowNodeState = {
   highlighted?: boolean; // 플로우 경로에 포함됨
   dimmed?: boolean; // 다른 플로우가 선택됨
+  executionState?: WorkflowNodeExecutionState; // 실행 상태
 };
 
 // ============================================
 // StartNode
 // ============================================
-export type StartNodeData = NodeCommonData & {
+export type StartNodeData = WorkflowNodeState & {
   title?: string;
   ports?: NodePort[];
 };
@@ -44,7 +55,7 @@ export type StartNodeProps = NodeProps<StartNodeData>;
 // ============================================
 export type EndNodeStatus = "success" | "failure" | "neutral";
 
-export type EndNodeData = NodeCommonData & {
+export type EndNodeData = WorkflowNodeState & {
   title?: string;
   status?: EndNodeStatus;
   ports?: NodePort[];
@@ -55,7 +66,7 @@ export type EndNodeProps = NodeProps<EndNodeData>;
 // ============================================
 // TaskNode
 // ============================================
-export type TaskNodeData = NodeCommonData & {
+export type TaskNodeData = WorkflowNodeState & {
   icon?: ReactNode;
   title: string;
   description?: string;
@@ -71,7 +82,7 @@ export type TaskNodeProps = NodeProps<TaskNodeData>;
 // ============================================
 // DecisionNode
 // ============================================
-export type DecisionNodeData = NodeCommonData & {
+export type DecisionNodeData = WorkflowNodeState & {
   title: string;
   condition?: string;
   ports?: NodePort[];
@@ -85,7 +96,7 @@ export type DecisionNodeProps = NodeProps<DecisionNodeData>;
 export type ServiceType = "api" | "database" | "email" | "webhook" | "custom";
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
-export type ServiceNodeData = NodeCommonData & {
+export type ServiceNodeData = WorkflowNodeState & {
   icon?: ReactNode;
   title: string;
   description?: string;
@@ -108,7 +119,4 @@ export type WorkflowNode = Node<
   | DecisionNodeData
   | ServiceNodeData,
   string
-  // NodeTypeKey
-
-  // react-cosmos-diagram에서 좀더 타입 세분화가 필요
 >;

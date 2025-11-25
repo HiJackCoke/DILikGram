@@ -8,6 +8,13 @@ export function StartNode({ data, selected }: StartNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
+  // 실행 상태에 따른 스타일
+  const executionStyles = {
+    executing: "ring-4 ring-palette-success-color animate-pulse",
+    executed: "ring-2 ring-palette-success-color",
+    idle: "",
+  };
+
   return (
     <div
       className={`
@@ -23,6 +30,7 @@ export function StartNode({ data, selected }: StartNodeProps) {
         }
         ${data.highlighted ? "ring-4 ring-green-400 scale-110" : ""}
         ${data.dimmed ? "opacity-30" : ""}
+        ${executionStyles[data.executionState || "idle"]}
       `}
     >
       {/* Ports */}

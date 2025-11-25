@@ -72,6 +72,13 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
+  // 실행 상태에 따른 스타일
+  const executionStyles = {
+    executing: "ring-4 ring-palette-secondary-color animate-pulse scale-105",
+    executed: "ring-2 ring-palette-secondary-color",
+    idle: "",
+  };
+
   return (
     <div
       className={`
@@ -86,6 +93,7 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
         }
         ${data.highlighted ? "border-palette-secondary-bg shadow-purple-200 shadow-xl scale-105 ring-2 ring-purple-300" : ""}
         ${data.dimmed ? "opacity-30" : ""}
+        ${executionStyles[data.executionState || "idle"]}
       `}
     >
       {/* Ports */}
