@@ -1,4 +1,4 @@
-import type { WorkflowNode } from "@/types/nodes";
+import type { WorkflowNode, ExecutionContext } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 
 export type ExecutionMode = "success" | "failure";
@@ -8,6 +8,9 @@ export type ExecutionState = {
   executedNodeIds: Set<string>;
   activeEdgeIds: Set<string>;
   isRunning: boolean;
+
+  // 실행 컨텍스트
+  context: ExecutionContext;
 };
 
 /**
@@ -36,6 +39,11 @@ export class WorkflowExecutor {
       executedNodeIds: new Set(),
       activeEdgeIds: new Set(),
       isRunning: false,
+      context: {
+        outputs: new Map(),
+        errors: new Map(),
+        startTime: 0,
+      },
     };
   }
 

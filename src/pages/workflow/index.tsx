@@ -26,6 +26,11 @@ export default function WorkflowPage() {
     executedNodeIds: new Set(),
     activeEdgeIds: new Set(),
     isRunning: false,
+    context: {
+      outputs: new Map(),
+      errors: new Map(),
+      startTime: 0,
+    },
   });
 
   const executorRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
@@ -53,6 +58,11 @@ export default function WorkflowPage() {
       executedNodeIds: new Set(),
       activeEdgeIds: new Set(),
       isRunning: false,
+      context: {
+        outputs: new Map(),
+        errors: new Map(),
+        startTime: 0,
+      },
     });
 
     // Executor 생성 및 실행
@@ -75,6 +85,11 @@ export default function WorkflowPage() {
       executedNodeIds: new Set(),
       activeEdgeIds: new Set(),
       isRunning: false,
+      context: {
+        outputs: new Map(),
+        errors: new Map(),
+        startTime: 0,
+      },
     });
   };
 

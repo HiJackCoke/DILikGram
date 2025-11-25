@@ -75,6 +75,12 @@ export type TaskNodeData = WorkflowNodeState & {
   assignee?: string;
   estimatedTime?: number;
   metadata?: Record<string, string>;
+
+  // 실행 관련
+  inputData?: unknown;
+  outputData?: unknown;
+  error?: ExecutionError;
+  executionTime?: number;
 };
 
 export type TaskNodeProps = NodeProps<TaskNodeData>;
@@ -86,6 +92,10 @@ export type DecisionNodeData = WorkflowNodeState & {
   title: string;
   condition?: string;
   ports?: NodePort[];
+
+  // 실행 관련
+  inputData?: unknown;
+  evaluationResult?: boolean;  // true면 yes, false면 no
 };
 
 export type DecisionNodeProps = NodeProps<DecisionNodeData>;
@@ -105,6 +115,12 @@ export type ServiceNodeData = WorkflowNodeState & {
   serviceType?: ServiceType;
   method?: HttpMethod;
   endpoint?: string;
+
+  // 실행 관련
+  inputData?: unknown;
+  outputData?: unknown;
+  error?: ExecutionError;
+  executionTime?: number;
 };
 
 export type ServiceNodeProps = NodeProps<ServiceNodeData>;
@@ -120,3 +136,29 @@ export type WorkflowNode = Node<
   | ServiceNodeData,
   string
 >;
+
+// ============================================
+// 실행 관련 타입
+// ============================================
+
+// 노드 실행 결과
+export type ExecutionOutput = {
+  data: unknown;          // 출력 데이터
+  timestamp: number;      // 실행 완료 시간
+  executionTime: number;  // 실행 시간(ms)
+};
+
+// 노드 실행 에러
+export type ExecutionError = {
+  message: string;
+  stack?: string;
+  timestamp: number;
+};
+
+// 전체 워크플로우 실행 컨텍스트
+export type ExecutionContext = {
+  outputs: Map<string, ExecutionOutput>;  // nodeId -> output
+  errors: Map<string, ExecutionError>;    // nodeId -> error
+  startTime: number;
+  endTime?: number;
+};
