@@ -1,5 +1,6 @@
 import type { WorkflowNode } from "@/types/nodes";
 import { Position } from "react-cosmos-diagram";
+import { createTypedExecutor } from "@/utils/executorHelpers";
 
 export const initialNodes: WorkflowNode[] = [
   {
@@ -11,6 +12,7 @@ export const initialNodes: WorkflowNode[] = [
         { id: "output", position: Position.Bottom, type: "source" as const },
       ],
     },
+
     position: { x: 300, y: 50 },
   },
   {
@@ -31,6 +33,16 @@ export const initialNodes: WorkflowNode[] = [
         { id: "input", position: Position.Top, type: "target" as const },
         { id: "output", position: Position.Bottom, type: "source" as const },
       ],
+      executor: {
+        config: createTypedExecutor<unknown, unknown>(
+          `// Example: Transform data
+return "REST API";`,
+          {
+            inputType: "unknown",
+            outputType: "unknown",
+          }
+        ),
+      },
     },
     position: { x: 250, y: 180 },
   },
@@ -56,6 +68,22 @@ export const initialNodes: WorkflowNode[] = [
           label: "No",
         },
       ],
+
+      executor: {
+        config: createTypedExecutor<unknown, unknown>(
+          `//
+  
+  return {
+    success: !!nodeInput,
+    validationChecked: true,
+    validationTime: Date.now()
+  
+  };`,
+          {
+            inputType: "unknown",
+          }
+        ),
+      },
     },
     position: { x: 270, y: 380 },
   },
@@ -74,6 +102,22 @@ export const initialNodes: WorkflowNode[] = [
         { id: "input", position: Position.Left, type: "target" as const },
         { id: "output", position: Position.Bottom, type: "source" as const },
       ],
+
+      executor: {
+        config: createTypedExecutor<unknown, unknown>(
+          `// Example: Async API call with full context (auto-detected from 'await' keyword)
+  const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+  const data = await response.json();
+  return {
+    ...data,
+    timestamp: Date.now()
+  };`,
+          {
+            inputType: "unknown",
+            outputType: "unknown",
+          }
+        ),
+      },
     },
     position: { x: 500, y: 400 },
   },

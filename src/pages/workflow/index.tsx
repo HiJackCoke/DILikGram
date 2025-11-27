@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import ReactDiagram, {
   useNodesState,
   useEdgesState,
@@ -17,14 +17,13 @@ import {
   type ExecutionState,
   type ExecutionMode,
 } from "@/utils/workflowExecution";
+import type { WorkflowEdge } from "@/types/edges";
+import type { ExecutorResult, ExecutorState } from "@/types/executor";
 
 export default function WorkflowPage() {
-  const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, _setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [executionState, setExecutionState] = useState<ExecutionState>({
-    currentNodeId: null,
-    executedNodeIds: new Set(),
-    activeEdgeIds: new Set(),
     isRunning: false,
     context: {
       outputs: new Map(),
@@ -41,7 +40,42 @@ export default function WorkflowPage() {
     (store) => store.resetSelectedElements
   );
 
-  // 선택된 노드 확인
+  // 노드 업데이트 콜백
+  const handleNodeUpdate = useCallback(
+    (
+      nodeId: string,
+      executor: { result: ExecutorResult; state: ExecutorState }
+    ) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  executor,
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
+
+  // 엣지 업데이트 콜백
+  const handleEdgeUpdate = useCallback(
+    (edgeId: string, data: Partial<WorkflowEdge["data"]>) => {
+      setEdges((prevEdges) =>
+        prevEdges.map((edge) =>
+          edge.id === edgeId
+            ? { ...edge, data: { ...edge.data, ...data } }
+            : edge
+        )
+      );
+    },
+    [setEdges]
+  );
 
   // 선택된 노드 ID 추출
   const selectedNodeId = nodes.find((node) => node.selected)?.id;
@@ -54,9 +88,6 @@ export default function WorkflowPage() {
 
     // 기존 실행 상태 초기화
     setExecutionState({
-      currentNodeId: null,
-      executedNodeIds: new Set(),
-      activeEdgeIds: new Set(),
       isRunning: false,
       context: {
         outputs: new Map(),
@@ -72,7 +103,9 @@ export default function WorkflowPage() {
       mode,
       (state) => {
         setExecutionState(state);
-      }
+      },
+      handleNodeUpdate,
+      handleEdgeUpdate
     );
 
     executorRef.current.execute();
@@ -81,9 +114,6 @@ export default function WorkflowPage() {
   const stopExecution = () => {
     executorRef.current?.abort();
     setExecutionState({
-      currentNodeId: null,
-      executedNodeIds: new Set(),
-      activeEdgeIds: new Set(),
       isRunning: false,
       context: {
         outputs: new Map(),
@@ -93,47 +123,32 @@ export default function WorkflowPage() {
     });
   };
 
-  // 노드에 하이라이트 + 실행 상태 추가
-  const enhancedNodes = nodes.map((node) => {
-    let executionNodeState: "idle" | "executing" | "executed" = "idle";
-
-    if (executionState.currentNodeId === node.id) {
-      executionNodeState = "executing";
-    } else if (executionState.executedNodeIds.has(node.id)) {
-      executionNodeState = "executed";
-    }
-
-    return {
-      ...node,
-      data: {
-        ...node.data,
+  const enhancedNodes = nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      state: {
         highlighted: highlightedNodeIds.has(node.id),
         dimmed: hasSelectedNode(nodes) && !highlightedNodeIds.has(node.id),
-        executionState: executionNodeState,
       },
-    };
-  });
+    },
+  }));
 
   // 엣지에 애니메이션 상태 추가
   const enhancedEdges = edges.map((edge) => {
     const isHighlighted = highlightedEdgeIds.has(edge.id);
-    const isExecuting = executionState.activeEdgeIds.has(edge.id);
 
     return {
       ...edge,
-      data: {
-        ...edge.data,
-        animated: isHighlighted || isExecuting,
-      },
       style: {
         ...edge.style,
         opacity:
           hasSelectedNode(nodes) && !isHighlighted
             ? 0.2
-            : isExecuting
+            : edge.data?.animated
               ? 1
               : edge.style?.opacity || 1,
-        strokeWidth: isExecuting ? 3 : 2,
+        strokeWidth: edge.data?.animated ? 3 : 2,
       },
     };
   });
@@ -179,20 +194,65 @@ export default function WorkflowPage() {
         </div>
 
         {/* Status */}
-        {executionState.isRunning && executionState.currentNodeId && (
-          <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">
-            실행 중:{" "}
-            <span className="font-semibold">
-              {executionState.currentNodeId}
-            </span>
-          </div>
-        )}
+        {executionState.isRunning &&
+          (() => {
+            const currentNode = nodes.find(
+              (n) => n.data.executor?.state === "executing"
+            );
+            return currentNode ? (
+              <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">
+                실행 중: <span className="font-semibold">{currentNode.id}</span>
+              </div>
+            ) : null;
+          })()}
 
         {selectedNodeId && !executionState.isRunning && (
           <div className="px-3 py-1.5 bg-purple-600/90 text-white rounded-lg text-sm">
             선택된 노드: <span className="font-semibold">{selectedNodeId}</span>
           </div>
         )}
+
+        {/* Execution Statistics */}
+        {(() => {
+          const executedCount = nodes.filter(
+            (n) => n.data.executor?.state === "executed"
+          ).length;
+          return executedCount > 0 ? (
+            <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">
+              <div className="font-semibold text-slate-300 mb-1.5">
+                실행 통계
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">완료된 노드:</span>
+                <span className="font-semibold text-palette-success-color">
+                  {executedCount}
+                </span>
+              </div>
+              {executionState.context.errors.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">에러:</span>
+                  <span className="font-semibold text-palette-danger-color">
+                    {executionState.context.errors.size}
+                  </span>
+                </div>
+              )}
+              {executionState.context.startTime > 0 &&
+                executionState.context.endTime && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">실행 시간:</span>
+                    <span className="font-semibold text-palette-primary-color">
+                      {(
+                        (executionState.context.endTime -
+                          executionState.context.startTime) /
+                        1000
+                      ).toFixed(2)}
+                      s
+                    </span>
+                  </div>
+                )}
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Legend */}
@@ -201,19 +261,19 @@ export default function WorkflowPage() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 bg-palette-neutral-bg rounded" />
-            <span className="text-slate-400 text-xs">Default</span>
+            <span className="text-palette-neutral-color text-xs">Default</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 bg-palette-success-bg rounded" />
-            <span className="text-slate-400 text-xs">Success</span>
+            <span className="text-palette-neutral-color text-xs">Success</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 bg-palette-danger-bg rounded" />
-            <span className="text-slate-400 text-xs">Error</span>
+            <span className="text-palette-neutral-color text-xs">Error</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 bg-palette-warning-bg rounded" />
-            <span className="text-slate-400 text-xs">Warning</span>
+            <span className="text-palette-neutral-color text-xs">Warning</span>
           </div>
         </div>
       </div>

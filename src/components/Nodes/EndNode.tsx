@@ -60,9 +60,9 @@ export function EndNode({ data, selected }: EndNodeProps) {
             ? `ring-4 ${ring} scale-110 ${shadow} shadow-xl`
             : "hover:scale-105 hover:shadow-xl"
         }
-        ${data.highlighted ? `ring-4 ${ring} scale-110` : ""}
-        ${data.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.executionState || "idle"]}
+        ${data.state?.highlighted ? `ring-4 ${ring} scale-110` : ""}
+        ${data.state?.dimmed ? "opacity-30" : ""}
+        ${executionStyles[data.executor?.state || "idle"]}
       `}
     >
       {/* Ports */}

@@ -5,6 +5,7 @@ import {
   CheckCircle,
   AlertCircle,
   ClipboardList,
+  Settings,
 } from "lucide-react";
 import type { TaskNodeProps, NodeStatus, NodePort } from "@/types/nodes";
 
@@ -46,6 +47,9 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
+  // Check if executor is configured
+  const hasExecutor = !!data.executor?.config?.functionCode;
+
   // 실행 상태에 따른 스타일
   const executionStyles = {
     executing: "ring-4 ring-palette-primary-color animate-pulse scale-105",
@@ -65,9 +69,9 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
             ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105"
             : "border-gray-200 hover:border-gray-300 hover:shadow-xl"
         }
-        ${data.highlighted ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105 ring-2 ring-blue-300" : ""}
-        ${data.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.executionState || "idle"]}
+        ${data.state?.highlighted ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105 ring-2 ring-blue-300" : ""}
+        ${data.state?.dimmed ? "opacity-30" : ""}
+        ${executionStyles[data.executor?.state || "idle"]}
       `}
     >
       {/* Ports */}
@@ -89,6 +93,17 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
           <span className="text-white font-semibold text-sm truncate flex-1">
             {data.title}
           </span>
+          {/* Executor Configuration Button */}
+          <button
+            className={`p-1 rounded transition ${
+              hasExecutor
+                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                : "bg-white/20 text-white hover:bg-white/30"
+            }`}
+            title="Configure executor function"
+          >
+            <Settings className="w-3 h-3" />
+          </button>
           <div className={`p-1 rounded-full ${statusConfig[status]?.bg}`}>
             <StatusIcon
               className={`w-3 h-3 ${statusConfig[status]?.color} ${statusConfig[status]?.animate || ""}`}

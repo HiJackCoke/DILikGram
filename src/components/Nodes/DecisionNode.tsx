@@ -1,5 +1,5 @@
 import { Port, Position } from "react-cosmos-diagram";
-import { GitBranch } from "lucide-react";
+import { GitBranch, Settings } from "lucide-react";
 import type { DecisionNodeProps, NodePort } from "@/types/nodes";
 
 export function DecisionNode({ data, selected }: DecisionNodeProps) {
@@ -9,6 +9,9 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
     { id: "no", position: Position.Bottom, type: "source", label: "No" },
   ];
   const ports = data.ports || defaultPorts;
+
+  // Check if executor is configured
+  const hasExecutor = !!data.executor?.config?.functionCode;
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
@@ -31,9 +34,9 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
           relative w-36 h-36
           transition-all duration-200
           ${selected ? "scale-110" : "hover:scale-105"}
-          ${data.highlighted ? "scale-110" : ""}
-          ${data.dimmed ? "opacity-30" : ""}
-          ${executionStyles[data.executionState || "idle"]}
+          ${data.state?.highlighted ? "scale-110" : ""}
+          ${data.state?.dimmed ? "opacity-30" : ""}
+          ${executionStyles[data.executor?.state || "idle"]}
         `}
       >
         {/* Diamond Background */}
@@ -48,8 +51,8 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
                 ? "border-palette-warning-border shadow-yellow-200 shadow-xl"
                 : "border-palette-warning-bg hover:shadow-xl"
             }
-            ${data.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
-            ${executionRingStyles[data.executionState || "idle"]}
+            ${data.state?.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
+            ${executionRingStyles[data.executor?.state || "idle"]}
           `}
         />
 
@@ -66,7 +69,20 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
         {/* Content - stays upright */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-2">
-            <GitBranch className="w-6 h-6 text-yellow-900 mx-auto mb-1" />
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <GitBranch className="w-6 h-6 text-yellow-900" />
+              {/* Executor Configuration Button */}
+              <button
+                className={`p-0.5 rounded transition ${
+                  hasExecutor
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                }`}
+                title="Configure evaluator function"
+              >
+                <Settings className="w-3 h-3" />
+              </button>
+            </div>
             <div className="font-semibold text-yellow-900 text-sm max-w-[100px] truncate">
               {data.title}
             </div>
