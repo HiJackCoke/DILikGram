@@ -6,11 +6,12 @@ import type {
   ExecutorFunction,
   ExecutorResult,
 } from "@/types/executor";
+import type { WorkflowNodeType } from "@/types/nodes";
 
 /**
  * Detects if code contains async/await patterns
  */
-function detectAsync(code: string): boolean {
+export function detectAsync(code: string): boolean {
   const trimmedCode = code.trim();
 
   // Check for common async patterns
@@ -39,7 +40,7 @@ function detectAsync(code: string): boolean {
  */
 export function compileExecutor<TInput = unknown, TOutput = unknown>(
   config: ExecutorConfig<TInput, TOutput>,
-  nodeType?: "task" | "service" | "decision"
+  nodeType?: WorkflowNodeType
 ): ExecutorFunction<TInput, TOutput> {
   const { functionCode } = config;
 

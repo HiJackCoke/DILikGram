@@ -16,6 +16,7 @@
     "react": "^19.2.0",
     "react-cosmos-diagram": "^0.8.1",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.6",
     "vite-react-routes": "^0.5.0",
     "zustand": "^5.0.8"
   },
