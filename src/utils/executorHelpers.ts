@@ -52,3 +52,42 @@ export function createTypedExecutor<TInput, TOutput>(
     __meta: meta,
   };
 }
+
+export function inferDetailedType(value: unknown): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+
+    // Detect array element types
+    const elementTypes = new Set(value.map(inferDetailedType));
+
+    // If all elements have the same type, use that
+    if (elementTypes.size === 1) {
+      const elementType = Array.from(elementTypes)[0];
+      return `${elementType}[]`;
+    }
+
+    // Mixed types - use union
+    return `(${Array.from(elementTypes).join(" | ")})[]`;
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value).map(([key, val]) => {
+      return `${key}: ${inferDetailedType(val)}`;
+    });
+    return `{ ${entries.join(", ")} }`;
+  }
+
+  return typeof value;
+}
+
+export function inferTypeFromJSON(jsonString: string): string {
+  try {
+    const parsed = JSON.parse(jsonString);
+    return inferDetailedType(parsed);
+  } catch {
+    return "string";
+  }
+}
