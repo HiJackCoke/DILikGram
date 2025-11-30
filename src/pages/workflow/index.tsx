@@ -58,7 +58,10 @@ export default function WorkflowPage() {
                 ...node,
                 data: {
                   ...node.data,
-                  executor,
+                  executor: {
+                    ...node.data.executor,
+                    ...executor,
+                  },
                 },
               }
             : node
