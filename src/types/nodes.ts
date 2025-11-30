@@ -124,8 +124,9 @@ export type WorkflowNode = Node<
     | DecisionNodeData
     | ServiceNodeData
   >,
-  string
+  WorkflowNodeType
 >;
+
 
 // ============================================
 // 실행 관련 타입

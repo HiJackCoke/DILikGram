@@ -1,0 +1,11 @@
+# .claudeignore 파일 생성
+cat > .claudeignore << EOF
+node_modules/
+*.log
+*.tmp
+build/
+dist/
+.git/
+*.md
+package-lock.json
+yarn.lock

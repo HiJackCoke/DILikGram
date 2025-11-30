@@ -17,6 +17,7 @@ import type {
   ServiceType,
   HttpMethod,
 } from "@/types/nodes";
+import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
 
 const statusConfig: Record<
   NodeStatus,
@@ -61,7 +62,9 @@ const methodColors: Record<HttpMethod, string> = {
   DELETE: "bg-red-100 text-red-700",
 };
 
-export function ServiceNode({ data, selected }: ServiceNodeProps) {
+export function ServiceNode({ data, selected, id }: ServiceNodeProps) {
+  const { open } = useExecutorEditorContext();
+
   const status = data.status || "idle";
   const StatusIcon = statusConfig[status]?.icon || Circle;
   const ServiceIcon = serviceIcons[data.serviceType || "api"];
@@ -74,6 +77,12 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
 
   // Check if executor is configured
   const hasExecutor = !!data.executor?.config?.functionCode;
+
+  // Handle settings button click
+  const handleOpenExecutorEditor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    open(id);
+  };
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
@@ -120,6 +129,7 @@ export function ServiceNode({ data, selected }: ServiceNodeProps) {
           </span>
           {/* Executor Configuration Button */}
           <button
+            onClick={handleOpenExecutorEditor}
             className={`p-1 rounded transition ${
               hasExecutor
                 ? "bg-green-100 text-green-700 hover:bg-green-200"

@@ -36,11 +36,7 @@ export const initialNodes: WorkflowNode[] = [
       executor: {
         config: createTypedExecutor<unknown, unknown>(
           `// Example: Transform data
-return "REST API";`,
-          {
-            inputType: "unknown",
-            outputType: "unknown",
-          }
+return "REST API";`
         ),
       },
     },
@@ -78,10 +74,11 @@ return "REST API";`,
     validationChecked: true,
     validationTime: Date.now()
   
-  };`,
-          {
-            inputType: "unknown",
-          }
+  };`
+          // {
+          //   inputType: "unknown",
+          //   outputType: "unknown",
+          // }
         ),
       },
     },
@@ -111,11 +108,7 @@ return "REST API";`,
   return {
     ...data,
     timestamp: Date.now()
-  };`,
-          {
-            inputType: "unknown",
-            outputType: "unknown",
-          }
+  };`
         ),
       },
     },

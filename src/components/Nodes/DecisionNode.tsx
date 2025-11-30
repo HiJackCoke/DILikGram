@@ -1,8 +1,11 @@
 import { Port, Position } from "react-cosmos-diagram";
 import { GitBranch, Settings } from "lucide-react";
 import type { DecisionNodeProps, NodePort } from "@/types/nodes";
+import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
 
-export function DecisionNode({ data, selected }: DecisionNodeProps) {
+export function DecisionNode({ data, selected, id }: DecisionNodeProps) {
+  const { open } = useExecutorEditorContext();
+
   const defaultPorts: NodePort[] = [
     { id: "input", position: Position.Top, type: "target" },
     { id: "yes", position: Position.Right, type: "source", label: "Yes" },
@@ -12,6 +15,12 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
 
   // Check if executor is configured
   const hasExecutor = !!data.executor?.config?.functionCode;
+
+  // Handle settings button click
+  const handleOpenExecutorEditor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    open(id);
+  };
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
@@ -73,6 +82,7 @@ export function DecisionNode({ data, selected }: DecisionNodeProps) {
               <GitBranch className="w-6 h-6 text-yellow-900" />
               {/* Executor Configuration Button */}
               <button
+                onClick={handleOpenExecutorEditor}
                 className={`p-0.5 rounded transition ${
                   hasExecutor
                     ? "bg-green-100 text-green-700 hover:bg-green-200"

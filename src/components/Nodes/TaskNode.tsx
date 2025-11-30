@@ -8,6 +8,7 @@ import {
   Settings,
 } from "lucide-react";
 import type { TaskNodeProps, NodeStatus, NodePort } from "@/types/nodes";
+import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
 
 const statusConfig: Record<
   NodeStatus,
@@ -37,7 +38,9 @@ const statusConfig: Record<
   },
 };
 
-export function TaskNode({ data, selected }: TaskNodeProps) {
+export function TaskNode({ data, selected, id }: TaskNodeProps) {
+  const { open } = useExecutorEditorContext();
+
   const status = data.status || "idle";
   const StatusIcon = statusConfig[status]?.icon || Circle;
 
@@ -49,6 +52,12 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
 
   // Check if executor is configured
   const hasExecutor = !!data.executor?.config?.functionCode;
+
+  // Handle settings button click
+  const handleOpenExecutorEditor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    open(id);
+  };
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
@@ -95,6 +104,7 @@ export function TaskNode({ data, selected }: TaskNodeProps) {
           </span>
           {/* Executor Configuration Button */}
           <button
+            onClick={handleOpenExecutorEditor}
             className={`p-1 rounded transition ${
               hasExecutor
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
