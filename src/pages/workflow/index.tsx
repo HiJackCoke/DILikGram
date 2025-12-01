@@ -9,8 +9,8 @@ import { Square, CheckCircle, XCircle } from "lucide-react";
 
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
-import { initialNodes } from "@/fixtures/nodes";
-import { initialEdges } from "@/fixtures/edges";
+import { initialNodes } from "@/mocks/nodes";
+import { initialEdges } from "@/mocks/edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
@@ -27,7 +27,7 @@ import type {
 } from "@/types/executor";
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditorContext";
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
-import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodeTemplates";
+import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {

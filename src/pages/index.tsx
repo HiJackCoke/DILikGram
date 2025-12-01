@@ -8,8 +8,8 @@ import ReactDiagram, {
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 
-import { initialNodes } from "@/fixtures/nodes";
-import { initialEdges } from "@/fixtures/edges";
+import { initialNodes } from "@/mocks/nodes";
+import { initialEdges } from "@/mocks/edges";
 
 export default function WorkflowPage() {
   const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);

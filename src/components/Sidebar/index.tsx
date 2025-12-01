@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import NodeTemplate from "./NodeTemplate";
-import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodeTemplates";
+import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 import type { WorkflowNodeType } from "@/types/nodes";
 
 export default function Sidebar() {
