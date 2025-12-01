@@ -70,7 +70,7 @@ export function TaskNode({ data, selected, id }: TaskNodeProps) {
     <div
       className={`
         task-node
-        relative min-w-[200px] max-w-[280px] bg-white rounded-xl shadow-lg 
+        relative min-w-[200px] max-w-[240px] min-h-[120px] bg-white rounded-xl shadow-lg 
         border-2 transition-all duration-200
         overflow-hidden
         ${

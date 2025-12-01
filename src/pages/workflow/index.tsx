@@ -11,7 +11,9 @@ import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 import { initialNodes } from "@/fixtures/nodes";
 import { initialEdges } from "@/fixtures/edges";
+
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
+import Sidebar from "@/components/Sidebar";
 import {
   createWorkflowExecutor,
   type ExecutionState,
@@ -24,7 +26,45 @@ import type {
   ExecutorConfig,
 } from "@/types/executor";
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditorContext";
-import type { WorkflowNode } from "@/types/nodes";
+import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
+import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodeTemplates";
+
+// Viewport transform 값 추출 헬퍼 함수
+function getTranslateValues(transformString: string) {
+  const translateRegex = /translate\(\s*([^\s,]+)px\s*,\s*([^\s,]+)px\s*\)/;
+  const scaleRegex = /scale\(\s*([^\s,]+)\s*(?:,\s*([^\s,]+))?\s*\)/;
+
+  const matches = transformString.match(translateRegex);
+  const scaleMatches = transformString.match(scaleRegex);
+
+  let x = 0,
+    y = 0,
+    scale = 1;
+
+  if (matches) {
+    x = parseFloat(matches[1]);
+    y = parseFloat(matches[2]);
+  }
+
+  if (scaleMatches) {
+    scale = parseFloat(scaleMatches[1]);
+  }
+
+  return { x, y, scale };
+}
+
+// 노드 타입별 기본 크기 (실제 렌더링 크기와 동일)
+function getNodeDimensions(type: string): { width: number; height: number } {
+  const dimensions: Record<string, { width: number; height: number }> = {
+    start: { width: 96, height: 96 }, // w-24 h-24
+    end: { width: 96, height: 96 }, // w-24 h-24
+    task: { width: 200, height: 120 }, // 평균 크기 (min-w-[200px] max-w-[280px])
+    decision: { width: 144, height: 144 }, // w-36 h-36
+    service: { width: 200, height: 120 }, // 평균 크기 (min-w-[200px] max-w-[280px])
+  };
+
+  return dimensions[type] || { width: 200, height: 100 }; // 기본값
+}
 
 export default function WorkflowPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -71,7 +111,6 @@ export default function WorkflowPage() {
     [setNodes]
   );
 
-  console.log(nodes);
   // 엣지 업데이트 콜백
   const handleEdgeUpdate = useCallback(
     (edgeId: string, data: Partial<WorkflowEdge["data"]>) => {
@@ -110,6 +149,65 @@ export default function WorkflowPage() {
     },
     [setNodes]
   );
+
+  // DND 핸들러
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+
+    const type = e.dataTransfer.getData(
+      "application/nodeType"
+    ) as WorkflowNodeType;
+    if (!type) return;
+
+    // JSON으로 저장된 비율 데이터 파싱
+    const distance = JSON.parse(
+      e.dataTransfer.getData("application/nodeDistance") || "{}"
+    );
+    const ratioX = distance.x || 0.5; // 기본값 중앙
+    const ratioY = distance.y || 0.5; // 기본값 중앙
+
+    // 실제 노드 크기 가져오기
+    const nodeDimensions = getNodeDimensions(type);
+
+    // Viewport 요소 쿼리 (.react-diagram__viewport)
+    const container = e.currentTarget as HTMLDivElement;
+    const viewport = container.querySelector(
+      ".react-diagram__viewport"
+    ) as HTMLDivElement;
+
+    // Transform 값 추출 (translate + scale)
+    const translate = getTranslateValues(viewport?.style.transform);
+
+    // 비율 × 실제 노드 크기 = 픽셀 offset
+    const offsetX = ratioX * nodeDimensions.width * translate.scale;
+    const offsetY = ratioY * nodeDimensions.height * translate.scale;
+
+    console.log(ratioY, nodeDimensions.height, translate.scale);
+
+    // Zoom(scale)과 비율 기반 offset을 모두 고려한 정확한 position 계산
+    const position = {
+      x: (e.clientX - offsetX - translate.x) / translate.scale,
+      y: (e.clientY - offsetY - translate.y) / translate.scale,
+    };
+
+    console.log(translate);
+    // Create new node from template
+    const template = UNIFIED_NODE_TEMPLATES[type]?.template;
+    if (!template) return;
+
+    const newNode: WorkflowNode = {
+      id: `${type}-${Date.now()}`,
+      ...template,
+      position,
+    };
+
+    setNodes((prevNodes) => [...prevNodes, newNode]);
+  };
 
   // 선택된 노드 ID 추출
   const selectedNodeId = nodes.find((node) => node.selected)?.id;
@@ -200,8 +298,11 @@ export default function WorkflowPage() {
         onSave={handleExecutorSave}
       >
         <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          {/* Sidebar */}
+          <Sidebar />
+
           {/* Header */}
-          <div className="absolute top-4 left-4 z-10 space-y-3">
+          <div className="absolute top-4 left-20 z-10 space-y-3">
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">
                 Workflow Builder
@@ -335,7 +436,6 @@ export default function WorkflowPage() {
             </div>
           </div>
 
-          {/* Diagram */}
           <ReactDiagram
             nodes={enhancedNodes}
             edges={enhancedEdges}
@@ -347,6 +447,8 @@ export default function WorkflowPage() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onPaneClick={resetSelectedElements}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           />
         </div>
       </ExecutorEditorProvider>

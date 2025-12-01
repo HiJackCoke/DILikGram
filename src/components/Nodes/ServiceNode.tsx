@@ -95,7 +95,7 @@ export function ServiceNode({ data, selected, id }: ServiceNodeProps) {
     <div
       className={`
         service-node
-        relative min-w-[200px] max-w-[280px] bg-white rounded-xl shadow-lg 
+        relative w-[200px] max-w-[280px] min-h-[120px] bg-white rounded-xl shadow-lg 
         border-2 transition-all duration-200
         overflow-hidden
         ${
