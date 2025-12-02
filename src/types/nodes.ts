@@ -44,6 +44,9 @@ type WorkflowNodeData<T> = T & {
   executor?: ExecutorData;
 };
 
+export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {
+  type: WorkflowNodeType;
+};
 // ============================================
 // StartNode
 // ============================================
@@ -52,7 +55,7 @@ export type StartNodeData = {
   ports?: NodePort[];
 };
 
-export type StartNodeProps = NodeProps<WorkflowNodeData<StartNodeData>>;
+export type StartNodeProps = WorkflowNodeProps<StartNodeData>;
 
 // ============================================
 // EndNode
@@ -65,7 +68,7 @@ export type EndNodeData = {
   ports?: NodePort[];
 };
 
-export type EndNodeProps = NodeProps<WorkflowNodeData<EndNodeData>>;
+export type EndNodeProps = WorkflowNodeProps<EndNodeData>;
 
 // ============================================
 // TaskNode
@@ -81,7 +84,7 @@ export type TaskNodeData = {
   metadata?: Record<string, string>;
 };
 
-export type TaskNodeProps = NodeProps<WorkflowNodeData<TaskNodeData>>;
+export type TaskNodeProps = WorkflowNodeProps<TaskNodeData>;
 
 // ============================================
 // DecisionNode
@@ -92,7 +95,7 @@ export type DecisionNodeData = {
   ports?: NodePort[];
 };
 
-export type DecisionNodeProps = NodeProps<WorkflowNodeData<DecisionNodeData>>;
+export type DecisionNodeProps = WorkflowNodeProps<DecisionNodeData>;
 
 // ============================================
 // ServiceNode
@@ -126,7 +129,6 @@ export type WorkflowNode = Node<
   >,
   WorkflowNodeType
 >;
-
 
 // ============================================
 // 실행 관련 타입

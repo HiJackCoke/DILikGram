@@ -1,24 +1,24 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import type { ReactNode } from "react";
 import type { ExecutorConfig } from "@/types/executor";
 import ExecutorEditorModal from "@/components/ExecutorEditor";
-import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
-
-export interface ExecutorEditorState {
-  nodeId: string;
-  nodeType: WorkflowNodeType;
-  initialConfig?: ExecutorConfig;
-}
+import type { WorkflowNodeProps } from "@/types/nodes";
+import type { ExecutorEditorState, ExecutorOnSave } from "./type";
 
 interface ExecutorEditorContextValue {
-  open: (nodeId: string) => void;
+  registerOnSave: (callback: ExecutorOnSave) => void;
+  open: (node: WorkflowNodeProps) => void;
   close: () => void;
 }
 
 interface ExecutorEditorProviderProps {
   children: ReactNode;
-  nodes: WorkflowNode[];
-  onSave: (nodeId: string, config: ExecutorConfig) => void;
 }
 
 const ExecutorEditorContext = createContext<ExecutorEditorContextValue | null>(
@@ -27,46 +27,51 @@ const ExecutorEditorContext = createContext<ExecutorEditorContextValue | null>(
 
 export function ExecutorEditorProvider({
   children,
-  nodes,
-  onSave,
 }: ExecutorEditorProviderProps) {
+  const listeners = useRef<ExecutorOnSave[]>([]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<ExecutorEditorState | null>(null);
 
-  const open = useCallback(
-    (nodeId: string) => {
-      const currentNode = nodes.find((n) => n.id === nodeId);
-      const initialConfig = currentNode?.data?.executor?.config;
+  const open = useCallback((node: WorkflowNodeProps) => {
+    const config = node?.data?.executor?.config;
 
-      if (!currentNode?.type) return;
+    if (!node?.type) return;
 
-      setIsOpen(true);
-      setState({
-        nodeId,
-        nodeType: currentNode?.type,
-        initialConfig,
-      });
-    },
-    [nodes]
-  );
+    setIsOpen(true);
+    setState({
+      nodeId: node.id,
+      nodeType: node?.type,
+      config,
+    });
+  }, []);
 
   const close = useCallback(() => {
     setIsOpen(false);
     setState(null);
   }, []);
 
+  const registerOnSave = useCallback((handler: ExecutorOnSave) => {
+    listeners.current.push(handler);
+
+    return () => {
+      listeners.current = listeners.current.filter(
+        (listener) => listener !== handler
+      );
+    };
+  }, []);
+
   const handleSave = useCallback(
     (config: ExecutorConfig) => {
-      if (state?.nodeId) {
-        onSave(state.nodeId, config);
-        close();
-      }
+      if (!state?.nodeId) return;
+      close();
+      listeners.current.forEach((listener) => listener(state.nodeId, config));
     },
-    [state, onSave, close]
+    [state, close]
   );
 
   return (
-    <ExecutorEditorContext.Provider value={{ open, close }}>
+    <ExecutorEditorContext.Provider value={{ open, close, registerOnSave }}>
       {children}
 
       <ExecutorEditorModal

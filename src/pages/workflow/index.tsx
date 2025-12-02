@@ -25,9 +25,10 @@ import type {
   ExecutorState,
   ExecutorConfig,
 } from "@/types/executor";
-import { ExecutorEditorProvider } from "@/contexts/ExecutorEditorContext";
+
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
+import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -69,6 +70,7 @@ function getNodeDimensions(type: string): { width: number; height: number } {
 export default function WorkflowPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
   const [executionState, setExecutionState] = useState<ExecutionState>({
     isRunning: false,
     context: {
@@ -149,6 +151,7 @@ export default function WorkflowPage() {
     },
     [setNodes]
   );
+  useExecutorOnSave(handleExecutorSave);
 
   // DND 핸들러
   const handleDragOver = (e: React.DragEvent) => {
@@ -195,7 +198,6 @@ export default function WorkflowPage() {
       y: (e.clientY - offsetY - translate.y) / translate.scale,
     };
 
-    console.log(translate);
     // Create new node from template
     const template = UNIFIED_NODE_TEMPLATES[type]?.template;
     if (!template) return;
@@ -290,168 +292,161 @@ export default function WorkflowPage() {
       },
     };
   });
-
+  // onSave={handleExecutorSave}
   return (
     <>
-      <ExecutorEditorProvider
-        nodes={nodes as WorkflowNode[]}
-        onSave={handleExecutorSave}
-      >
-        <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          {/* Sidebar */}
-          <Sidebar />
+      <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Sidebar */}
+        <Sidebar />
 
-          {/* Header */}
-          <div className="absolute top-4 left-20 z-10 space-y-3">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-2">
-                Workflow Builder
-              </h1>
-              <p className="text-slate-400 text-sm">react-cosmos-diagram</p>
-            </div>
+        {/* Header */}
+        <div className="absolute top-4 left-20 z-10 space-y-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Workflow Builder
+            </h1>
+            <p className="text-slate-400 text-sm">react-cosmos-diagram</p>
+          </div>
 
-            {/* Execution Controls */}
-            <div className="flex items-center gap-2">
+          {/* Execution Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => executeWorkflow("success")}
+              disabled={executionState.isRunning}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+            >
+              <CheckCircle className="w-4 h-4" />
+              성공 실행
+            </button>
+            <button
+              onClick={() => executeWorkflow("failure")}
+              disabled={executionState.isRunning}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+            >
+              <XCircle className="w-4 h-4" />
+              실패 실행
+            </button>
+            {executionState.isRunning && (
               <button
-                onClick={() => executeWorkflow("success")}
-                disabled={executionState.isRunning}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+                onClick={stopExecution}
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors text-sm"
               >
-                <CheckCircle className="w-4 h-4" />
-                성공 실행
+                <Square className="w-4 h-4" />
+                중단
               </button>
-              <button
-                onClick={() => executeWorkflow("failure")}
-                disabled={executionState.isRunning}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
-              >
-                <XCircle className="w-4 h-4" />
-                실패 실행
-              </button>
-              {executionState.isRunning && (
-                <button
-                  onClick={stopExecution}
-                  className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors text-sm"
-                >
-                  <Square className="w-4 h-4" />
-                  중단
-                </button>
-              )}
-            </div>
-
-            {/* Status */}
-            {executionState.isRunning &&
-              (() => {
-                const currentNode = nodes.find(
-                  (n) => n.data.executor?.state === "executing"
-                );
-                return currentNode ? (
-                  <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">
-                    실행 중:{" "}
-                    <span className="font-semibold">{currentNode.id}</span>
-                  </div>
-                ) : null;
-              })()}
-
-            {selectedNodeId && !executionState.isRunning && (
-              <div className="px-3 py-1.5 bg-purple-600/90 text-white rounded-lg text-sm">
-                선택된 노드:{" "}
-                <span className="font-semibold">{selectedNodeId}</span>
-              </div>
             )}
+          </div>
 
-            {/* Execution Statistics */}
-            {(() => {
-              const executedCount = nodes.filter(
-                (n) => n.data.executor?.state === "executed"
-              ).length;
-              return executedCount > 0 ? (
-                <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">
-                  <div className="font-semibold text-slate-300 mb-1.5">
-                    실행 통계
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400">완료된 노드:</span>
-                    <span className="font-semibold text-palette-success-color">
-                      {executedCount}
-                    </span>
-                  </div>
-                  {executionState.context.errors.size > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400">에러:</span>
-                      <span className="font-semibold text-palette-danger-color">
-                        {executionState.context.errors.size}
-                      </span>
-                    </div>
-                  )}
-                  {executionState.context.startTime > 0 &&
-                    executionState.context.endTime && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-400">실행 시간:</span>
-                        <span className="font-semibold text-palette-primary-color">
-                          {(
-                            (executionState.context.endTime -
-                              executionState.context.startTime) /
-                            1000
-                          ).toFixed(2)}
-                          s
-                        </span>
-                      </div>
-                    )}
+          {/* Status */}
+          {executionState.isRunning &&
+            (() => {
+              const currentNode = nodes.find(
+                (n) => n.data.executor?.state === "executing"
+              );
+              return currentNode ? (
+                <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">
+                  실행 중:{" "}
+                  <span className="font-semibold">{currentNode.id}</span>
                 </div>
               ) : null;
             })()}
-          </div>
 
-          {/* Legend */}
-          <div className="absolute top-4 right-4 z-10 bg-slate-800/80 rounded-lg p-4 border border-slate-700">
-            <p className="text-slate-300 text-xs font-semibold mb-2">
-              Edge Types
-            </p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-0.5 bg-palette-neutral-bg rounded" />
-                <span className="text-palette-neutral-color text-xs">
-                  Default
-                </span>
+          {selectedNodeId && !executionState.isRunning && (
+            <div className="px-3 py-1.5 bg-purple-600/90 text-white rounded-lg text-sm">
+              선택된 노드:{" "}
+              <span className="font-semibold">{selectedNodeId}</span>
+            </div>
+          )}
+
+          {/* Execution Statistics */}
+          {(() => {
+            const executedCount = nodes.filter(
+              (n) => n.data.executor?.state === "executed"
+            ).length;
+            return executedCount > 0 ? (
+              <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">
+                <div className="font-semibold text-slate-300 mb-1.5">
+                  실행 통계
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">완료된 노드:</span>
+                  <span className="font-semibold text-palette-success-color">
+                    {executedCount}
+                  </span>
+                </div>
+                {executionState.context.errors.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">에러:</span>
+                    <span className="font-semibold text-palette-danger-color">
+                      {executionState.context.errors.size}
+                    </span>
+                  </div>
+                )}
+                {executionState.context.startTime > 0 &&
+                  executionState.context.endTime && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">실행 시간:</span>
+                      <span className="font-semibold text-palette-primary-color">
+                        {(
+                          (executionState.context.endTime -
+                            executionState.context.startTime) /
+                          1000
+                        ).toFixed(2)}
+                        s
+                      </span>
+                    </div>
+                  )}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-0.5 bg-palette-success-bg rounded" />
-                <span className="text-palette-neutral-color text-xs">
-                  Success
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-0.5 bg-palette-danger-bg rounded" />
-                <span className="text-palette-neutral-color text-xs">
-                  Error
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-0.5 bg-palette-warning-bg rounded" />
-                <span className="text-palette-neutral-color text-xs">
-                  Warning
-                </span>
-              </div>
+            ) : null;
+          })()}
+        </div>
+
+        {/* Legend */}
+        <div className="absolute top-4 right-4 z-10 bg-slate-800/80 rounded-lg p-4 border border-slate-700">
+          <p className="text-slate-300 text-xs font-semibold mb-2">
+            Edge Types
+          </p>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-0.5 bg-palette-neutral-bg rounded" />
+              <span className="text-palette-neutral-color text-xs">
+                Default
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-0.5 bg-palette-success-bg rounded" />
+              <span className="text-palette-neutral-color text-xs">
+                Success
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-0.5 bg-palette-danger-bg rounded" />
+              <span className="text-palette-neutral-color text-xs">Error</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-0.5 bg-palette-warning-bg rounded" />
+              <span className="text-palette-neutral-color text-xs">
+                Warning
+              </span>
             </div>
           </div>
-
-          <ReactDiagram
-            nodes={enhancedNodes}
-            edges={enhancedEdges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            connectionRadius={20}
-            minZoom={0.5}
-            maxZoom={2}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onPaneClick={resetSelectedElements}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          />
         </div>
-      </ExecutorEditorProvider>
+
+        <ReactDiagram
+          nodes={enhancedNodes}
+          edges={enhancedEdges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          connectionRadius={20}
+          minZoom={0.5}
+          maxZoom={2}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onPaneClick={resetSelectedElements}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        />
+      </div>
     </>
   );
 }

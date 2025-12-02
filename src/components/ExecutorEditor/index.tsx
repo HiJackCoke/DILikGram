@@ -9,7 +9,8 @@ import { compileExecutor, detectAsync } from "@/utils/executorRuntime";
 import { inferTypeFromJSON } from "@/utils/executorHelpers";
 
 import type { ExecutorConfig } from "@/types/executor";
-import type { ExecutorEditorState } from "@/contexts/ExecutorEditorContext";
+import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
+
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> & {
   open: boolean;
@@ -21,18 +22,18 @@ export default function ExecutorEditorModal({
   open,
   nodeId,
   nodeType,
-  initialConfig,
+  config,
   onSave,
   onClose,
 }: ExecutorEditorModalProps) {
   // Initialize state directly from props
-  const [code, setCode] = useState(() => initialConfig?.functionCode || "");
-  const [meta, setMeta] = useState(() => initialConfig?.__meta);
+  const [code, setCode] = useState(() => config?.functionCode || "");
+  const [meta, setMeta] = useState(() => config?.__meta);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [inputData, setInputData] = useState("{}");
   const [outputData, setOutputData] = useState<string | null>(null);
 
-  // Reset code when initialConfig changes
+  // Reset code when config changes
 
   // Auto-detect if code is async
   const isAsync = useMemo(() => detectAsync(code), [code]);
@@ -57,10 +58,10 @@ export default function ExecutorEditorModal({
   }, [code, nodeType]);
 
   useEffect(() => {
-    setCode(initialConfig?.functionCode || "");
+    setCode(config?.functionCode || "");
     setOutputData(null);
     setCompileError(null);
-  }, [initialConfig?.functionCode]);
+  }, [config?.functionCode]);
 
   // Update compile error state when validation changes
   useEffect(() => {

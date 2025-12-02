@@ -1,9 +1,14 @@
 import { Port, Position } from "react-cosmos-diagram";
 import { GitBranch, Settings } from "lucide-react";
-import type { DecisionNodeProps, NodePort } from "@/types/nodes";
-import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
+import type {
+  DecisionNodeProps,
+  NodePort,
+  WorkflowNodeProps,
+} from "@/types/nodes";
+import { useExecutorEditorContext } from "@/contexts/ExecutorEditor";
 
-export function DecisionNode({ data, selected, id }: DecisionNodeProps) {
+export function DecisionNode(nodeProps: DecisionNodeProps) {
+  const { data, selected } = nodeProps;
   const { open } = useExecutorEditorContext();
 
   const defaultPorts: NodePort[] = [
@@ -19,7 +24,7 @@ export function DecisionNode({ data, selected, id }: DecisionNodeProps) {
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(id);
+    open(nodeProps as WorkflowNodeProps);
   };
 
   // 실행 상태에 따른 스타일

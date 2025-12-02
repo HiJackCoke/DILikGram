@@ -16,8 +16,9 @@ import type {
   NodePort,
   ServiceType,
   HttpMethod,
+  WorkflowNodeProps,
 } from "@/types/nodes";
-import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
+import { useExecutorEditorContext } from "@/contexts/ExecutorEditor";
 
 const statusConfig: Record<
   NodeStatus,
@@ -62,7 +63,8 @@ const methodColors: Record<HttpMethod, string> = {
   DELETE: "bg-red-100 text-red-700",
 };
 
-export function ServiceNode({ data, selected, id }: ServiceNodeProps) {
+export function ServiceNode(nodeProps: ServiceNodeProps) {
+  const { data, selected } = nodeProps;
   const { open } = useExecutorEditorContext();
 
   const status = data.status || "idle";
@@ -81,7 +83,7 @@ export function ServiceNode({ data, selected, id }: ServiceNodeProps) {
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(id);
+    open(nodeProps as WorkflowNodeProps);
   };
 
   // 실행 상태에 따른 스타일

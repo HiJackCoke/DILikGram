@@ -7,8 +7,13 @@ import {
   ClipboardList,
   Settings,
 } from "lucide-react";
-import type { TaskNodeProps, NodeStatus, NodePort } from "@/types/nodes";
-import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
+import type {
+  TaskNodeProps,
+  NodeStatus,
+  NodePort,
+  WorkflowNodeProps,
+} from "@/types/nodes";
+import { useExecutorEditorContext } from "@/contexts/ExecutorEditor";
 
 const statusConfig: Record<
   NodeStatus,
@@ -38,7 +43,8 @@ const statusConfig: Record<
   },
 };
 
-export function TaskNode({ data, selected, id }: TaskNodeProps) {
+export function TaskNode(nodeProps: TaskNodeProps) {
+  const { data, selected } = nodeProps;
   const { open } = useExecutorEditorContext();
 
   const status = data.status || "idle";
@@ -56,7 +62,7 @@ export function TaskNode({ data, selected, id }: TaskNodeProps) {
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(id);
+    open(nodeProps as WorkflowNodeProps);
   };
 
   // 실행 상태에 따른 스타일
