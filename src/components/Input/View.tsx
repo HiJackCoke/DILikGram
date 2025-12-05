@@ -9,6 +9,7 @@ export default function InputView({
   placeholder,
   required = false,
   disabled = false,
+  readOnly = false,
   status = "default",
   errorMessage,
   isFocused,
@@ -69,7 +70,7 @@ export default function InputView({
           min={min}
           max={max}
           step={step}
-          readOnly
+          readOnly={readOnly}
           onChange={onChange}
           onFocus={onFocus}
           onBlur={onBlur}
