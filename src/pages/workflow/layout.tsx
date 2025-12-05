@@ -1,11 +1,14 @@
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditor";
+import { PropertiesPanelProvider } from "@/contexts/PropertiesPanel";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {
   return (
     <ExecutorEditorProvider>
-      <div id="executor-modal" />
-      <Outlet />
+      <PropertiesPanelProvider>
+        <div id="executor-modal" />
+        <Outlet />
+      </PropertiesPanelProvider>
     </ExecutorEditorProvider>
   );
 };
