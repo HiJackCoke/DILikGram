@@ -15,12 +15,12 @@ export default function InputView({
   min,
   max,
   step,
+  formatNumber,
   onChange,
   onFocus,
   onBlur,
   onIncrement,
   onDecrement,
-  formatNumber,
 }: InputViewProps) {
   // Status-based border colors
   const borderColor = (() => {
@@ -47,16 +47,6 @@ export default function InputView({
       {/* Input */}
       <div className="relative">
         <input
-          type={type === "number" && formatNumber && !isFocused ? "text" : type}
-          value={isFocused ? value : displayValue}
-          onChange={onChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          placeholder={placeholder}
-          disabled={disabled}
-          min={min}
-          max={max}
-          step={step}
           className={`
             w-full ${type === "number" ? "pr-8" : "pr-3"} pl-3 py-2
             bg-slate-700
@@ -71,7 +61,18 @@ export default function InputView({
             transition-all duration-200 ease-in-out
             ${isFocused ? "scale-[1.01]" : "scale-100"}
             [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-          `}
+            `}
+          type={type === "number" && formatNumber && !isFocused ? "text" : type}
+          value={isFocused ? value : displayValue}
+          placeholder={placeholder}
+          disabled={disabled}
+          min={min}
+          max={max}
+          step={step}
+          readOnly
+          onChange={onChange}
+          onFocus={onFocus}
+          onBlur={onBlur}
         />
 
         {/* Custom number spinner buttons */}

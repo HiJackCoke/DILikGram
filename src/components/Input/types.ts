@@ -3,25 +3,29 @@ import type { Ref } from "react";
 export type InputType = "text" | "number";
 export type InputStatus = "default" | "error" | "valid";
 
-export interface BaseInputProps {
-  ref?: Ref<HTMLInputElement>;
+interface BaseInputProps {
   label: string;
   value: string | number;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   status?: InputStatus;
   errorMessage?: string;
+}
+
+export interface CoreInputProps extends BaseInputProps {
+  ref?: Ref<HTMLInputElement>;
   onChange: (value: string | number) => void;
 }
 
-export type TextInputProps = BaseInputProps & {
+export type TextInputProps = CoreInputProps & {
   type?: "text";
   value: string;
   onChange: (value: string) => void;
 };
 
-export type NumberInputProps = BaseInputProps & {
+export type NumberInputProps = CoreInputProps & {
   type: "number";
   value: number;
   min?: number;
@@ -33,17 +37,10 @@ export type NumberInputProps = BaseInputProps & {
 
 export type InputProps = TextInputProps | NumberInputProps;
 
-export interface InputViewProps {
-  label: string;
+export interface InputViewProps extends BaseInputProps {
   type?: InputType;
-  value: string;
-  displayValue: string;
-  placeholder?: string;
-  required?: boolean;
-  disabled?: boolean;
-  status: InputStatus;
-  errorMessage?: string;
   isFocused: boolean;
+  displayValue: string;
   // Number-specific props
   formatNumber?: boolean;
   min?: number;

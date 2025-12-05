@@ -65,6 +65,7 @@ export default function Input(props: InputProps) {
       placeholder={props.placeholder}
       required={props.required}
       disabled={props.disabled}
+      readOnly={props.readOnly}
       status={props.status || "default"}
       errorMessage={props.errorMessage}
       isFocused={isFocused}
