@@ -6,7 +6,8 @@ export function useExecutorOnSave(handler: ExecutorOnSave) {
   const { registerOnSave } = useExecutorEditorContext();
 
   useEffect(() => {
-    const register = registerOnSave(handler);
-    return register;
+    const unregister = registerOnSave(handler);
+    return unregister;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

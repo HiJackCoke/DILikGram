@@ -29,6 +29,8 @@ import type {
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
+import { usePropertiesOnSave } from "@/hooks/usePropertiesOnSave";
+import { usePropertiesPanelContext } from "@/contexts/PropertiesPanel";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -153,6 +155,25 @@ export default function WorkflowPage() {
   );
   useExecutorOnSave(handleExecutorSave);
 
+  // Handle properties save
+  const handlePropertiesSave = useCallback(
+    (nodeId: string, data: Partial<WorkflowNode["data"]>) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, ...data } }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
+  
+  usePropertiesOnSave(handlePropertiesSave);
+
+  // PropertiesPanel context
+  const { open: openPropertiesPanel } = usePropertiesPanelContext();
+
   // DND 핸들러
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -189,8 +210,6 @@ export default function WorkflowPage() {
     // 비율 × 실제 노드 크기 = 픽셀 offset
     const offsetX = ratioX * nodeDimensions.width * translate.scale;
     const offsetY = ratioY * nodeDimensions.height * translate.scale;
-
-    console.log(ratioY, nodeDimensions.height, translate.scale);
 
     // Zoom(scale)과 비율 기반 offset을 모두 고려한 정확한 position 계산
     const position = {
@@ -442,6 +461,9 @@ export default function WorkflowPage() {
           maxZoom={2}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeClick={(_event, node) => {
+            openPropertiesPanel(node as WorkflowNode);
+          }}
           onPaneClick={resetSelectedElements}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
