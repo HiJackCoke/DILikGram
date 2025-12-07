@@ -8,6 +8,7 @@ export default function KeyValueEditorView({
   disabled = false,
   placeholder = { key: "Key", value: "Value" },
   keySchema = {},
+  editable = true,
   onAdd,
   onEdit,
   onRemove,
@@ -70,7 +71,7 @@ export default function KeyValueEditorView({
               <button
                 type="button"
                 onClick={() => onRemove(pair.key)}
-                disabled={disabled || isKeyReadonly}
+                disabled={disabled || !editable}
                 className="mt-1.5 p-2 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Remove pair"
               >
@@ -92,7 +93,7 @@ export default function KeyValueEditorView({
       <button
         type="button"
         onClick={onAdd}
-        disabled={disabled}
+        disabled={disabled || !editable}
         className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Plus className="w-4 h-4" />

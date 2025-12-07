@@ -12,6 +12,8 @@ export interface FieldConfig {
   options?: { label: string; value: string }[];
   placeholder?: string;
   readonly?: boolean;
+  disabled?: boolean;
+  editable?: boolean;
   keySchema?: Record<
     string,
     {

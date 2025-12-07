@@ -112,6 +112,8 @@ export default function DynamicNodeEditor({
             value={(fieldValue as Record<string, string | number>) || {}}
             onChange={(v) => handleFieldChange(key, v)}
             keySchema={fieldConfig.keySchema}
+            editable={fieldConfig.editable}
+            disabled={fieldConfig.disabled}
           />
         );
 

@@ -254,6 +254,7 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
   retry: {
     type: "keyvalue",
     label: "Retry",
+    editable: false,
     keySchema: {
       count: {
         valueType: "number",

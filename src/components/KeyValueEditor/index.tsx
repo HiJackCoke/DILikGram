@@ -5,6 +5,7 @@ export default function KeyValueEditor({
   label,
   value,
   disabled,
+  editable,
   placeholder,
   keySchema = {},
   onChange,
@@ -23,7 +24,11 @@ export default function KeyValueEditor({
     onChange({ ...value, [newKey]: "" });
   };
 
-  const handleEdit = (oldKey: string, newKey: string, newValue: string | number) => {
+  const handleEdit = (
+    oldKey: string,
+    newKey: string,
+    newValue: string | number
+  ) => {
     // Preserve order by rebuilding object with same key order
     const updated: Record<string, string | number> = {};
 
@@ -51,6 +56,7 @@ export default function KeyValueEditor({
       label={label}
       pairs={pairs}
       disabled={disabled}
+      editable={editable}
       placeholder={placeholder}
       keySchema={keySchema}
       onAdd={handleAdd}

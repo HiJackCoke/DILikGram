@@ -12,6 +12,7 @@ interface BaseKeyValueEditorProps {
   disabled?: boolean;
   placeholder?: { key?: string; value?: string };
   keySchema?: Record<string, KeySchema>;
+  editable?: boolean;
 }
 
 export interface KeyValueEditorProps extends BaseKeyValueEditorProps {
