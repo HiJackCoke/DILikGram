@@ -38,7 +38,7 @@ export default function Modal({
     ReactDOM.createPortal(
       <div
         className={`modal-container ${open ? "active" : "inactive"}`}
-        onClick={handleBackdropClick}
+        onMouseDown={handleBackdropClick}
       >
         <ModalView title={title} description={description} onClose={onClose}>
           {open && children}
