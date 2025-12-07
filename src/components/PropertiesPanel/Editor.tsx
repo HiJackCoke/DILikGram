@@ -1,11 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import type { WorkflowNode } from "@/types/nodes";
-import { getFieldConfig } from "@/utils/formFieldInference";
+
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
 import Select from "@/components/Select";
 import KeyValueEditor from "@/components/KeyValueEditor";
+import Tabs from "@/components/Tabs";
+
+import { getFieldConfig } from "@/utils/formFieldInference";
 import { generateFunctionCodeFromPanel } from "@/utils/executorHelpers";
+
+import type { WorkflowNode } from "@/types/nodes";
+import type { FieldConfig, TabOption } from "@/types/editor";
+import type { KeysOfUnion } from "@/types/utils";
 
 interface DynamicNodeEditorProps {
   node: WorkflowNode;
@@ -42,7 +48,7 @@ export default function DynamicNodeEditor({
   };
 
   const handleSave = () => {
-    // For ServiceNode, auto-generate functionCode
+    // For ServiceNode in Panel Mode, auto-generate functionCode
     if (node.type === "service") {
       const functionCode = generateFunctionCodeFromPanel(formData);
 
@@ -61,11 +67,90 @@ export default function DynamicNodeEditor({
       return;
     }
 
-    // Normal save for other nodes
+    // Normal save for other nodes or Code Mode ServiceNode
     onSave(formData as Partial<WorkflowNode["data"]>);
   };
 
-  const renderField = (key: string, value: unknown) => {
+  const renderFieldByConfig = (
+    config: FieldConfig & { key?: string },
+    fieldKey: KeysOfUnion<WorkflowNode["data"]>
+  ) => {
+    const fieldValue =
+      formData[fieldKey] ?? node.data[fieldKey as keyof typeof node.data];
+
+    switch (config.type) {
+      case "text":
+        return (
+          <Input
+            key={fieldKey}
+            label={config.label}
+            value={String(fieldValue ?? "")}
+            onChange={(v) => handleFieldChange(fieldKey, v)}
+            placeholder={config.placeholder}
+          />
+        );
+
+      case "number":
+        return (
+          <Input
+            key={fieldKey}
+            type={config.type}
+            formatNumber={config.type === "number"}
+            label={config.label}
+            value={Number(fieldValue ?? 0)}
+            onChange={(v) => handleFieldChange(fieldKey, v)}
+            placeholder={config.placeholder}
+          />
+        );
+
+      case "textarea":
+        return (
+          <TextArea
+            key={fieldKey}
+            label={config.label}
+            value={String(fieldValue ?? "")}
+            onChange={(v) => handleFieldChange(fieldKey, v)}
+            placeholder={config.placeholder}
+            rows={4}
+          />
+        );
+
+      case "select":
+        return (
+          <Select
+            key={fieldKey}
+            label={config.label}
+            value={String(fieldValue ?? "")}
+            onChange={(v) => handleFieldChange(fieldKey, v)}
+            options={
+              (config.options as { label: string; value: string }[]) || []
+            }
+            searchable
+          />
+        );
+
+      case "keyvalue":
+        return (
+          <KeyValueEditor
+            key={fieldKey}
+            label={config.label}
+            value={(fieldValue as Record<string, string | number>) || {}}
+            onChange={(v) => handleFieldChange(fieldKey, v)}
+            keySchema={config.keySchema}
+            editable={config.editable}
+            disabled={config.disabled}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderField = (
+    key: KeysOfUnion<WorkflowNode["data"]>,
+    value: unknown
+  ) => {
     // Get field config from fixtures only
     if (!node.type) return null;
 
@@ -76,76 +161,45 @@ export default function DynamicNodeEditor({
 
     const fieldValue = formData[key] ?? value;
 
-    switch (fieldConfig.type) {
-      case "text":
-        return (
-          <Input
-            key={key}
-            label={fieldConfig.label}
-            value={String(fieldValue ?? "")}
-            onChange={(v) => handleFieldChange(key, v)}
-            placeholder={fieldConfig.placeholder}
-          />
-        );
+    // Handle tab type separately
+    if (fieldConfig.type === "tab") {
+      const tabOptions = fieldConfig.options as TabOption[];
+      const currentTabValue = String(fieldValue ?? "");
 
-      case "number":
-        return (
-          <Input
-            key={key}
-            type={fieldConfig.type}
-            formatNumber={fieldConfig.type === "number"}
-            label={fieldConfig.label}
-            value={Number(fieldValue ?? 0)}
-            onChange={(v) => handleFieldChange(key, v)}
-            placeholder={fieldConfig.placeholder}
-          />
-        );
+      // Find the active tab
+      const activeTab = tabOptions.find((tab) => tab.value === currentTabValue);
 
-      case "textarea":
-        return (
-          <TextArea
-            key={key}
+      return (
+        <div key={key} className="space-y-4">
+          <Tabs
             label={fieldConfig.label}
-            value={String(fieldValue ?? "")}
+            value={currentTabValue}
             onChange={(v) => handleFieldChange(key, v)}
-            placeholder={fieldConfig.placeholder}
-            rows={4}
-          />
-        );
-
-      case "select":
-        return (
-          <Select
-            key={key}
-            label={fieldConfig.label}
-            value={String(fieldValue ?? "")}
-            onChange={(v) => handleFieldChange(key, v)}
-            options={fieldConfig.options || []}
-            searchable
-          />
-        );
-
-      case "keyvalue":
-        return (
-          <KeyValueEditor
-            key={key}
-            label={fieldConfig.label}
-            value={(fieldValue as Record<string, string | number>) || {}}
-            onChange={(v) => handleFieldChange(key, v)}
-            keySchema={fieldConfig.keySchema}
-            editable={fieldConfig.editable}
+            options={tabOptions.map((tab) => ({
+              label: tab.label,
+              value: tab.value,
+            }))}
             disabled={fieldConfig.disabled}
           />
-        );
 
-      default:
-        return null;
+          {/* Render fields for the active tab */}
+          {activeTab?.options?.map((fieldDef) => {
+            if (!fieldDef.key) return null;
+            return renderFieldByConfig(fieldDef, fieldDef.key);
+          })}
+        </div>
+      );
     }
+
+    // For non-tab fields, use renderFieldByConfig
+    return renderFieldByConfig(fieldConfig, key);
   };
 
   return (
     <div className="space-y-4">
-      {Object.entries(node.data).map(([key, value]) => renderField(key, value))}
+      {Object.entries(node.data).map(([key, value]) =>
+        renderField(key as KeysOfUnion<WorkflowNode["data"]>, value)
+      )}
 
       <button
         onClick={handleSave}

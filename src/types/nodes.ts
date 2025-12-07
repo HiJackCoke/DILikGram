@@ -42,6 +42,7 @@ export type WorkflowNodeState = {
 type WorkflowNodeData<T> = T & {
   state?: WorkflowNodeState;
   executor?: ExecutorData;
+  ports?: NodePort[];
 };
 
 export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {
@@ -52,7 +53,6 @@ export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {
 // ============================================
 export type StartNodeData = {
   title?: string;
-  ports?: NodePort[];
 };
 
 export type StartNodeProps = WorkflowNodeProps<StartNodeData>;
@@ -65,7 +65,6 @@ export type EndNodeStatus = "success" | "failure" | "neutral";
 export type EndNodeData = {
   title?: string;
   status?: EndNodeStatus;
-  ports?: NodePort[];
 };
 
 export type EndNodeProps = WorkflowNodeProps<EndNodeData>;
@@ -77,7 +76,7 @@ export type TaskNodeData = {
   icon?: ReactNode;
   title: string;
   description?: string;
-  ports?: NodePort[];
+
   status?: NodeStatus;
   assignee?: string;
   estimatedTime?: number;
@@ -92,7 +91,6 @@ export type TaskNodeProps = WorkflowNodeProps<TaskNodeData>;
 export type DecisionNodeData = {
   title: string;
   condition?: string;
-  ports?: NodePort[];
 };
 
 export type DecisionNodeProps = WorkflowNodeProps<DecisionNodeData>;
@@ -102,14 +100,16 @@ export type DecisionNodeProps = WorkflowNodeProps<DecisionNodeData>;
 // ============================================
 export type ServiceType = "api" | "database" | "email" | "webhook" | "custom";
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type ServiceNodeMode = "code" | "panel";
 
 export type ServiceNodeData = {
   icon?: ReactNode;
   title: string;
   description?: string;
-  ports?: NodePort[];
+
   status?: NodeStatus;
   serviceType?: ServiceType;
+  mode?: ServiceNodeMode;
   headers?: HeadersInit;
   body?: Record<string, unknown>;
   method?: HttpMethod;
@@ -121,7 +121,15 @@ export type ServiceNodeData = {
   };
 };
 
-export type ServiceNodeProps = NodeProps<WorkflowNodeData<ServiceNodeData>>;
+export type ServiceNodeProps = WorkflowNodeProps<ServiceNodeData>;
+
+export type WorkflowNodeMap = {
+  start: StartNodeData;
+  end: EndNodeData;
+  task: TaskNodeData;
+  decision: DecisionNodeData;
+  service: ServiceNodeData;
+};
 
 // ============================================
 // 워크플로우 노드 타입 (ReactDiagram용)

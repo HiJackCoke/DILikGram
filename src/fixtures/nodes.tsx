@@ -87,7 +87,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         title: "API Call",
         description: "Service description",
         serviceType: "api",
-        timeout: 5000,
+        mode: "panel",
         method: "POST",
         endpoint: "",
         // status: "idle",
@@ -99,6 +99,8 @@ export const UNIFIED_NODE_TEMPLATES: Record<
           count: 3,
           delay: 1000,
         },
+        timeout: 5000,
+
         ports: [
           { id: "input", position: Position.Top, type: "target" },
           { id: "output", position: Position.Bottom, type: "source" },
@@ -235,54 +237,73 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
       { label: "Custom", value: "custom" },
     ],
   },
-  timeout: {
-    type: "number",
-    label: "Timeout (ms)",
-    placeholder: "Enter timeout in milliseconds",
-  },
-  method: {
-    type: "select",
-    label: "HTTP Method",
+  mode: {
+    type: "tab",
+    label: "Editing Mode",
     options: [
-      { label: "GET", value: "GET" },
-      { label: "POST", value: "POST" },
-      { label: "PUT", value: "PUT" },
-      { label: "DELETE", value: "DELETE" },
+      {
+        label: "Panel",
+        value: "panel",
+        options: [
+          {
+            key: "method",
+            type: "select",
+            label: "HTTP Method",
+            options: [
+              { label: "GET", value: "GET" },
+              { label: "POST", value: "POST" },
+              { label: "PUT", value: "PUT" },
+              { label: "DELETE", value: "DELETE" },
+            ],
+          },
+          {
+            key: "endpoint",
+            type: "text",
+            label: "Endpoint",
+            placeholder: "Enter API endpoint",
+          },
+          {
+            key: "headers",
+            type: "keyvalue",
+            label: "Headers",
+            keySchema: {
+              "Content-Type": {
+                valueType: "text",
+                readonly: true,
+              },
+            },
+          },
+          {
+            key: "body",
+            type: "keyvalue",
+            label: "Body",
+          },
+          {
+            key: "retry",
+            type: "keyvalue",
+            label: "Retry",
+            editable: false,
+            keySchema: {
+              count: {
+                valueType: "number",
+                readonly: true,
+              },
+              delay: {
+                valueType: "number",
+                readonly: true,
+              },
+            },
+          },
+          {
+            key: "timeout",
+            type: "number",
+            label: "Timeout (ms)",
+            placeholder: "Enter timeout in milliseconds",
+          },
+        ],
+      },
+      { label: "Code", value: "code", options: [] },
     ],
-  },
-  endpoint: {
-    type: "text",
-    label: "Endpoint",
-    placeholder: "Enter API endpoint",
-  },
-  headers: {
-    type: "keyvalue",
-    label: "Headers",
-    keySchema: {
-      "Content-Type": {
-        valueType: "text",
-        readonly: true,
-      },
-    },
-  },
-  body: {
-    type: "keyvalue",
-    label: "Body",
-  },
-  retry: {
-    type: "keyvalue",
-    label: "Retry",
-    editable: false,
-    keySchema: {
-      count: {
-        valueType: "number",
-        readonly: true,
-      },
-      delay: {
-        valueType: "number",
-        readonly: true,
-      },
-    },
   },
   // status: {
   //   type: "select",

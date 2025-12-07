@@ -131,9 +131,10 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
           </span>
           {/* Executor Configuration Button */}
           <button
+            disabled={data.mode === "panel"}
             onClick={handleOpenExecutorEditor}
             className={`p-1 rounded transition ${
-              hasExecutor
+              hasExecutor && data.mode === "code"
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
                 : "bg-white/20 text-white hover:bg-white/30"
             }`}

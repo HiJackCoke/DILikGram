@@ -1,15 +1,29 @@
+import type { WorkflowNode } from "./nodes";
+import type { KeysOfUnion } from "./utils";
+
 export type FieldType =
   | "text"
   | "textarea"
   | "select"
   | "number"
   | "readonly"
-  | "keyvalue";
+  | "keyvalue"
+  | "tab";
+
+type TabItemOptions = FieldConfig & {
+  key: KeysOfUnion<WorkflowNode["data"]>;
+};
+export interface TabOption {
+  label: string;
+  value: string;
+  options?: TabItemOptions[];
+}
 
 export interface FieldConfig {
   type: FieldType;
   label: string;
-  options?: { label: string; value: string }[];
+  key?: string;
+  options?: TabOption[];
   placeholder?: string;
   readonly?: boolean;
   disabled?: boolean;
