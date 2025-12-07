@@ -4,7 +4,7 @@ export type InputType = "text" | "number";
 export type InputStatus = "default" | "error" | "valid";
 
 interface BaseInputProps {
-  label: string;
+  label?: string;
   value: string | number;
   placeholder?: string;
   required?: boolean;

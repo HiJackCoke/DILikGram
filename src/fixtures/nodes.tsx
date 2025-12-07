@@ -254,6 +254,16 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
   retry: {
     type: "keyvalue",
     label: "Retry",
+    keySchema: {
+      count: {
+        valueType: "number",
+        readonly: true,
+      },
+      delay: {
+        valueType: "number",
+        readonly: true,
+      },
+    },
   },
   status: {
     type: "select",

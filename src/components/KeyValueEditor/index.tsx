@@ -4,15 +4,18 @@ import type { KeyValueEditorProps, KeyValuePair } from "./types";
 export default function KeyValueEditor({
   label,
   value,
+  disabled,
+  placeholder,
+  keySchema = {},
   onChange,
-  disabled = false,
-  placeholder = { key: "Key", value: "Value" },
 }: KeyValueEditorProps) {
   // Convert Record<string, string> to KeyValuePair[]
-  const pairs: KeyValuePair[] = Object.entries(value || {}).map(([key, val]) => ({
-    key,
-    value: val,
-  }));
+  const pairs: KeyValuePair[] = Object.entries(value || {}).map(
+    ([key, val]) => ({
+      key,
+      value: val,
+    })
+  );
 
   const handleAdd = () => {
     // Generate unique key
@@ -20,9 +23,9 @@ export default function KeyValueEditor({
     onChange({ ...value, [newKey]: "" });
   };
 
-  const handleEdit = (oldKey: string, newKey: string, newValue: string) => {
+  const handleEdit = (oldKey: string, newKey: string, newValue: string | number) => {
     // Preserve order by rebuilding object with same key order
-    const updated: Record<string, string> = {};
+    const updated: Record<string, string | number> = {};
 
     Object.entries(value || {}).forEach(([k, v]) => {
       if (k === oldKey) {
@@ -49,6 +52,7 @@ export default function KeyValueEditor({
       pairs={pairs}
       disabled={disabled}
       placeholder={placeholder}
+      keySchema={keySchema}
       onAdd={handleAdd}
       onEdit={handleEdit}
       onRemove={handleRemove}

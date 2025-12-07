@@ -12,4 +12,11 @@ export interface FieldConfig {
   options?: { label: string; value: string }[];
   placeholder?: string;
   readonly?: boolean;
+  keySchema?: Record<
+    string,
+    {
+      valueType?: "text" | "number";
+      readonly?: boolean;
+    }
+  >;
 }

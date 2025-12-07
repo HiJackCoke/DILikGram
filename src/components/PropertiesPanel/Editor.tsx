@@ -109,8 +109,9 @@ export default function DynamicNodeEditor({
           <KeyValueEditor
             key={key}
             label={fieldConfig.label}
-            value={(fieldValue as Record<string, string>) || {}}
+            value={(fieldValue as Record<string, string | number>) || {}}
             onChange={(v) => handleFieldChange(key, v)}
+            keySchema={fieldConfig.keySchema}
           />
         );
 

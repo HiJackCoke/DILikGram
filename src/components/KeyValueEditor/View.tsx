@@ -5,8 +5,9 @@ import type { KeyValueEditorViewProps } from "./types";
 export default function KeyValueEditorView({
   label,
   pairs,
-  disabled,
-  placeholder,
+  disabled = false,
+  placeholder = { key: "Key", value: "Value" },
+  keySchema = {},
   onAdd,
   onEdit,
   onRemove,
@@ -20,42 +21,64 @@ export default function KeyValueEditorView({
 
       {/* Key-Value Pairs */}
       <div className="space-y-2">
-        {pairs.map((pair, index) => (
-          <div key={index} className="flex gap-2 items-start">
-            {/* Key Input */}
-            <div className="flex-1">
-              <Input
-                label=""
-                value={pair.key}
-                onChange={(newKey) => onEdit(pair.key, newKey as string, pair.value)}
-                placeholder={placeholder.key || "Key"}
-                disabled={disabled}
-              />
-            </div>
+        {pairs.map((pair, index) => {
+          const config = keySchema[pair.key] || {};
+          const isKeyReadonly = config.readonly ?? false;
+          const valueType = config.valueType ?? "text";
 
-            {/* Value Input */}
-            <div className="flex-1">
-              <Input
-                label=""
-                value={pair.value}
-                onChange={(newValue) => onEdit(pair.key, pair.key, newValue as string)}
-                placeholder={placeholder.value || "Value"}
-                disabled={disabled}
-              />
-            </div>
+          return (
+            <div key={index} className="flex gap-2 items-start">
+              {/* Key Input */}
+              <div className="flex-1">
+                <Input
+                  label=""
+                  value={pair.key}
+                  onChange={(newKey) =>
+                    onEdit(pair.key, newKey as string, pair.value)
+                  }
+                  placeholder={placeholder.key || "Key"}
+                  disabled={disabled || isKeyReadonly}
+                />
+              </div>
 
-            {/* Remove Button */}
-            <button
-              type="button"
-              onClick={() => onRemove(pair.key)}
-              disabled={disabled}
-              className="mt-1.5 p-2 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Remove pair"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+              {/* Value Input */}
+              <div className="flex-1">
+                {valueType === "number" ? (
+                  <Input
+                    type="number"
+                    formatNumber
+                    value={Number(pair.value)}
+                    placeholder={placeholder.value || "Value"}
+                    disabled={disabled}
+                    onChange={(newValue) => {
+                      onEdit(pair.key, pair.key, newValue);
+                    }}
+                  />
+                ) : (
+                  <Input
+                    value={String(pair.value)}
+                    placeholder={placeholder.value || "Value"}
+                    disabled={disabled}
+                    onChange={(newValue) => {
+                      onEdit(pair.key, pair.key, newValue);
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Remove Button */}
+              <button
+                type="button"
+                onClick={() => onRemove(pair.key)}
+                disabled={disabled || isKeyReadonly}
+                className="mt-1.5 p-2 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Remove pair"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
 
         {/* Empty State */}
         {pairs.length === 0 && (
