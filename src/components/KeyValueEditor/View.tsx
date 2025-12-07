@@ -90,15 +90,17 @@ export default function KeyValueEditorView({
       </div>
 
       {/* Add Button */}
-      <button
-        type="button"
-        onClick={onAdd}
-        disabled={disabled || !editable}
-        className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Plus className="w-4 h-4" />
-        Add Entry
-      </button>
+      {!disabled && editable && (
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={disabled || !editable}
+          className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus className="w-4 h-4" />
+          Add Entry
+        </button>
+      )}
     </div>
   );
 }

@@ -92,10 +92,14 @@ return "REST API";`
       title: "API 호출",
       description: "처리된 데이터를 서버에 전송합니다",
       serviceType: "api" as const,
+      timeout: 10000,
       method: "POST" as const,
       endpoint: "/api/v1/data",
-      status: "running" as const,
-      timeout: 10000,
+      // status: "running" as const,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: {},
       retry: {
         count: 3,
         delay: 2000,

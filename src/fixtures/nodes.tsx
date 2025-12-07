@@ -87,10 +87,14 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         title: "API Call",
         description: "Service description",
         serviceType: "api",
-        method: "POST",
-        status: "idle",
-        endpoint: "",
         timeout: 5000,
+        method: "POST",
+        endpoint: "",
+        // status: "idle",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {},
         retry: {
           count: 3,
           delay: 1000,
@@ -231,6 +235,11 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
       { label: "Custom", value: "custom" },
     ],
   },
+  timeout: {
+    type: "number",
+    label: "Timeout (ms)",
+    placeholder: "Enter timeout in milliseconds",
+  },
   method: {
     type: "select",
     label: "HTTP Method",
@@ -246,10 +255,19 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Endpoint",
     placeholder: "Enter API endpoint",
   },
-  timeout: {
-    type: "number",
-    label: "Timeout (ms)",
-    placeholder: "Enter timeout in milliseconds",
+  headers: {
+    type: "keyvalue",
+    label: "Headers",
+    keySchema: {
+      "Content-Type": {
+        valueType: "text",
+        readonly: true,
+      },
+    },
+  },
+  body: {
+    type: "keyvalue",
+    label: "Body",
   },
   retry: {
     type: "keyvalue",
@@ -266,16 +284,16 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
       },
     },
   },
-  status: {
-    type: "select",
-    label: "Status",
-    options: [
-      { label: "Idle", value: "idle" },
-      { label: "Running", value: "running" },
-      { label: "Completed", value: "completed" },
-      { label: "Error", value: "error" },
-    ],
-  },
+  // status: {
+  //   type: "select",
+  //   label: "Status",
+  //   options: [
+  //     { label: "Idle", value: "idle" },
+  //     { label: "Running", value: "running" },
+  //     { label: "Completed", value: "completed" },
+  //     { label: "Error", value: "error" },
+  //   ],
+  // },
   icon: {
     type: "readonly",
     label: "Icon",

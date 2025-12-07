@@ -110,6 +110,8 @@ export type ServiceNodeData = {
   ports?: NodePort[];
   status?: NodeStatus;
   serviceType?: ServiceType;
+  headers?: HeadersInit;
+  body?: Record<string, unknown>;
   method?: HttpMethod;
   endpoint?: string;
   timeout?: number;
