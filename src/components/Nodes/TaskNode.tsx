@@ -152,14 +152,14 @@ export function TaskNode(nodeProps: TaskNodeProps) {
         )}
 
         {/* Assignee & Estimated Time */}
-        {(data.assignee || data.estimatedTime) && (
+        {(!!data.assignee || !!data.estimatedTime) && (
           <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-            {data.assignee && (
+            {!!data.assignee && (
               <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
                 👤 {data.assignee}
               </span>
             )}
-            {data.estimatedTime && (
+            {!!data.estimatedTime && (
               <span className="px-2 py-1 bg-blue-50 text-palette-primary-bg rounded-full text-xs">
                 ⏱ {data.estimatedTime}분
               </span>

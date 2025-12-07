@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import type { WorkflowNode } from "@/types/nodes";
-import { inferFieldType } from "@/utils/formFieldInference";
+import { getFieldConfig } from "@/utils/formFieldInference";
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
 import Select from "@/components/Select";
+import KeyValueEditor from "@/components/KeyValueEditor";
 
 interface DynamicNodeEditorProps {
   node: WorkflowNode;
@@ -21,13 +22,14 @@ export default function DynamicNodeEditor({
     const data: Record<string, unknown> = {};
     Object.entries(node.data).forEach(([key, value]) => {
       // Exclude readonly fields
-      const fieldConfig = inferFieldType(key, value);
-      if (!fieldConfig.readonly) {
+      if (!node.type) return;
+      const fieldConfig = getFieldConfig(node.type, key);
+      if (fieldConfig && !fieldConfig.readonly) {
         data[key] = value;
       }
     });
     return data;
-  }, [node.data]);
+  }, [node.data, node.type]);
 
   // Sync formData when initialData changes
   useEffect(() => {
@@ -43,10 +45,13 @@ export default function DynamicNodeEditor({
   };
 
   const renderField = (key: string, value: unknown) => {
-    const fieldConfig = inferFieldType(key, value);
+    // Get field config from fixtures only
+    if (!node.type) return null;
 
-    // Skip readonly fields
-    if (fieldConfig.readonly) return null;
+    const fieldConfig = getFieldConfig(node.type, key);
+
+    // Skip fields not defined in fixtures or readonly fields
+    if (!fieldConfig || fieldConfig.readonly) return null;
 
     const fieldValue = formData[key] ?? value;
 
@@ -96,6 +101,16 @@ export default function DynamicNodeEditor({
             onChange={(v) => handleFieldChange(key, v)}
             options={fieldConfig.options || []}
             searchable
+          />
+        );
+
+      case "keyvalue":
+        return (
+          <KeyValueEditor
+            key={key}
+            label={fieldConfig.label}
+            value={(fieldValue as Record<string, string>) || {}}
+            onChange={(v) => handleFieldChange(key, v)}
           />
         );
 

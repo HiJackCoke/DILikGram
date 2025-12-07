@@ -1,5 +1,6 @@
 import { Position } from "react-cosmos-diagram";
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
+
 import {
   Play,
   ClipboardList,
@@ -7,6 +8,7 @@ import {
   Globe,
   StopCircle,
 } from "lucide-react";
+import type { FieldConfig } from "@/types/editor";
 
 // 통합 노드 템플릿 타입
 export type UnifiedNodeTemplate = {
@@ -46,6 +48,9 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         title: "New Task",
         description: "Add description",
         status: "idle",
+        assignee: "",
+        estimatedTime: 0,
+        metadata: {},
         ports: [
           { id: "input", position: Position.Top, type: "target" },
           { id: "output", position: Position.Bottom, type: "source" },
@@ -84,6 +89,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         serviceType: "api",
         method: "POST",
         status: "idle",
+        endpoint: "",
         ports: [
           { id: "input", position: Position.Top, type: "target" },
           { id: "output", position: Position.Bottom, type: "source" },
@@ -105,4 +111,189 @@ export const UNIFIED_NODE_TEMPLATES: Record<
       },
     },
   },
+};
+
+// ============================================================================
+// Field Definitions for Each Node Type
+// ============================================================================
+
+// Start Node Fields
+const START_NODE_FIELDS: Record<string, FieldConfig> = {
+  title: {
+    type: "text",
+    label: "Title",
+    placeholder: "Enter title",
+  },
+  ports: {
+    type: "readonly",
+    label: "Ports",
+    readonly: true,
+  },
+  state: {
+    type: "readonly",
+    label: "State",
+    readonly: true,
+  },
+};
+
+// Task Node Fields
+const TASK_NODE_FIELDS: Record<string, FieldConfig> = {
+  title: {
+    type: "text",
+    label: "Title",
+    placeholder: "Enter task title",
+  },
+  description: {
+    type: "textarea",
+    label: "Description",
+    placeholder: "Enter task description",
+  },
+  status: {
+    type: "select",
+    label: "Status",
+    options: [
+      { label: "Idle", value: "idle" },
+      { label: "Running", value: "running" },
+      { label: "Completed", value: "completed" },
+      { label: "Error", value: "error" },
+    ],
+  },
+  assignee: {
+    type: "text",
+    label: "Assignee",
+    placeholder: "Enter assignee name",
+  },
+  estimatedTime: {
+    type: "number",
+    label: "Estimated Time (min)",
+    placeholder: "Enter estimated time",
+  },
+  metadata: {
+    type: "keyvalue",
+    label: "Metadata",
+  },
+  icon: {
+    type: "readonly",
+    label: "Icon",
+    readonly: true,
+  },
+  ports: {
+    type: "readonly",
+    label: "Ports",
+    readonly: true,
+  },
+};
+
+// Decision Node Fields
+const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
+  title: {
+    type: "text",
+    label: "Title",
+    placeholder: "Enter decision title",
+  },
+  condition: {
+    type: "textarea",
+    label: "Condition",
+    placeholder: "Enter decision condition",
+  },
+  ports: {
+    type: "readonly",
+    label: "Ports",
+    readonly: true,
+  },
+};
+
+// Service Node Fields
+const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
+  title: {
+    type: "text",
+    label: "Title",
+    placeholder: "Enter service title",
+  },
+  description: {
+    type: "textarea",
+    label: "Description",
+    placeholder: "Enter service description",
+  },
+  serviceType: {
+    type: "select",
+    label: "Service Type",
+    options: [
+      { label: "API", value: "api" },
+      { label: "Database", value: "database" },
+      { label: "Email", value: "email" },
+      { label: "Webhook", value: "webhook" },
+      { label: "Custom", value: "custom" },
+    ],
+  },
+  method: {
+    type: "select",
+    label: "HTTP Method",
+    options: [
+      { label: "GET", value: "GET" },
+      { label: "POST", value: "POST" },
+      { label: "PUT", value: "PUT" },
+      { label: "DELETE", value: "DELETE" },
+    ],
+  },
+  endpoint: {
+    type: "text",
+    label: "Endpoint",
+    placeholder: "Enter API endpoint",
+  },
+  status: {
+    type: "select",
+    label: "Status",
+    options: [
+      { label: "Idle", value: "idle" },
+      { label: "Running", value: "running" },
+      { label: "Completed", value: "completed" },
+      { label: "Error", value: "error" },
+    ],
+  },
+  icon: {
+    type: "readonly",
+    label: "Icon",
+    readonly: true,
+  },
+  ports: {
+    type: "readonly",
+    label: "Ports",
+    readonly: true,
+  },
+};
+
+// End Node Fields
+const END_NODE_FIELDS: Record<string, FieldConfig> = {
+  title: {
+    type: "text",
+    label: "Title",
+    placeholder: "Enter title",
+  },
+  status: {
+    type: "select",
+    label: "Status",
+    options: [
+      { label: "Success", value: "success" },
+      { label: "Failure", value: "failure" },
+      { label: "Neutral", value: "neutral" },
+    ],
+  },
+  ports: {
+    type: "readonly",
+    label: "Ports",
+    readonly: true,
+  },
+};
+
+// Export consolidated field definitions
+export const NODE_FIELD_DEFINITIONS: Record<
+  WorkflowNodeType,
+  Record<string, FieldConfig>
+> = {
+  start: START_NODE_FIELDS,
+  task: TASK_NODE_FIELDS,
+  decision: DECISION_NODE_FIELDS,
+  service: SERVICE_NODE_FIELDS,
+  end: END_NODE_FIELDS,
 };
