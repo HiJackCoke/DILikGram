@@ -71,7 +71,7 @@ export default function KeyValueEditorView({
               <button
                 type="button"
                 onClick={() => onRemove(pair.key)}
-                disabled={disabled || !editable}
+                disabled={disabled || isKeyReadonly || !editable}
                 className="mt-1.5 p-2 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Remove pair"
               >

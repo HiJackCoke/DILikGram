@@ -5,6 +5,7 @@ import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
 import Select from "@/components/Select";
 import KeyValueEditor from "@/components/KeyValueEditor";
+import { generateFunctionCodeFromPanel } from "@/utils/executorHelpers";
 
 interface DynamicNodeEditorProps {
   node: WorkflowNode;
@@ -41,6 +42,26 @@ export default function DynamicNodeEditor({
   };
 
   const handleSave = () => {
+    // For ServiceNode, auto-generate functionCode
+    if (node.type === "service") {
+      const functionCode = generateFunctionCodeFromPanel(formData);
+
+      // Save with generated code
+      onSave({
+        ...formData,
+        executor: {
+          ...node.data.executor,
+          config: {
+            ...node.data.executor?.config,
+            functionCode,
+            lastModified: Date.now(),
+          },
+        },
+      } as Partial<WorkflowNode["data"]>);
+      return;
+    }
+
+    // Normal save for other nodes
     onSave(formData as Partial<WorkflowNode["data"]>);
   };
 

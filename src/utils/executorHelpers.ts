@@ -5,6 +5,8 @@
  * while maintaining string-based storage for serialization.
  */
 import type { ExecutorConfig } from "@/types/executor";
+import type { ServiceNodeData } from "@/types/nodes";
+
 
 /**
  * Create a typed executor with full type inference
@@ -90,4 +92,28 @@ export function inferTypeFromJSON(jsonString: string): string {
   } catch {
     return "string";
   }
+}
+
+
+export function generateFunctionCodeFromPanel(
+  input: Pick<ServiceNodeData, "headers" | "body" | "endpoint" | "method">
+): string {
+  const { headers = {}, body = {}, endpoint = "", method = "GET" } = input;
+
+  // Convert to JavaScript literals
+  const headersStr = JSON.stringify(headers, null, 2);
+  const bodyStr = JSON.stringify(body, null, 2);
+
+  return `const headers = ${headersStr}
+const body = ${bodyStr}
+const endpoint = ${JSON.stringify(endpoint)}
+const method = ${JSON.stringify(method)}
+
+const response = await fetch(endpoint, {
+  method,
+  headers,
+  body: JSON.stringify(body),
+})
+
+return response.json()`;
 }
