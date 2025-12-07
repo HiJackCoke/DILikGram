@@ -112,6 +112,11 @@ export type ServiceNodeData = {
   serviceType?: ServiceType;
   method?: HttpMethod;
   endpoint?: string;
+  timeout?: number;
+  retry?: {
+    count: number;
+    delay: number;
+  };
 };
 
 export type ServiceNodeProps = NodeProps<WorkflowNodeData<ServiceNodeData>>;

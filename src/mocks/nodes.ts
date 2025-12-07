@@ -95,6 +95,11 @@ return "REST API";`
       method: "POST" as const,
       endpoint: "/api/v1/data",
       status: "running" as const,
+      timeout: 10000,
+      retry: {
+        count: 3,
+        delay: 2000,
+      },
       ports: [
         { id: "input", position: Position.Left, type: "target" as const },
         { id: "output", position: Position.Bottom, type: "source" as const },

@@ -90,6 +90,11 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         method: "POST",
         status: "idle",
         endpoint: "",
+        timeout: 5000,
+        retry: {
+          count: 3,
+          delay: 1000,
+        },
         ports: [
           { id: "input", position: Position.Top, type: "target" },
           { id: "output", position: Position.Bottom, type: "source" },
@@ -240,6 +245,15 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
     type: "text",
     label: "Endpoint",
     placeholder: "Enter API endpoint",
+  },
+  timeout: {
+    type: "number",
+    label: "Timeout (ms)",
+    placeholder: "Enter timeout in milliseconds",
+  },
+  retry: {
+    type: "keyvalue",
+    label: "Retry",
   },
   status: {
     type: "select",
