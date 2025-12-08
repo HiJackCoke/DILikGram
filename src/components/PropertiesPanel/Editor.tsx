@@ -31,7 +31,7 @@ export default function DynamicNodeEditor({
       // Exclude readonly fields
       if (!node.type) return;
       const fieldConfig = getFieldConfig(node.type, key);
-      if (fieldConfig && !fieldConfig.readonly) {
+      if (fieldConfig) {
         data[key] = value;
       }
     });
@@ -84,6 +84,8 @@ export default function DynamicNodeEditor({
           <Input
             key={fieldKey}
             label={config.label}
+            readOnly={config.readonly}
+            disabled={config.disabled}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
             placeholder={config.placeholder}
@@ -95,6 +97,8 @@ export default function DynamicNodeEditor({
           <Input
             key={fieldKey}
             type={config.type}
+            readOnly={config.readonly}
+            disabled={config.disabled}
             formatNumber={config.type === "number"}
             label={config.label}
             value={Number(fieldValue ?? 0)}
@@ -108,6 +112,7 @@ export default function DynamicNodeEditor({
           <TextArea
             key={fieldKey}
             label={config.label}
+            disabled={config.disabled || config.readonly}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
             placeholder={config.placeholder}
@@ -120,6 +125,7 @@ export default function DynamicNodeEditor({
           <Select
             key={fieldKey}
             label={config.label}
+            disabled={config.disabled || config.readonly}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
             options={
@@ -138,7 +144,7 @@ export default function DynamicNodeEditor({
             onChange={(v) => handleFieldChange(fieldKey, v)}
             keySchema={config.keySchema}
             editable={config.editable}
-            disabled={config.disabled}
+            disabled={config.disabled || config.readonly}
           />
         );
 
@@ -157,7 +163,7 @@ export default function DynamicNodeEditor({
     const fieldConfig = getFieldConfig(node.type, key);
 
     // Skip fields not defined in fixtures or readonly fields
-    if (!fieldConfig || fieldConfig.readonly) return null;
+    if (!fieldConfig) return null;
 
     const fieldValue = formData[key] ?? value;
 
