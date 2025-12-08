@@ -6,6 +6,7 @@ export default function TextAreaView({
   placeholder,
   required = false,
   disabled = false,
+  readOnly = false,
   status = "default",
   errorMessage,
   isFocused,
@@ -45,6 +46,7 @@ export default function TextAreaView({
           onFocus={onFocus}
           onBlur={onBlur}
           placeholder={placeholder}
+          readOnly={readOnly}
           disabled={disabled}
           rows={rows}
           maxLength={maxLength}
@@ -104,9 +106,7 @@ export default function TextAreaView({
 
       {/* Error message */}
       {status === "error" && errorMessage && (
-        <p className="text-sm text-red-400 animate-slideDown">
-          {errorMessage}
-        </p>
+        <p className="text-sm text-red-400 animate-slideDown">{errorMessage}</p>
       )}
     </div>
   );

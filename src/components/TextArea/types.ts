@@ -1,29 +1,23 @@
 export type TextAreaStatus = "default" | "error" | "valid";
 
-export interface TextAreaProps {
+export interface BaseTextAreaProps {
   label: string;
   value: string;
   placeholder?: string;
   required?: boolean;
+  readOnly?: boolean;
   disabled?: boolean;
   status?: TextAreaStatus;
   errorMessage?: string;
   rows?: number;
   maxLength?: number;
+}
+export interface TextAreaProps extends BaseTextAreaProps {
   onChange: (value: string) => void;
 }
 
-export interface TextAreaViewProps {
-  label: string;
-  value: string;
-  placeholder?: string;
-  required?: boolean;
-  disabled?: boolean;
-  status: TextAreaStatus;
-  errorMessage?: string;
+export interface TextAreaViewProps extends BaseTextAreaProps {
   isFocused: boolean;
-  rows?: number;
-  maxLength?: number;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onFocus: () => void;
   onBlur: () => void;
