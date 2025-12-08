@@ -32,7 +32,7 @@ export type ExecutorConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
   lastModified: number;
   isAsync?: boolean; // NEW: Set during compilation
-  __meta?: { inputType?: string; outputType?: string };
+  __meta?: { inputType?: unknown; outputType?: unknown };
   __phantomInput?: TInput;
   __phantomOutput?: TOutput;
 };

@@ -7,7 +7,6 @@
 import type { ExecutorConfig } from "@/types/executor";
 import type { ServiceNodeData } from "@/types/nodes";
 
-
 /**
  * Create a typed executor with full type inference
  *
@@ -44,8 +43,8 @@ import type { ServiceNodeData } from "@/types/nodes";
 export function createTypedExecutor<TInput, TOutput>(
   functionCode: string,
   meta?: {
-    inputType?: string;
-    outputType?: string;
+    inputType?: unknown;
+    outputType?: unknown;
   }
 ): ExecutorConfig<TInput, TOutput> {
   return {
@@ -55,45 +54,78 @@ export function createTypedExecutor<TInput, TOutput>(
   };
 }
 
-export function inferDetailedType(value: unknown): string {
+/**
+ * Infer detailed type representation from value with multiline formatting
+ * @param value - Value to infer type from
+ * @param indent - Current indentation level (for nested structures)
+ * @returns Type representation string with proper formatting
+ */
+function inferDetailed(value: unknown, indent: number = 0): string {
+  const indentStr = "  ".repeat(indent);
+  const nextIndentStr = "  ".repeat(indent + 1);
+
   if (value === null) return "null";
   if (value === undefined) return "undefined";
 
   if (Array.isArray(value)) {
     if (value.length === 0) return "[]";
 
-    // Detect array element types
-    const elementTypes = new Set(value.map(inferDetailedType));
+    const elementTypes = new Set(
+      value.map((v) => inferDetailed(v, indent + 1))
+    );
 
-    // If all elements have the same type, use that
     if (elementTypes.size === 1) {
       const elementType = Array.from(elementTypes)[0];
       return `${elementType}[]`;
     }
 
-    // Mixed types - use union
     return `(${Array.from(elementTypes).join(" | ")})[]`;
   }
 
   if (typeof value === "object") {
-    const entries = Object.entries(value).map(([key, val]) => {
-      return `${key}: ${inferDetailedType(val)}`;
-    });
-    return `{ ${entries.join(", ")} }`;
+    const entries = Object.entries(value);
+
+    const props = entries.map(
+      ([key, val]) =>
+        `${nextIndentStr}${key}: ${inferDetailed(val, indent + 1)}`
+    );
+
+    return `{\n${props.join(",\n")}\n${indentStr}}`;
   }
 
   return typeof value;
 }
 
-export function inferTypeFromJSON(jsonString: string): string {
-  try {
-    const parsed = JSON.parse(jsonString);
-    return inferDetailedType(parsed);
-  } catch {
-    return "string";
+export function inferType(value: unknown): string {
+  let target: unknown = value;
+
+  // 문자열이면 JSON parse 시도
+  if (typeof value === "string") {
+    try {
+      target = JSON.parse(value);
+    } catch {
+      const cleaned = value.replace(/(\w+):/g, '"$1":').replace(/'/g, '"');
+
+      try {
+        target = JSON.parse(cleaned);
+      } catch {
+        return "string";
+      }
+    }
   }
+
+  return inferDetailed(target);
 }
 
+export function stringifyForDisplay(value: unknown): string {
+  if (value === null || value === undefined) return "";
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
 
 export function generateFunctionCodeFromPanel(
   input: Pick<ServiceNodeData, "headers" | "body" | "endpoint" | "method">

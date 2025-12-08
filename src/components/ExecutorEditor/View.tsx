@@ -1,6 +1,7 @@
 import { Play, AlertTriangle, Zap, Code } from "lucide-react";
 import type { ExecutorConfig } from "@/types/executor";
 import type { WorkflowNodeType } from "@/types/nodes";
+import { inferType, stringifyForDisplay } from "@/utils/executorHelpers";
 
 type ExecutorEditorViewProps = {
   meta: ExecutorConfig["__meta"];
@@ -17,6 +18,10 @@ type ExecutorEditorViewProps = {
   onSave: () => void;
   onClose: () => void;
 };
+
+/**
+ * Format unknown type value for display in UI
+ */
 
 export default function ExecutorEditorView({
   meta,
@@ -65,14 +70,14 @@ export default function ExecutorEditorView({
             <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1.5">
               <div className="text-gray-700">
                 <span className="font-semibold">Input Type:</span>{" "}
-                <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
-                  {meta.inputType || "unknown"}
+                <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
+                  {inferType(stringifyForDisplay(meta.inputType))}
                 </code>
               </div>
               <div className="text-gray-700">
                 <span className="font-semibold">Output Type:</span>{" "}
-                <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
-                  {meta.outputType || "unknown"}
+                <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
+                  {inferType(meta.outputType)}
                 </code>
               </div>
             </div>
@@ -87,7 +92,7 @@ export default function ExecutorEditorView({
                 : nodeType === "task"
                   ? `// Task function (SYNC ONLY - no await/async)\n// Receives: nodeInput, fetch\n// Returns: transformed data\n\nreturn { ...nodeInput };`
                   : meta
-                    ? `// Receives: nodeInput (${meta.inputType || "unknown"})\n// Returns: ${meta.outputType || "unknown"}\n\nreturn nodeOutput;`
+                    ? `// Receives: nodeInput (${stringifyForDisplay(meta.inputType)})\n// Returns: ${stringifyForDisplay(meta.outputType)}\n\nreturn nodeOutput;`
                     : `// Your function code here\n// Receives: nodeInput, fetch\n// Return: output data\n\nreturn nodeInput;`
             }
             className="flex-1 w-full p-4 font-mono text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

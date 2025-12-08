@@ -6,11 +6,10 @@ import Modal from "@/components/Modal";
 import ExecutorEditorView from "./View";
 
 import { compileExecutor, detectAsync } from "@/utils/executorRuntime";
-import { inferTypeFromJSON } from "@/utils/executorHelpers";
 
 import type { ExecutorConfig } from "@/types/executor";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
-
+import { stringifyForDisplay } from "@/utils/executorHelpers";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> & {
   open: boolean;
@@ -30,7 +29,9 @@ export default function ExecutorEditorModal({
   const [code, setCode] = useState(() => config?.functionCode || "");
   const [meta, setMeta] = useState(() => config?.__meta);
   const [compileError, setCompileError] = useState<string | null>(null);
-  const [inputData, setInputData] = useState("{}");
+  const [inputData, setInputData] = useState(() =>
+    stringifyForDisplay(config?.__meta?.inputType)
+  );
   const [outputData, setOutputData] = useState<string | null>(null);
 
   // Reset code when config changes
@@ -81,8 +82,8 @@ export default function ExecutorEditorModal({
 
       setOutputData(outputData);
       setMeta({
-        inputType: inferTypeFromJSON(inputData),
-        outputType: outputData ? inferTypeFromJSON(outputData) : "unknown",
+        inputType: JSON.parse(inputData),
+        outputType: outputData ? JSON.parse(outputData) : null,
       });
     } catch (error) {
       setOutputData(`Error: ${(error as Error).message}`);
@@ -96,8 +97,8 @@ export default function ExecutorEditorModal({
       functionCode: code,
       lastModified: Date.now(),
       __meta: {
-        inputType: inferTypeFromJSON(inputData),
-        outputType: outputData ? inferTypeFromJSON(outputData) : "unknown",
+        inputType: JSON.parse(inputData),
+        outputType: outputData ? JSON.parse(outputData) : null,
       },
     };
     onSave(config);
