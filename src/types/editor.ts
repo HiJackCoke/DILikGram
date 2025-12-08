@@ -1,3 +1,4 @@
+import type { KeySchema } from "@/components/KeyValueEditor/types";
 import type { WorkflowNode } from "./nodes";
 import type { KeysOfUnion } from "./utils";
 
@@ -29,11 +30,5 @@ export interface FieldConfig {
   readOnly?: boolean;
   disabled?: boolean;
   editable?: boolean;
-  keySchema?: Record<
-    string,
-    {
-      valueType?: "text" | "number";
-      readOnly?: boolean;
-    }
-  >;
+  keySchema?: Record<string, KeySchema>;
 }

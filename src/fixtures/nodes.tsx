@@ -268,7 +268,12 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
             label: "Headers",
             keySchema: {
               "Content-Type": {
-                valueType: "text",
+                valueType: "select",
+                options: [
+                  { label: "application/json", value: "application/json" },
+                  { label: "application/xml", value: "application/xml" },
+                  { label: "text/plain", value: "text/plain" },
+                ],
                 readOnly: true,
               },
             },

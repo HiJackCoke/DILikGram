@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 import Input from "@/components/Input";
+import Select from "@/components/Select";
 import type { KeyValueEditorViewProps } from "./types";
 
 export default function KeyValueEditorView({
@@ -54,6 +55,17 @@ export default function KeyValueEditorView({
                     onChange={(newValue) => {
                       onEdit(pair.key, pair.key, newValue);
                     }}
+                  />
+                ) : valueType === "select" ? (
+                  <Select
+                    label=""
+                    value={String(pair.value)}
+                    onChange={(newValue) => {
+                      if (newValue) onEdit(pair.key, pair.key, newValue);
+                    }}
+                    options={config.options || []}
+                    disabled={disabled}
+                    searchable={false}
                   />
                 ) : (
                   <Input
