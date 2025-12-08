@@ -8,10 +8,13 @@ import {
 import type { ReactNode } from "react";
 import PropertiesPanelModal from "@/components/PropertiesPanel";
 import type { WorkflowNode } from "@/types/nodes";
+
 import type { PropertiesPanelState, PropertiesOnSave } from "./type";
+import type { Edge } from "react-cosmos-diagram";
 
 interface PropertiesPanelContextValue {
   registerOnSave: (callback: PropertiesOnSave) => void;
+  updateEdges: (edges: Edge[]) => void;
   open: (node: WorkflowNode) => void;
   close: () => void;
 }
@@ -30,6 +33,11 @@ export function PropertiesPanelProvider({
 
   const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<PropertiesPanelState | null>(null);
+  const [edges, setEdges] = useState<Edge[]>([]);
+
+  const updateEdges = (edges: Edge[]) => {
+    setEdges(edges);
+  };
 
   const open = useCallback((node: WorkflowNode) => {
     setIsOpen(true);
@@ -64,11 +72,14 @@ export function PropertiesPanelProvider({
   );
 
   return (
-    <PropertiesPanelContext.Provider value={{ open, close, registerOnSave }}>
+    <PropertiesPanelContext.Provider
+      value={{ open, close, updateEdges, registerOnSave }}
+    >
       {children}
 
       <PropertiesPanelModal
         node={state?.node}
+        edges={edges}
         open={isOpen}
         onSave={handleSave}
         onClose={close}

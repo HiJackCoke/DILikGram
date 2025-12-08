@@ -8,7 +8,8 @@ export type FieldType =
   | "number"
   // | "readonly"
   | "keyvalue"
-  | "tab";
+  | "tab"
+  | "port";
 
 type TabItemOptions = FieldConfig & {
   key: KeysOfUnion<WorkflowNode["data"]>;

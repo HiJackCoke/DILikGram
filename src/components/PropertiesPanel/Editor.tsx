@@ -5,21 +5,25 @@ import TextArea from "@/components/TextArea";
 import Select from "@/components/Select";
 import KeyValueEditor from "@/components/KeyValueEditor";
 import Tabs from "@/components/Tabs";
+import PortEditor from "@/components/PortEditor";
 
 import { getFieldConfig } from "@/utils/formFieldInference";
 import { generateFunctionCodeFromPanel } from "@/utils/executorHelpers";
 
-import type { WorkflowNode } from "@/types/nodes";
+import type { WorkflowNode, NodePort } from "@/types/nodes";
+import type { WorkflowEdge } from "@/types/edges";
 import type { FieldConfig, TabOption } from "@/types/editor";
 import type { KeysOfUnion } from "@/types/utils";
 
 interface DynamicNodeEditorProps {
   node: WorkflowNode;
+  edges: WorkflowEdge[];
   onSave: (data: Partial<WorkflowNode["data"]>) => void;
 }
 
 export default function DynamicNodeEditor({
   node,
+  edges,
   onSave,
 }: DynamicNodeEditorProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
@@ -112,7 +116,8 @@ export default function DynamicNodeEditor({
           <TextArea
             key={fieldKey}
             label={config.label}
-            disabled={config.disabled || config.readonly}
+            readOnly={config.readonly}
+            disabled={config.disabled}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
             placeholder={config.placeholder}
@@ -145,6 +150,21 @@ export default function DynamicNodeEditor({
             keySchema={config.keySchema}
             editable={config.editable}
             disabled={config.disabled || config.readonly}
+          />
+        );
+
+      case "port":
+        if (!node.type) return null;
+        return (
+          <PortEditor
+            key={fieldKey}
+            label={config.label}
+            value={(fieldValue as NodePort[]) || []}
+            nodeType={node.type}
+            edges={edges}
+            currentNodeId={node.id}
+            onChange={(v) => handleFieldChange(fieldKey, v)}
+            readOnly={config.disabled || config.readonly}
           />
         );
 

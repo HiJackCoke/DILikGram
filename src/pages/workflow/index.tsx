@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import ReactDiagram, {
   useNodesState,
   useEdgesState,
@@ -168,11 +168,16 @@ export default function WorkflowPage() {
     },
     [setNodes]
   );
-  
+
   usePropertiesOnSave(handlePropertiesSave);
 
   // PropertiesPanel context
-  const { open: openPropertiesPanel } = usePropertiesPanelContext();
+  const { open: openPropertiesPanel, updateEdges } =
+    usePropertiesPanelContext();
+
+  useEffect(() => {
+    updateEdges(edges);
+  }, [edges]);
 
   // DND 핸들러
   const handleDragOver = (e: React.DragEvent) => {

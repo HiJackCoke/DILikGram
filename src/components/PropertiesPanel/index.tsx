@@ -1,9 +1,11 @@
 import { X } from "lucide-react";
 import type { WorkflowNode } from "@/types/nodes";
+import type { WorkflowEdge } from "@/types/edges";
 import DynamicNodeEditor from "./Editor";
 
 interface PropertiesPanelModalProps {
   node?: WorkflowNode;
+  edges: WorkflowEdge[];
   open: boolean;
   onSave: (data: Partial<WorkflowNode["data"]>) => void;
   onClose: () => void;
@@ -11,6 +13,7 @@ interface PropertiesPanelModalProps {
 
 export default function PropertiesPanelModal({
   node,
+  edges,
   open,
   onSave,
   onClose,
@@ -18,7 +21,7 @@ export default function PropertiesPanelModal({
   const renderEditor = () => {
     if (!node) return null;
 
-    return <DynamicNodeEditor node={node} onSave={onSave} />;
+    return <DynamicNodeEditor node={node} edges={edges} onSave={onSave} />;
   };
 
   return (

@@ -135,11 +135,11 @@ const START_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Title",
     placeholder: "Enter title",
   },
-  // ports: {
-  //   type: "readonly",
-  //   label: "Ports",
-  //   readonly: true,
-  // },
+  ports: {
+    type: "port",
+    label: "Ports",
+    readonly: true,
+  },
   // state: {
   //   type: "readonly",
   //   label: "State",
@@ -183,14 +183,14 @@ const TASK_NODE_FIELDS: Record<string, FieldConfig> = {
     type: "keyvalue",
     label: "Metadata",
   },
+  ports: {
+    type: "port",
+    label: "Ports",
+    readonly: true,
+  },
   // icon: {
   //   type: "readonly",
   //   label: "Icon",
-  //   readonly: true,
-  // },
-  // ports: {
-  //   type: "readonly",
-  //   label: "Ports",
   //   readonly: true,
   // },
 };
@@ -207,11 +207,11 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Condition",
     placeholder: "Enter decision condition",
   },
-  // ports: {
-  //   type: "keyvalue",
-  //   label: "Ports",
-  //   readonly: true,
-  // },
+  ports: {
+    type: "port",
+    label: "Ports",
+    readonly: true,
+  },
 };
 
 // Service Node Fields
@@ -316,14 +316,13 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
   //     { label: "Error", value: "error" },
   //   ],
   // },
+  ports: {
+    type: "port",
+    label: "Ports",
+  },
   // icon: {
   //   type: "readonly",
   //   label: "Icon",
-  //   readonly: true,
-  // },
-  // ports: {
-  //   type: "readonly",
-  //   label: "Ports",
   //   readonly: true,
   // },
 };
@@ -344,11 +343,11 @@ const END_NODE_FIELDS: Record<string, FieldConfig> = {
       { label: "Neutral", value: "neutral" },
     ],
   },
-  // ports: {
-  //   type: "readonly",
-  //   label: "Ports",
-  //   readonly: true,
-  // },
+  ports: {
+    type: "port",
+    label: "Ports",
+    readonly: true,
+  },
 };
 
 // Export consolidated field definitions
