@@ -212,6 +212,21 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Ports",
     readOnly: true,
   },
+  "executor.config.__meta.inputType": {
+    type: "keyvalue",
+    label: "Type Metadata",
+    keySchema: {
+      inputType: {
+        valueType: "text",
+        readOnly: false,
+      },
+      outputType: {
+        valueType: "text",
+        readOnly: true,
+      },
+    },
+    // editable: false,
+  },
 };
 
 // Service Node Fields

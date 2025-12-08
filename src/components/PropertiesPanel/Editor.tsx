@@ -7,7 +7,11 @@ import KeyValueEditor from "@/components/KeyValueEditor";
 import Tabs from "@/components/Tabs";
 import PortEditor from "@/components/PortEditor";
 
-import { getFieldConfig } from "@/utils/formFieldInference";
+import {
+  getFieldConfig,
+  getValueByNestedPath,
+  updateStateByNestedPath,
+} from "@/utils/formFieldInference";
 import { generateFunctionCodeFromPanel } from "@/utils/executorHelpers";
 
 import type { WorkflowNode, NodePort } from "@/types/nodes";
@@ -34,7 +38,9 @@ export default function DynamicNodeEditor({
     Object.entries(node.data).forEach(([key, value]) => {
       // Exclude readOnly fields
       if (!node.type) return;
+
       const fieldConfig = getFieldConfig(node.type, key);
+
       if (fieldConfig) {
         data[key] = value;
       }
@@ -48,7 +54,7 @@ export default function DynamicNodeEditor({
   }, [initialData]);
 
   const handleFieldChange = (key: string, value: unknown) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
+    setFormData((prev) => updateStateByNestedPath(prev, key, value));
   };
 
   const handleSave = () => {
@@ -75,12 +81,10 @@ export default function DynamicNodeEditor({
     onSave(formData as Partial<WorkflowNode["data"]>);
   };
 
-  const renderFieldByConfig = (
-    config: FieldConfig & { key?: string },
-    fieldKey: KeysOfUnion<WorkflowNode["data"]>
-  ) => {
+  const renderFieldByConfig = (config: FieldConfig, fieldKey: string) => {
     const fieldValue =
-      formData[fieldKey] ?? node.data[fieldKey as keyof typeof node.data];
+      getValueByNestedPath(formData, fieldKey) ??
+      node.data[fieldKey as keyof typeof node.data];
 
     switch (config.type) {
       case "text":
@@ -183,13 +187,14 @@ export default function DynamicNodeEditor({
     const fieldConfig = getFieldConfig(node.type, key);
 
     // Skip fields not defined in fixtures or readOnly fields
-    if (!fieldConfig) return null;
+    const config = fieldConfig?.config;
+    if (!config) return null;
 
     const fieldValue = formData[key] ?? value;
 
     // Handle tab type separately
-    if (fieldConfig.type === "tab") {
-      const tabOptions = fieldConfig.options as TabOption[];
+    if (config.type === "tab") {
+      const tabOptions = config.options as TabOption[];
       const currentTabValue = String(fieldValue ?? "");
 
       // Find the active tab
@@ -198,14 +203,14 @@ export default function DynamicNodeEditor({
       return (
         <div key={key} className="space-y-4">
           <Tabs
-            label={fieldConfig.label}
+            label={config.label}
             value={currentTabValue}
             onChange={(v) => handleFieldChange(key, v)}
             options={tabOptions.map((tab) => ({
               label: tab.label,
               value: tab.value,
             }))}
-            disabled={fieldConfig.disabled}
+            disabled={config.disabled}
           />
 
           {/* Render fields for the active tab */}
@@ -224,7 +229,8 @@ export default function DynamicNodeEditor({
     }
 
     // For non-tab fields, use renderFieldByConfig
-    return renderFieldByConfig(fieldConfig, key);
+
+    return renderFieldByConfig(config, fieldConfig.key);
   };
 
   return (
