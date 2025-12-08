@@ -6,7 +6,7 @@ export type FieldType =
   | "textarea"
   | "select"
   | "number"
-  | "readonly"
+  // | "readonly"
   | "keyvalue"
   | "tab";
 

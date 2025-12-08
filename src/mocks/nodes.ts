@@ -22,7 +22,7 @@ export const initialNodes: WorkflowNode[] = [
     data: {
       title: "데이터 수집",
       description: "외부 API에서 데이터를 가져옵니다",
-      status: "completed" as const,
+      // status: "completed" as const,
       assignee: "김개발",
       estimatedTime: 30,
       metadata: {
@@ -131,7 +131,7 @@ return "REST API";`
     data: {
       title: "에러 로깅",
       description: "실패한 요청을 기록합니다",
-      status: "idle" as const,
+      // status: "idle" as const,
       metadata: {
         저장소: "CloudWatch",
         레벨: "ERROR",
