@@ -29,10 +29,10 @@ export default function Input(props: InputProps) {
         if (props.max !== undefined && numValue > props.max) {
           constrainedValue = props.max;
         }
-        props.onChange(constrainedValue);
+        props.onChange?.(constrainedValue);
       }
     } else {
-      props.onChange(e.target.value);
+      props.onChange?.(e.target.value);
     }
   };
 
@@ -42,7 +42,7 @@ export default function Input(props: InputProps) {
       const newValue = props.value + step;
       const constrainedValue =
         props.max !== undefined ? Math.min(newValue, props.max) : newValue;
-      props.onChange(constrainedValue);
+      props.onChange?.(constrainedValue);
     }
   };
 
@@ -52,7 +52,7 @@ export default function Input(props: InputProps) {
       const newValue = props.value - step;
       const constrainedValue =
         props.min !== undefined ? Math.max(newValue, props.min) : newValue;
-      props.onChange(constrainedValue);
+      props.onChange?.(constrainedValue);
     }
   };
 

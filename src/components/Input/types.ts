@@ -16,13 +16,13 @@ interface BaseInputProps {
 
 export interface CoreInputProps extends BaseInputProps {
   ref?: Ref<HTMLInputElement>;
-  onChange: (value: string | number) => void;
+  onChange?: (value: string | number) => void;
 }
 
 export type TextInputProps = CoreInputProps & {
   type?: "text";
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
 };
 
 export type NumberInputProps = CoreInputProps & {
@@ -32,7 +32,7 @@ export type NumberInputProps = CoreInputProps & {
   max?: number;
   step?: number;
   formatNumber?: boolean;
-  onChange: (value: number) => void;
+  onChange?: (value: number) => void;
 };
 
 export type InputProps = TextInputProps | NumberInputProps;
