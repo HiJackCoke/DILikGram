@@ -32,7 +32,7 @@ export default function DynamicNodeEditor({
   const initialData = useMemo(() => {
     const data: Record<string, unknown> = {};
     Object.entries(node.data).forEach(([key, value]) => {
-      // Exclude readonly fields
+      // Exclude readOnly fields
       if (!node.type) return;
       const fieldConfig = getFieldConfig(node.type, key);
       if (fieldConfig) {
@@ -88,7 +88,7 @@ export default function DynamicNodeEditor({
           <Input
             key={fieldKey}
             label={config.label}
-            readOnly={config.readonly}
+            readOnly={config.readOnly}
             disabled={config.disabled}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
@@ -101,7 +101,7 @@ export default function DynamicNodeEditor({
           <Input
             key={fieldKey}
             type={config.type}
-            readOnly={config.readonly}
+            readOnly={config.readOnly}
             disabled={config.disabled}
             formatNumber={config.type === "number"}
             label={config.label}
@@ -116,7 +116,7 @@ export default function DynamicNodeEditor({
           <TextArea
             key={fieldKey}
             label={config.label}
-            readOnly={config.readonly}
+            readOnly={config.readOnly}
             disabled={config.disabled}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
@@ -130,7 +130,7 @@ export default function DynamicNodeEditor({
           <Select
             key={fieldKey}
             label={config.label}
-            disabled={config.disabled || config.readonly}
+            disabled={config.disabled || config.readOnly}
             value={String(fieldValue ?? "")}
             onChange={(v) => handleFieldChange(fieldKey, v)}
             options={
@@ -149,7 +149,7 @@ export default function DynamicNodeEditor({
             onChange={(v) => handleFieldChange(fieldKey, v)}
             keySchema={config.keySchema}
             editable={config.editable}
-            disabled={config.disabled || config.readonly}
+            disabled={config.disabled || config.readOnly}
           />
         );
 
@@ -164,7 +164,7 @@ export default function DynamicNodeEditor({
             edges={edges}
             currentNodeId={node.id}
             onChange={(v) => handleFieldChange(fieldKey, v)}
-            readOnly={config.disabled || config.readonly}
+            readOnly={config.disabled || config.readOnly}
           />
         );
 
@@ -182,7 +182,7 @@ export default function DynamicNodeEditor({
 
     const fieldConfig = getFieldConfig(node.type, key);
 
-    // Skip fields not defined in fixtures or readonly fields
+    // Skip fields not defined in fixtures or readOnly fields
     if (!fieldConfig) return null;
 
     const fieldValue = formData[key] ?? value;

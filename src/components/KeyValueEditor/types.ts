@@ -5,7 +5,7 @@ export interface KeyValuePair {
 
 interface KeySchema {
   valueType?: "text" | "number";
-  readonly?: boolean;
+  readOnly?: boolean;
 }
 interface BaseKeyValueEditorProps {
   label: string;

@@ -6,7 +6,7 @@ export type FieldType =
   | "textarea"
   | "select"
   | "number"
-  // | "readonly"
+  // | "readOnly"
   | "keyvalue"
   | "tab"
   | "port";
@@ -26,14 +26,14 @@ export interface FieldConfig {
   key?: string;
   options?: TabOption[];
   placeholder?: string;
-  readonly?: boolean;
+  readOnly?: boolean;
   disabled?: boolean;
   editable?: boolean;
   keySchema?: Record<
     string,
     {
       valueType?: "text" | "number";
-      readonly?: boolean;
+      readOnly?: boolean;
     }
   >;
 }

@@ -24,7 +24,7 @@ export default function KeyValueEditorView({
       <div className="space-y-2">
         {pairs.map((pair, index) => {
           const config = keySchema[pair.key] || {};
-          const isKeyReadonly = config.readonly ?? false;
+          const isKeyReadonly = config.readOnly ?? false;
           const valueType = config.valueType ?? "text";
 
           return (

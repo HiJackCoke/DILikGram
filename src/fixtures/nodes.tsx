@@ -138,12 +138,12 @@ const START_NODE_FIELDS: Record<string, FieldConfig> = {
   ports: {
     type: "port",
     label: "Ports",
-    readonly: true,
+    readOnly: true,
   },
   // state: {
-  //   type: "readonly",
+  //   type: "readOnly",
   //   label: "State",
-  //   readonly: true,
+  //   readOnly: true,
   // },
 };
 
@@ -186,12 +186,12 @@ const TASK_NODE_FIELDS: Record<string, FieldConfig> = {
   ports: {
     type: "port",
     label: "Ports",
-    readonly: true,
+    readOnly: true,
   },
   // icon: {
-  //   type: "readonly",
+  //   type: "readOnly",
   //   label: "Icon",
-  //   readonly: true,
+  //   readOnly: true,
   // },
 };
 
@@ -210,7 +210,7 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
   ports: {
     type: "port",
     label: "Ports",
-    readonly: true,
+    readOnly: true,
   },
 };
 
@@ -269,7 +269,7 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
             keySchema: {
               "Content-Type": {
                 valueType: "text",
-                readonly: true,
+                readOnly: true,
               },
             },
           },
@@ -286,11 +286,11 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
             keySchema: {
               count: {
                 valueType: "number",
-                readonly: true,
+                readOnly: true,
               },
               delay: {
                 valueType: "number",
-                readonly: true,
+                readOnly: true,
               },
             },
           },
@@ -321,9 +321,9 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Ports",
   },
   // icon: {
-  //   type: "readonly",
+  //   type: "readOnly",
   //   label: "Icon",
-  //   readonly: true,
+  //   readOnly: true,
   // },
 };
 
@@ -346,7 +346,7 @@ const END_NODE_FIELDS: Record<string, FieldConfig> = {
   ports: {
     type: "port",
     label: "Ports",
-    readonly: true,
+    readOnly: true,
   },
 };
 
