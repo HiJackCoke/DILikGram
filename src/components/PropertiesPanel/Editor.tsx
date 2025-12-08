@@ -185,6 +185,12 @@ export default function DynamicNodeEditor({
           {/* Render fields for the active tab */}
           {activeTab?.options?.map((fieldDef) => {
             if (!fieldDef.key) return null;
+
+            // Hide body field when method is GET
+            if (fieldDef.key === "body" && formData.method === "GET") {
+              return null;
+            }
+
             return renderFieldByConfig(fieldDef, fieldDef.key);
           })}
         </div>

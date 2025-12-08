@@ -100,20 +100,33 @@ export function generateFunctionCodeFromPanel(
 ): string {
   const { headers = {}, body = {}, endpoint = "", method = "GET" } = input;
 
-  // Convert to JavaScript literals
   const headersStr = JSON.stringify(headers, null, 2);
-  const bodyStr = JSON.stringify(body, null, 2);
+  const isGetMethod = method === "GET";
 
-  return `const headers = ${headersStr}
-const body = ${bodyStr}
-const endpoint = ${JSON.stringify(endpoint)}
-const method = ${JSON.stringify(method)}
+  // Build variable declarations
+  let code = `const headers = ${headersStr}\n`;
 
-const response = await fetch(endpoint, {
-  method,
-  headers,
-  body: JSON.stringify(body),
-})
+  // Only declare body for non-GET methods
+  if (!isGetMethod) {
+    const bodyStr = JSON.stringify(body, null, 2);
+    code += `const body = ${bodyStr}\n`;
+  }
 
-return response.json()`;
+  code += `const endpoint = ${JSON.stringify(endpoint)}\n`;
+  code += `const method = ${JSON.stringify(method)}\n\n`;
+
+  // Build fetch options
+  code += `const response = await fetch(endpoint, {\n`;
+  code += `  method,\n`;
+  code += `  headers,\n`;
+
+  // Only include body in fetch options for non-GET methods
+  if (!isGetMethod) {
+    code += `  body: JSON.stringify(body),\n`;
+  }
+
+  code += `})\n\n`;
+  code += `return response.json()`;
+
+  return code;
 }
