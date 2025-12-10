@@ -37,21 +37,23 @@ export function updateStateByNestedPath<T>(
   path: string,
   value: T
 ) {
+  if (!path.includes(".")) {
+    return { ...prev, [path]: value };
+  }
+
   const clone = structuredClone(prev);
   const keys = path.split(".");
   const rootKey = keys[0];
 
-  // 1) 루트 객체 안전하게 가져오기 (getter 재활용)
   const rootObj = getValueByNestedPath<Record<string, unknown>>(clone, rootKey);
 
-  // 루트 영역이 없으면 새로 만든다
   const base =
     rootObj && typeof rootObj === "object"
       ? structuredClone(rootObj)
       : ({} as Record<string, unknown>);
 
-  // 2) 루트 아래에 값 삽입
   let current: unknown = base;
+
   for (let i = 1; i < keys.length - 1; i++) {
     const key = keys[i];
 
