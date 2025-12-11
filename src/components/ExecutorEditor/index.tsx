@@ -27,10 +27,10 @@ export default function ExecutorEditorModal({
 }: ExecutorEditorModalProps) {
   // Initialize state directly from props
   const [code, setCode] = useState(() => config?.functionCode || "");
-  const [meta, setMeta] = useState(() => config?.__meta);
+  const [meta, setMeta] = useState(() => config?.nodeData);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [inputData, setInputData] = useState(() =>
-    stringifyForDisplay(config?.__meta?.inputType)
+    stringifyForDisplay(config?.nodeData?.inputType)
   );
   const [outputData, setOutputData] = useState<string | null>(null);
 
@@ -96,7 +96,7 @@ export default function ExecutorEditorModal({
     const config: ExecutorConfig = {
       functionCode: code,
       lastModified: Date.now(),
-      __meta: {
+      nodeData: {
         inputType: JSON.parse(inputData),
         outputType: outputData ? JSON.parse(outputData) : null,
       },

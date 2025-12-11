@@ -50,7 +50,7 @@ export function createTypedExecutor<TInput, TOutput>(
   return {
     functionCode,
     lastModified: Date.now(),
-    __meta: meta,
+    nodeData: meta,
   };
 }
 

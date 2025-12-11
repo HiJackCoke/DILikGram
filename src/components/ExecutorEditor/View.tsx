@@ -4,7 +4,7 @@ import type { WorkflowNodeType } from "@/types/nodes";
 import { inferType, stringifyForDisplay } from "@/utils/executorHelpers";
 
 type ExecutorEditorViewProps = {
-  meta: ExecutorConfig["__meta"];
+  meta: ExecutorConfig["nodeData"];
   nodeType: WorkflowNodeType;
   code: string;
   isAsync: boolean;

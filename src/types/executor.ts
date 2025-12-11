@@ -8,7 +8,6 @@ export type ExecutionError = {
   timestamp: number;
 };
 
-
 // Re-export ExecutionError from nodes.ts
 
 /**
@@ -32,7 +31,7 @@ export type ExecutorConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
   lastModified: number;
   isAsync?: boolean; // NEW: Set during compilation
-  __meta?: { inputType?: unknown; outputType?: unknown };
+  nodeData?: { inputType?: unknown; outputType?: unknown };
   __phantomInput?: TInput;
   __phantomOutput?: TOutput;
 };
