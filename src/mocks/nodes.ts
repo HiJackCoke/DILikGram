@@ -77,7 +77,7 @@ return "REST API";`
   };`
           // {
           //   inputType: "unknown",
-          //   outputType: "unknown",
+          //   outputData: "unknown",
           // }
         ),
       },

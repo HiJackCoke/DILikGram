@@ -220,7 +220,7 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
         valueType: "text",
         readOnly: false,
       },
-      outputType: {
+      outputData: {
         valueType: "text",
         readOnly: true,
       },

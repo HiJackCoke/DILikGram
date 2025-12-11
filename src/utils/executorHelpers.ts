@@ -35,7 +35,7 @@ import type { ServiceNodeData } from "@/types/nodes";
  *   'const res = await fetch(`/api/users/${nodeInput.userId}`); return { user: await res.json() };',
  *   {
  *     inputType: '{ userId: string }',
- *     outputType: '{ user: User }'
+ *     outputData: '{ user: User }'
  *   }
  * )
  * ```
@@ -44,7 +44,7 @@ export function createTypedExecutor<TInput, TOutput>(
   functionCode: string,
   meta?: {
     inputType?: unknown;
-    outputType?: unknown;
+    outputData?: unknown;
   }
 ): ExecutorConfig<TInput, TOutput> {
   return {

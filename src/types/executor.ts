@@ -31,7 +31,7 @@ export type ExecutorConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
   lastModified: number;
   isAsync?: boolean; // NEW: Set during compilation
-  nodeData?: { inputType?: unknown; outputType?: unknown };
+  nodeData?: { inputType?: unknown; outputData?: unknown };
   __phantomInput?: TInput;
   __phantomOutput?: TOutput;
 };

@@ -83,7 +83,7 @@ export default function ExecutorEditorModal({
       setOutputData(outputData);
       setMeta({
         inputType: JSON.parse(inputData),
-        outputType: outputData ? JSON.parse(outputData) : null,
+        outputData: outputData ? JSON.parse(outputData) : null,
       });
     } catch (error) {
       setOutputData(`Error: ${(error as Error).message}`);
@@ -98,7 +98,7 @@ export default function ExecutorEditorModal({
       lastModified: Date.now(),
       nodeData: {
         inputType: JSON.parse(inputData),
-        outputType: outputData ? JSON.parse(outputData) : null,
+        outputData: outputData ? JSON.parse(outputData) : null,
       },
     };
     onSave(config);
