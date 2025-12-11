@@ -10,7 +10,7 @@ import type { ServiceNodeData } from "@/types/nodes";
 /**
  * Create a typed executor with full type inference
  *
- * Provides compile-time type checking and IDE autocomplete for nodeInput/nodeOutput
+ * Provides compile-time type checking and IDE autocomplete for nodeInput/outputData
  * while storing the function as a serializable string.
  *
  * @template TInput - Type of nodeInput received from parent node

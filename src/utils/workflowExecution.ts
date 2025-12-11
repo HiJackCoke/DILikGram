@@ -280,12 +280,12 @@ export class WorkflowExecutor {
       }
 
       // 4. Execute node with custom executor or default behavior
-      let nodeOutput: unknown;
+      let outputData: unknown;
       let success: boolean | undefined; // Track success for DecisionNode
 
       if (node.type === "start") {
         // Start node: no transformation, pass null
-        nodeOutput = null;
+        outputData = null;
       } else {
         // Task/Service node: transform data
 
@@ -302,18 +302,18 @@ export class WorkflowExecutor {
             node.type === "decision" && this.mode === "failure"
               ? false
               : result.success;
-          nodeOutput = result.data;
+          outputData = result.data;
         } else {
           // Default: identity function
           await this.delay(1000);
-          nodeOutput = nodeInput;
+          outputData = nodeInput;
         }
       }
 
       // 5. Output 저장
       const executionTime = Date.now() - startTime;
       this.executionState.context.outputs.set(nodeId, {
-        data: nodeOutput,
+        data: outputData,
         timestamp: Date.now(),
         executionTime,
         success, // Include success for DecisionNode
@@ -324,7 +324,7 @@ export class WorkflowExecutor {
         this.onNodeUpdate(nodeId, {
           result: {
             success: true,
-            data: nodeOutput,
+            data: outputData,
             executionTime,
           },
           state: "executed",
@@ -371,9 +371,9 @@ export class WorkflowExecutor {
           // 현재 노드의 output 가져오기
           const currentOutput =
             this.executionState.context.outputs.get(currentNodeId);
-          const nodeOutput = currentOutput?.data;
+          const outputData = currentOutput?.data;
 
-          await this.transferDataThroughEdge(edge.id, nodeOutput); // 추가
+          await this.transferDataThroughEdge(edge.id, outputData); // 추가
           this.notifyStateChange();
           await this.delay(500);
         }
@@ -397,9 +397,9 @@ export class WorkflowExecutor {
           // 현재 노드의 output 가져오기
           const currentOutput =
             this.executionState.context.outputs.get(currentNodeId);
-          const nodeOutput = currentOutput?.data;
+          const outputData = currentOutput?.data;
 
-          await this.transferDataThroughEdge(edge.id, nodeOutput); // 추가
+          await this.transferDataThroughEdge(edge.id, outputData); // 추가
           this.notifyStateChange();
           await this.delay(500);
         }
