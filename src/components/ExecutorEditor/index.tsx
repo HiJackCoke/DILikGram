@@ -30,7 +30,7 @@ export default function ExecutorEditorModal({
   const [meta, setMeta] = useState(() => config?.nodeData);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [inputData, setInputData] = useState(() =>
-    stringifyForDisplay(config?.nodeData?.inputType)
+    stringifyForDisplay(config?.nodeData?.inputData)
   );
   const [outputData, setOutputData] = useState<string | null>(null);
 
@@ -82,7 +82,7 @@ export default function ExecutorEditorModal({
 
       setOutputData(outputData);
       setMeta({
-        inputType: JSON.parse(inputData),
+        inputData: JSON.parse(inputData),
         outputData: outputData ? JSON.parse(outputData) : null,
       });
     } catch (error) {
@@ -97,7 +97,7 @@ export default function ExecutorEditorModal({
       functionCode: code,
       lastModified: Date.now(),
       nodeData: {
-        inputType: JSON.parse(inputData),
+        inputData: JSON.parse(inputData),
         outputData: outputData ? JSON.parse(outputData) : null,
       },
     };

@@ -71,7 +71,7 @@ export default function ExecutorEditorView({
               <div className="text-gray-700">
                 <span className="font-semibold">Input Type:</span>{" "}
                 <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
-                  {inferType(stringifyForDisplay(meta.inputType))}
+                  {inferType(stringifyForDisplay(meta.inputData))}
                 </code>
               </div>
               <div className="text-gray-700">
@@ -92,7 +92,7 @@ export default function ExecutorEditorView({
                 : nodeType === "task"
                   ? `// Task function (SYNC ONLY - no await/async)\n// Receives: nodeInput, fetch\n// Returns: transformed data\n\nreturn { ...nodeInput };`
                   : meta
-                    ? `// Receives: nodeInput (${stringifyForDisplay(meta.inputType)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn nodeOutput;`
+                    ? `// Receives: nodeInput (${stringifyForDisplay(meta.inputData)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn nodeOutput;`
                     : `// Your function code here\n// Receives: nodeInput, fetch\n// Return: output data\n\nreturn nodeInput;`
             }
             className="flex-1 w-full p-4 font-mono text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

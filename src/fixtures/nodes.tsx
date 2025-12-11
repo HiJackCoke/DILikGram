@@ -212,11 +212,11 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Ports",
     readOnly: true,
   },
-  "executor.config.nodeData.inputType": {
+  "executor.config.nodeData.inputData": {
     type: "keyvalue",
     label: "Type Metadata",
     keySchema: {
-      inputType: {
+      inputData: {
         valueType: "text",
         readOnly: false,
       },
