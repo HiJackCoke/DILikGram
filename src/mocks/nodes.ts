@@ -70,7 +70,7 @@ return "REST API";`
           `//
   
   return {
-    success: !!nodeInput,
+    success: !!inputData,
     validationChecked: true,
     validationTime: Date.now()
   

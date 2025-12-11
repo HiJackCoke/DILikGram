@@ -31,7 +31,7 @@ export function detectAsync(code: string): boolean {
  * Uses Function constructor for sync, AsyncFunction for async
  * Automatically detects if code is async from patterns
  *
- * @template TInput - Type of nodeInput
+ * @template TInput - Type of inputData
  * @template TOutput - Type of output data
  * @param config - Executor configuration with code and optional type metadata
  * @param nodeType - Optional node type for validation (task must be sync)
@@ -65,20 +65,20 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
 
   try {
     if (isAsync) {
-      // Create async function: async (nodeInput, fetch) => { ...code... }
+      // Create async function: async (inputData, fetch) => { ...code... }
       const AsyncFunction = Object.getPrototypeOf(
         async function () {}
       ).constructor;
 
       return new AsyncFunction(
-        "nodeInput",
+        "inputData",
         "fetch",
         functionCode
       ) as ExecutorFunction<TInput, TOutput>;
     } else {
-      // Create sync function: (nodeInput, fetch) => { ...code... }
+      // Create sync function: (inputData, fetch) => { ...code... }
       return new Function(
-        "nodeInput",
+        "inputData",
         "fetch",
         functionCode
       ) as ExecutorFunction<TInput, TOutput>;
@@ -93,19 +93,19 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
  * Execute a compiled function with error handling and timeout protection
  *
  * @param executorFn - Compiled executor function
- * @param nodeInput - Input data from parent node
+ * @param inputData - Input data from parent node
  * @param timeout - Maximum execution time in milliseconds (default 30s)
  * @returns Execution result with success status, data, and timing
  */
 export async function executeFunction(
   executorFn: ExecutorFunction,
-  nodeInput: unknown,
+  inputData: unknown,
   timeout: number = 30000
 ): Promise<ExecutorResult> {
   const startTime = Date.now();
 
   try {
-    const resultPromise = Promise.resolve(executorFn(nodeInput, fetch));
+    const resultPromise = Promise.resolve(executorFn(inputData, fetch));
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Execution timeout")), timeout)
     );

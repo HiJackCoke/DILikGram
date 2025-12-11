@@ -265,14 +265,14 @@ export class WorkflowExecutor {
 
     try {
       // 1. Input 데이터 가져오기
-      const nodeInput = this.getNodeInput(nodeId);
+      const inputData = this.getNodeInput(nodeId);
 
-      // 2. 노드에 nodeInput 표시
+      // 2. 노드에 inputData 표시
       if (this.onNodeUpdate) {
         this.onNodeUpdate(nodeId, {
           result: {
             success: true,
-            data: nodeInput,
+            data: inputData,
             executionTime: startTime,
           },
           state: "executing",
@@ -292,7 +292,7 @@ export class WorkflowExecutor {
         const executor = this.getExecutorForNode(node);
         if (executor) {
           await this.delay(500);
-          const result = await executeFunction(executor, nodeInput, 30000);
+          const result = await executeFunction(executor, inputData, 30000);
 
           if (!result.success) {
             throw new Error(result.error.message || "Execution failed");
@@ -306,7 +306,7 @@ export class WorkflowExecutor {
         } else {
           // Default: identity function
           await this.delay(1000);
-          outputData = nodeInput;
+          outputData = inputData;
         }
       }
 

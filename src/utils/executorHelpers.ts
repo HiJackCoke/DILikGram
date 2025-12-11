@@ -10,10 +10,10 @@ import type { ServiceNodeData } from "@/types/nodes";
 /**
  * Create a typed executor with full type inference
  *
- * Provides compile-time type checking and IDE autocomplete for nodeInput/outputData
+ * Provides compile-time type checking and IDE autocomplete for inputData/outputData
  * while storing the function as a serializable string.
  *
- * @template TInput - Type of nodeInput received from parent node
+ * @template TInput - Type of inputData received from parent node
  * @template TOutput - Type of output data returned by executor
  * @param functionCode - JavaScript code as string (will be compiled at runtime)
  * @param meta - Optional metadata for displaying types in editor UI
@@ -25,14 +25,14 @@ import type { ServiceNodeData } from "@/types/nodes";
  * createTypedExecutor<
  *   { text: string },
  *   { result: string }
- * >('return { result: nodeInput.text.toUpperCase() };')
+ * >('return { result: inputData.text.toUpperCase() };')
  *
  * // Async API call
  * createTypedExecutor<
  *   { userId: string },
  *   { user: User }
  * >(
- *   'const res = await fetch(`/api/users/${nodeInput.userId}`); return { user: await res.json() };',
+ *   'const res = await fetch(`/api/users/${inputData.userId}`); return { user: await res.json() };',
  *   {
  *     inputData: '{ userId: string }',
  *     outputData: '{ user: User }'

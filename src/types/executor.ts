@@ -12,19 +12,19 @@ export type ExecutionError = {
 
 /**
  * Executor function signature with generic input/output types
- * - Receives nodeInput from parent node
+ * - Receives inputData from parent node
  * - Returns output data (can be async)
  * - Has access to fetch API for external calls
  */
 export type ExecutorFunction<TInput = unknown, TOutput = unknown> = (
-  nodeInput: TInput,
+  inputData: TInput,
   fetch: typeof globalThis.fetch
 ) => Promise<TOutput> | TOutput;
 
 /**
  * Serializable configuration stored in node data with type inference support
  *
- * @template TInput - Type of nodeInput received from parent node
+ * @template TInput - Type of inputData received from parent node
  * @template TOutput - Type of output data returned by executor
  */
 export type ExecutorConfig<TInput = unknown, TOutput = unknown> = {

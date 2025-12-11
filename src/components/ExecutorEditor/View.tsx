@@ -88,12 +88,12 @@ export default function ExecutorEditorView({
             onChange={(e) => onCodeChange(e.target.value)}
             placeholder={
               nodeType === "decision"
-                ? `// Decision evaluator - return structured output\n// Example:\nconst isValid = nodeInput && nodeInput.isValid === true;\n\nreturn {\n  outputData: { ...nodeInput, checked: true },\n  success: isValid  // true = Yes, false = No\n};`
+                ? `// Decision evaluator - return structured output\n// Example:\nconst isValid = inputData && inputData.isValid === true;\n\nreturn {\n  outputData: { ...inputData, checked: true },\n  success: isValid  // true = Yes, false = No\n};`
                 : nodeType === "task"
-                  ? `// Task function (SYNC ONLY - no await/async)\n// Receives: nodeInput, fetch\n// Returns: transformed data\n\nreturn { ...nodeInput };`
+                  ? `// Task function (SYNC ONLY - no await/async)\n// Receives: inputData, fetch\n// Returns: transformed data\n\nreturn { ...inputData };`
                   : meta
-                    ? `// Receives: nodeInput (${stringifyForDisplay(meta.inputData)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn outputData;`
-                    : `// Your function code here\n// Receives: nodeInput, fetch\n// Return: output data\n\nreturn nodeInput;`
+                    ? `// Receives: inputData (${stringifyForDisplay(meta.inputData)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn outputData;`
+                    : `// Your function code here\n// Receives: inputData, fetch\n// Return: output data\n\nreturn inputData;`
             }
             className="flex-1 w-full p-4 font-mono text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             spellCheck={false}
