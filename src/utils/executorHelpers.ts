@@ -43,8 +43,8 @@ import type { ServiceNodeData } from "@/types/nodes";
 export function createTypedExecutor<TInput, TOutput>(
   functionCode: string,
   meta?: {
-    inputData?: unknown;
-    outputData?: unknown;
+    inputData?: TInput;
+    outputData?: TOutput;
   }
 ): ExecutorConfig<TInput, TOutput> {
   return {

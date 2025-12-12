@@ -2,13 +2,13 @@
  * Executor function type definitions
  */
 
-export type ExecutionError = {
+export type ExecutorError = {
   message: string;
   stack?: string;
   timestamp: number;
 };
 
-// Re-export ExecutionError from nodes.ts
+// Re-export ExecutorError from nodes.ts
 
 /**
  * Executor function signature with generic input/output types
@@ -31,30 +31,25 @@ export type ExecutorConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
   lastModified: number;
   isAsync?: boolean; // NEW: Set during compilation
-  nodeData?: { inputData?: unknown; outputData?: unknown };
-  __phantomInput?: TInput;
-  __phantomOutput?: TOutput;
+  nodeData?: { inputData?: TInput; outputData?: TOutput };
 };
 
 /**
  * Execution result with success/failure information (discriminated union)
  */
-export type ExecutorResult =
-  | {
-      success: true;
-      data: unknown;
-      executionTime: number;
-    }
-  | {
-      success: false;
-      error: ExecutionError;
-      executionTime: number;
-    };
+
+export type ExecutorResult<T = unknown> = {
+  data?: T;
+  error?: ExecutorError;
+  success: boolean;
+  timestamp?: number;
+  executionTime?: number;
+};
 
 export type ExecutorState = "idle" | "executing" | "executed";
 
 export type ExecutorData = {
-  result?: ExecutorResult;
+  // result?: ExecutorResult;
   state?: ExecutorState;
   config?: ExecutorConfig; // Executor function configuration
 };

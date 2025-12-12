@@ -96,20 +96,32 @@ export default function WorkflowPage() {
       executor: { result: ExecutorResult; state: ExecutorState }
     ) => {
       setNodes((prevNodes) =>
-        prevNodes.map((node) =>
-          node.id === nodeId
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  executor: {
-                    ...node.data.executor,
-                    ...executor,
-                  },
+        prevNodes.map((node) => {
+          if (node.id === nodeId) {
+            const isInput = executor.state === "executing";
+            const dataType = isInput ? "inputData" : "outputData";
+
+            const newNode = {
+              ...node,
+              data: {
+                ...node.data,
+                executor: {
+                  ...node.data.executor,
+                  state: executor.state,
                 },
-              }
-            : node
-        )
+              },
+            };
+
+            const clone = structuredClone(newNode);
+            Reflect.set(clone.data.executor.config || {}, "nodeData", {
+              ...clone.data.executor?.config?.nodeData,
+              [dataType]: executor.result.data,
+            });
+
+            return clone;
+          }
+          return node;
+        })
       );
     },
     [setNodes]

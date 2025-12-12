@@ -1,9 +1,9 @@
 import type { WorkflowNode } from "@/types/nodes";
 import type { EdgeTransferData, WorkflowEdge } from "@/types/edges";
 import type {
-  ExecutionError,
-  ExecutorFunction,
+  ExecutorError,
   ExecutorResult,
+  ExecutorFunction,
   ExecutorState,
 } from "@/types/executor";
 import { compileExecutor, executeFunction } from "./executorRuntime";
@@ -18,16 +18,9 @@ export type ExecutionState = {
   context: ExecutionContext;
 };
 
-type ExecutionOutput = {
-  data: unknown;
-  timestamp: number;
-  executionTime: number;
-  success?: boolean; // NEW: For DecisionNode branching
-};
-
 export type ExecutionContext = {
-  outputs: Map<string, ExecutionOutput>; // nodeId -> output
-  errors: Map<string, ExecutionError>; // nodeId -> error
+  outputs: Map<string, ExecutorResult>; // nodeId -> output
+  errors: Map<string, ExecutorError>; // nodeId -> error
   startTime: number;
   endTime?: number;
 };
@@ -169,7 +162,7 @@ export class WorkflowExecutor {
    */
   private handleNodeError(nodeId: string, error: Error): void {
     const timestamp = Date.now();
-    const executionError: ExecutionError = {
+    const executionError: ExecutorError = {
       message: error.message,
       stack: error.stack,
       timestamp,
@@ -281,7 +274,7 @@ export class WorkflowExecutor {
 
       // 4. Execute node with custom executor or default behavior
       let outputData: unknown;
-      let success: boolean | undefined; // Track success for DecisionNode
+      let success: boolean = false; // Track success for DecisionNode
 
       if (node.type === "start") {
         // Start node: no transformation, pass null
@@ -295,7 +288,7 @@ export class WorkflowExecutor {
           const result = await executeFunction(executor, inputData, 30000);
 
           if (!result.success) {
-            throw new Error(result.error.message || "Execution failed");
+            throw new Error(result.error?.message || "Execution failed");
           }
 
           success =
@@ -309,6 +302,8 @@ export class WorkflowExecutor {
           outputData = inputData;
         }
       }
+
+      // if (!success) throw new Error("Execution failed");
 
       // 5. Output 저장
       const executionTime = Date.now() - startTime;
