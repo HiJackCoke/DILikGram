@@ -14,13 +14,14 @@ import { initialEdges } from "@/mocks/edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
-import {
-  createWorkflowExecutor,
-  type ExecutionState,
-  type ExecutionMode,
-} from "@/utils/workflowExecution";
+import { createWorkflowExecutor } from "@/utils/workflowExecution";
 import type { WorkflowEdge } from "@/types/edges";
-import type { ExecutorConfig, ExecutorData } from "@/types/executor";
+import type {
+  ExecutionConfig,
+  ExecutionData,
+  WorkflowRuntimeState,
+  WorkflowMode,
+} from "@/types/execution";
 
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
@@ -69,7 +70,7 @@ export default function WorkflowPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const [executionState, setExecutionState] = useState<ExecutionState>({
+  const [executionState, setExecutionState] = useState<WorkflowRuntimeState>({
     isRunning: false,
     context: {
       outputs: new Map(),
@@ -77,7 +78,7 @@ export default function WorkflowPage() {
       startTime: 0,
     },
   });
-  const executorRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
+  const executionRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
     null
   );
 
@@ -87,11 +88,11 @@ export default function WorkflowPage() {
 
   // 노드 업데이트 콜백
   const handleNodeUpdate = useCallback(
-    (nodeId: string, executorData: ExecutorData) => {
+    (nodeId: string, executionData: ExecutionData) => {
       setNodes((prevNodes) =>
         prevNodes.map((node) =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, executor: executorData } }
+            ? { ...node, data: { ...node.data, execution: executionData } }
             : node
         )
       );
@@ -112,10 +113,10 @@ export default function WorkflowPage() {
     },
     [setEdges]
   );
-
-  // Handle executor config save
+  console.log(nodes);
+  // Handle execution config save
   const handleExecutorSave = useCallback(
-    (nodeId: string, config: ExecutorConfig) => {
+    (nodeId: string, config: ExecutionConfig) => {
       setNodes((prevNodes) =>
         prevNodes.map((node) => {
           if (node.id === nodeId) {
@@ -124,8 +125,8 @@ export default function WorkflowPage() {
               ...node,
               data: {
                 ...node.data,
-                executor: {
-                  ...nodeData.executor,
+                execution: {
+                  ...nodeData.execution,
                   config,
                 },
               },
@@ -228,26 +229,26 @@ export default function WorkflowPage() {
     edges
   );
   // 워크플로우 실행
-  const executeWorkflow = (mode: ExecutionMode) => {
+  const executeWorkflow = (mode: WorkflowMode) => {
     if (executionState.isRunning) return;
 
     // Executor 생성 및 실행
-    executorRef.current = createWorkflowExecutor(
-      nodes as WorkflowNode[],
+    executionRef.current = createWorkflowExecutor({
+      nodes: nodes as WorkflowNode[],
       edges,
       mode,
-      (state) => {
+      onStateChange: (state) => {
         setExecutionState(state);
       },
-      handleNodeUpdate,
-      handleEdgeUpdate
-    );
+      onNodeUpdate: handleNodeUpdate,
+      onEdgeUpdate: handleEdgeUpdate,
+    });
 
-    executorRef.current.execute();
+    executionRef.current.execute();
   };
   // 실행 중단
   const stopExecution = () => {
-    executorRef.current?.abort();
+    executionRef.current?.abort();
     setExecutionState({
       isRunning: false,
       context: {
@@ -258,7 +259,7 @@ export default function WorkflowPage() {
     });
   };
 
-  // 노드에 하이라이트 상태 추가 (executor.state는 handleNodeUpdate에서 관리)
+  // 노드에 하이라이트 상태 추가 (execution.state는 handleNodeUpdate에서 관리)
   const enhancedNodes = nodes.map((node) => ({
     ...node,
     data: {
@@ -339,7 +340,7 @@ export default function WorkflowPage() {
           {executionState.isRunning &&
             (() => {
               const currentNode = nodes.find(
-                (n) => n.data.executor?.state === "executing"
+                (n) => n.data.execution?.state === "executing"
               );
               return currentNode ? (
                 <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">
@@ -359,7 +360,7 @@ export default function WorkflowPage() {
           {/* Execution Statistics */}
           {(() => {
             const executedCount = nodes.filter(
-              (n) => n.data.executor?.state === "executed"
+              (n) => n.data.execution?.state === "executed"
             ).length;
             return executedCount > 0 ? (
               <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">

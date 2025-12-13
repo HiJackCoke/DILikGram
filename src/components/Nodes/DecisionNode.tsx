@@ -18,8 +18,8 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
-  // Check if executor is configured
-  const hasExecutor = !!data.executor?.config?.functionCode;
+  // Check if execution is configured
+  const hasExecutor = !!data.execution?.config?.functionCode;
 
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
@@ -50,7 +50,7 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
           ${selected ? "scale-110" : "hover:scale-105"}
           ${data.state?.highlighted ? "scale-110" : ""}
           ${data.state?.dimmed ? "opacity-30" : ""}
-          ${executionStyles[data.executor?.state || "idle"]}
+          ${executionStyles[data.execution?.state || "idle"]}
         `}
       >
         {/* Diamond Background */}
@@ -66,7 +66,7 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
                 : "border-palette-warning-bg hover:shadow-xl"
             }
             ${data.state?.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
-            ${executionRingStyles[data.executor?.state || "idle"]}
+            ${executionRingStyles[data.execution?.state || "idle"]}
           `}
         />
 

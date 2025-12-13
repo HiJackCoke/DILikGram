@@ -7,13 +7,13 @@ import ExecutorEditorView from "./View";
 
 import { compileExecutor, detectAsync } from "@/utils/executorRuntime";
 
-import type { ExecutorConfig } from "@/types/executor";
+import type { ExecutionConfig } from "@/types/execution";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
 import { stringifyForDisplay } from "@/utils/executorHelpers";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> & {
   open: boolean;
-  onSave: (config: ExecutorConfig) => void;
+  onSave: (config: ExecutionConfig) => void;
   onClose: () => void;
 };
 
@@ -46,7 +46,7 @@ export default function ExecutorEditorModal({
     }
 
     try {
-      const config: ExecutorConfig = {
+      const config: ExecutionConfig = {
         functionCode: code,
         lastModified: 0, // Dummy value for validation
       };
@@ -71,7 +71,7 @@ export default function ExecutorEditorModal({
 
   const handleTest = async () => {
     try {
-      const config: ExecutorConfig = {
+      const config: ExecutionConfig = {
         functionCode: code,
         lastModified: Date.now(),
       };
@@ -93,7 +93,7 @@ export default function ExecutorEditorModal({
   const handleSave = () => {
     if (compileError) return;
 
-    const config: ExecutorConfig = {
+    const config: ExecutionConfig = {
       functionCode: code,
       lastModified: Date.now(),
       nodeData: {

@@ -1,10 +1,10 @@
-import type { ExecutorConfig } from "@/types/executor";
+import type { ExecutionConfig } from "@/types/execution";
 import type { WorkflowNodeType } from "@/types/nodes";
 
 export interface ExecutorEditorState {
   nodeId: string;
   nodeType: WorkflowNodeType;
-  config?: ExecutorConfig;
+  config?: ExecutionConfig;
 }
 
-export type ExecutorOnSave = (nodeId: string, config: ExecutorConfig) => void;
+export type ExecutorOnSave = (nodeId: string, config: ExecutionConfig) => void;

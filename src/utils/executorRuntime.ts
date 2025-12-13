@@ -2,10 +2,10 @@
  * Runtime executor - compiles and executes user-defined functions
  */
 import type {
-  ExecutorConfig,
+  ExecutionConfig,
   ExecutorFunction,
-  ExecutorResult,
-} from "@/types/executor";
+  ExecutionResult,
+} from "@/types/execution";
 import type { WorkflowNodeType } from "@/types/nodes";
 
 /**
@@ -39,7 +39,7 @@ export function detectAsync(code: string): boolean {
  * @throws Error if compilation fails (syntax error or validation error)
  */
 export function compileExecutor<TInput = unknown, TOutput = unknown>(
-  config: ExecutorConfig<TInput, TOutput>,
+  config: ExecutionConfig<TInput, TOutput>,
   nodeType?: WorkflowNodeType
 ): ExecutorFunction<TInput, TOutput> {
   const { functionCode } = config;
@@ -101,7 +101,7 @@ export async function executeFunction(
   executorFn: ExecutorFunction,
   inputData: unknown,
   timeout: number = 30000
-): Promise<ExecutorResult> {
+): Promise<ExecutionResult> {
   const startTime = Date.now();
 
   try {

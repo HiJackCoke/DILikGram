@@ -4,7 +4,7 @@
  * These helpers provide TypeScript type inference for executor functions
  * while maintaining string-based storage for serialization.
  */
-import type { ExecutorConfig } from "@/types/executor";
+import type { ExecutionConfig } from "@/types/execution";
 import type { ServiceNodeData } from "@/types/nodes";
 
 /**
@@ -46,7 +46,7 @@ export function createTypedExecutor<TInput, TOutput>(
     inputData?: TInput;
     outputData?: TOutput;
   }
-): ExecutorConfig<TInput, TOutput> {
+): ExecutionConfig<TInput, TOutput> {
   return {
     functionCode,
     lastModified: Date.now(),

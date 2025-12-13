@@ -62,7 +62,7 @@ export function EndNode({ data, selected }: EndNodeProps) {
         }
         ${data.state?.highlighted ? `ring-4 ${ring} scale-110` : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.executor?.state || "idle"]}
+        ${executionStyles[data.execution?.state || "idle"]}
       `}
     >
       {/* Ports */}

@@ -30,7 +30,7 @@ export function StartNode({ data, selected }: StartNodeProps) {
         }
         ${data.state?.highlighted ? "ring-4 ring-green-400 scale-110" : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.executor?.state || "idle"]}
+        ${executionStyles[data.execution?.state || "idle"]}
       `}
     >
       {/* Ports */}

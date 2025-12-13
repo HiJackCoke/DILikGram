@@ -56,8 +56,8 @@ export function TaskNode(nodeProps: TaskNodeProps) {
   ];
   const ports = data.ports || defaultPorts;
 
-  // Check if executor is configured
-  const hasExecutor = !!data.executor?.config?.functionCode;
+  // Check if execution is configured
+  const hasExecutor = !!data.execution?.config?.functionCode;
 
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
@@ -86,7 +86,7 @@ export function TaskNode(nodeProps: TaskNodeProps) {
         }
         ${data.state?.highlighted ? "border-palette-primary-bg shadow-blue-200 shadow-xl scale-105 ring-2 ring-blue-300" : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.executor?.state || "idle"]}
+        ${executionStyles[data.execution?.state || "idle"]}
       `}
     >
       {/* Ports */}
@@ -116,7 +116,7 @@ export function TaskNode(nodeProps: TaskNodeProps) {
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
                 : "bg-white/20 text-white hover:bg-white/30"
             }`}
-            title="Configure executor function"
+            title="Configure execution function"
           >
             <Settings className="w-3 h-3" />
           </button>

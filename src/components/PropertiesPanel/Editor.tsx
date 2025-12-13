@@ -65,10 +65,10 @@ export default function DynamicNodeEditor({
       // Save with generated code
       onSave({
         ...formData,
-        executor: {
-          ...node.data.executor,
+        execution: {
+          ...node.data.execution,
           config: {
-            ...node.data.executor?.config,
+            ...node.data.execution?.config,
             functionCode,
             lastModified: Date.now(),
           },

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { NodeProps, Position, Node } from "react-cosmos-diagram";
-import type { ExecutorData } from "./executor";
+import type { ExecutionData } from "./execution";
 
 // ============================================
 // Port 타입 정의
@@ -41,7 +41,7 @@ export type WorkflowNodeState = {
 
 type WorkflowNodeData<T> = T & {
   state?: WorkflowNodeState;
-  executor?: ExecutorData;
+  execution?: ExecutionData;
   ports?: NodePort[];
 };
 

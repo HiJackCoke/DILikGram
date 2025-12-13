@@ -6,7 +6,7 @@ import {
   useRef,
 } from "react";
 import type { ReactNode } from "react";
-import type { ExecutorConfig } from "@/types/executor";
+import type { ExecutionConfig } from "@/types/execution";
 import ExecutorEditorModal from "@/components/ExecutorEditor";
 import type { WorkflowNodeProps } from "@/types/nodes";
 import type { ExecutorEditorState, ExecutorOnSave } from "./type";
@@ -34,7 +34,7 @@ export function ExecutorEditorProvider({
   const [state, setState] = useState<ExecutorEditorState | null>(null);
 
   const open = useCallback((node: WorkflowNodeProps) => {
-    const config = node?.data?.executor?.config;
+    const config = node?.data?.execution?.config;
 
     if (!node?.type) return;
 
@@ -62,7 +62,7 @@ export function ExecutorEditorProvider({
   }, []);
 
   const handleSave = useCallback(
-    (config: ExecutorConfig) => {
+    (config: ExecutionConfig) => {
       if (!state?.nodeId) return;
       close();
       listeners.current.forEach((listener) => listener(state.nodeId, config));

@@ -1,30 +1,18 @@
 import type { WorkflowNode } from "@/types/nodes";
 import type { EdgeTransferData, WorkflowEdge } from "@/types/edges";
 import type {
-  ExecutorError,
-  ExecutorResult,
+  ExecutionError,
   ExecutorFunction,
-  ExecutorState,
-  ExecutorData,
-} from "@/types/executor";
+  ExecutionState,
+  ExecutionData,
+  WorkflowMode,
+  WorkflowRuntimeState,
+  OnStateChangeCallback,
+  OnNodeUpdateCallback,
+  OnEdgeUpdateCallback,
+  WorkflowExecutorConfig,
+} from "@/types/execution";
 import { compileExecutor, executeFunction } from "./executorRuntime";
-
-export type ExecutionMode = "success" | "failure";
-
-export type ExecutionState = {
-  // activeEdgeIds: Set<string>;
-  isRunning: boolean;
-
-  // 실행 컨텍스트
-  context: ExecutionContext;
-};
-
-export type ExecutionContext = {
-  outputs: Map<string, ExecutorResult>; // nodeId -> output
-  errors: Map<string, ExecutorError>; // nodeId -> error
-  startTime: number;
-  endTime?: number;
-};
 
 /**
  * 워크플로우 실행을 위한 유틸리티
@@ -32,34 +20,24 @@ export type ExecutionContext = {
 export class WorkflowExecutor {
   private nodes: WorkflowNode[];
   private edges: WorkflowEdge[];
-  private mode: ExecutionMode;
-  private onStateChange: (state: ExecutionState) => void;
-  private executionState: ExecutionState;
+  private mode: WorkflowMode;
+  private executionState: WorkflowRuntimeState;
   private abortController: AbortController | null = null;
 
-  private onNodeUpdate?: (nodeId: string, executorData: ExecutorData) => void;
-  private onEdgeUpdate?: (
-    edgeId: string,
-    data: Partial<WorkflowEdge["data"]>
-  ) => void;
+  private onStateChange: OnStateChangeCallback;
+  private onNodeUpdate?: OnNodeUpdateCallback;
+  private onEdgeUpdate?: OnEdgeUpdateCallback;
 
   // Executor function cache
-  private executorCache = new Map<string, ExecutorFunction>();
+  private executionCache = new Map<string, ExecutorFunction>();
 
-  constructor(
-    nodes: WorkflowNode[],
-    edges: WorkflowEdge[],
-    mode: ExecutionMode,
-    onStateChange: (state: ExecutionState) => void,
-    onNodeUpdate?: (nodeId: string, executorData: ExecutorData) => void,
-    onEdgeUpdate?: (edgeId: string, data: Partial<WorkflowEdge["data"]>) => void
-  ) {
-    this.nodes = nodes;
-    this.edges = edges;
-    this.mode = mode;
-    this.onStateChange = onStateChange;
-    this.onNodeUpdate = onNodeUpdate; // 추가
-    this.onEdgeUpdate = onEdgeUpdate; // 추가
+  constructor(config: WorkflowExecutorConfig) {
+    this.nodes = config.nodes;
+    this.edges = config.edges;
+    this.mode = config.mode;
+    this.onStateChange = config.onStateChange;
+    this.onNodeUpdate = config.onNodeUpdate;
+    this.onEdgeUpdate = config.onEdgeUpdate;
     this.executionState = {
       isRunning: false,
       context: {
@@ -155,9 +133,9 @@ export class WorkflowExecutor {
   /**
    * 노드 실행 에러 처리
    */
-  private handleNodeError(nodeId: string, error: Error): void {
+  private handleExecutionError(nodeId: string, error: Error): void {
     const timestamp = Date.now();
-    const executionError: ExecutorError = {
+    const executionError: ExecutionError = {
       message: error.message,
       stack: error.stack,
       timestamp,
@@ -167,14 +145,14 @@ export class WorkflowExecutor {
 
     // 노드에 에러 표시
     if (this.onNodeUpdate) {
-      const executorData = this.buildExecutorData(
+      const executionData = this.buildExecutorData(
         nodeId,
         "executed",
         undefined, // No output data on error
         executionError // Pass error
       );
-      this.onNodeUpdate(nodeId, executorData);
-      this.syncNodeAfterUpdate(nodeId, executorData);
+      this.onNodeUpdate(nodeId, executionData);
+      this.syncNodeAfterUpdate(nodeId, executionData);
     }
   }
 
@@ -184,7 +162,7 @@ export class WorkflowExecutor {
    */
   private syncNodeAfterUpdate(
     nodeId: string,
-    executorData: ExecutorData
+    executionData: ExecutionData
   ): void {
     const nodeIndex = this.nodes.findIndex((n) => n.id === nodeId);
 
@@ -194,35 +172,35 @@ export class WorkflowExecutor {
         ...this.nodes[nodeIndex],
         data: {
           ...this.nodes[nodeIndex].data,
-          executor: executorData,
+          execution: executionData,
         },
       };
     }
   }
 
   /**
-   * Get or compile executor for a node
-   * Returns null if no executor configured or node doesn't support executors
+   * Get or compile execution for a node
+   * Returns null if no execution configured or node doesn't support executions
    */
   private getExecutorForNode(node: WorkflowNode): ExecutorFunction | null {
-    // Start and End nodes don't have executors
+    // Start and End nodes don't have executions
     if (node.type === "start" || node.type === "end") {
       return null;
     }
 
     const data = node.data;
 
-    const config = data.executor?.config;
+    const config = data.execution?.config;
 
-    // No custom executor configured
+    // No custom execution configured
     if (!config?.functionCode) {
       return null;
     }
 
     // Check cache
     const cacheKey = `${node.id}-${config.lastModified}`;
-    if (this.executorCache.has(cacheKey)) {
-      return this.executorCache.get(cacheKey)!;
+    if (this.executionCache.has(cacheKey)) {
+      return this.executionCache.get(cacheKey)!;
     }
 
     // Compile and cache with node type validation
@@ -232,14 +210,14 @@ export class WorkflowExecutor {
         | "service"
         | "decision";
 
-      const executor = compileExecutor(config, nodeTypeForValidation);
-      this.executorCache.set(cacheKey, executor);
+      const execution = compileExecutor(config, nodeTypeForValidation);
+      this.executionCache.set(cacheKey, execution);
 
-      return executor;
+      return execution;
     } catch (error) {
-      console.error(`Failed to compile executor for ${node.id}:`, error);
+      console.error(`Failed to compile execution for ${node.id}:`, error);
       // Display error on node for validation failures (e.g., TaskNode with async)
-      this.handleNodeError(node.id, error as Error);
+      this.handleExecutionError(node.id, error as Error);
       return null;
     }
   }
@@ -257,7 +235,7 @@ export class WorkflowExecutor {
     // Primary: Get from parent node's config.nodeData.outputData
     const parentNode = this.nodes.find((n) => n.id === node.parentNode);
     const parentOutputData =
-      parentNode?.data.executor?.config?.nodeData?.outputData;
+      parentNode?.data.execution?.config?.nodeData?.outputData;
 
     if (parentOutputData !== undefined) {
       return parentOutputData;
@@ -272,23 +250,23 @@ export class WorkflowExecutor {
   }
 
   /**
-   * Build complete ExecutorData by merging execution result with existing config
+   * Build complete ExecutionData by merging execution result with existing config
    *
    * @param nodeId - Node being updated
    * @param executionState - Current execution state
    * @param resultData - Data to store (input or output)
    * @param error - Optional execution error
-   * @returns Complete ExecutorData ready to assign
+   * @returns Complete ExecutionData ready to assign
    */
   private buildExecutorData(
     nodeId: string,
-    executionState: ExecutorState,
+    executionState: ExecutionState,
     resultData: unknown,
-    error?: ExecutorError
-  ): ExecutorData {
+    error?: ExecutionError
+  ): ExecutionData {
     // Find existing node to preserve config
     const existingNode = this.nodes.find((n) => n.id === nodeId);
-    const existingExecutor = existingNode?.data.executor;
+    const existingExecutor = existingNode?.data.execution;
     const existingConfig = existingExecutor?.config;
 
     // Determine if updating input (executing) or output (executed)
@@ -301,7 +279,7 @@ export class WorkflowExecutor {
       [dataKey]: resultData,
     };
 
-    // Build complete ExecutorData
+    // Build complete ExecutionData
     return {
       state: executionState,
       config: {
@@ -333,16 +311,16 @@ export class WorkflowExecutor {
 
       // 2. 노드에 inputData 표시
       if (this.onNodeUpdate) {
-        const executorData = this.buildExecutorData(
+        const executionData = this.buildExecutorData(
           nodeId,
           "executing",
           inputData
         );
-        this.onNodeUpdate(nodeId, executorData);
-        this.syncNodeAfterUpdate(nodeId, executorData);
+        this.onNodeUpdate(nodeId, executionData);
+        this.syncNodeAfterUpdate(nodeId, executionData);
       }
 
-      // 4. Execute node with custom executor or default behavior
+      // 4. Execute node with custom execution or default behavior
       let outputData: unknown;
       let success: boolean = false; // Track success for DecisionNode
 
@@ -352,10 +330,10 @@ export class WorkflowExecutor {
       } else {
         // Task/Service node: transform data
 
-        const executor = this.getExecutorForNode(node);
-        if (executor) {
+        const execution = this.getExecutorForNode(node);
+        if (execution) {
           await this.delay(500);
-          const result = await executeFunction(executor, inputData, 30000);
+          const result = await executeFunction(execution, inputData, 30000);
 
           if (!result.success) {
             throw new Error(result.error?.message || "Execution failed");
@@ -386,13 +364,13 @@ export class WorkflowExecutor {
 
       // 6. 노드에 결과 표시
       if (this.onNodeUpdate) {
-        const executorData = this.buildExecutorData(
+        const executionData = this.buildExecutorData(
           nodeId,
           "executed",
           outputData
         );
-        this.onNodeUpdate(nodeId, executorData);
-        this.syncNodeAfterUpdate(nodeId, executorData);
+        this.onNodeUpdate(nodeId, executionData);
+        this.syncNodeAfterUpdate(nodeId, executionData);
       }
 
       // 8. 다음 노드 실행
@@ -400,7 +378,7 @@ export class WorkflowExecutor {
       await this.executeNextNodes(nodeId);
     } catch (error) {
       // 에러 처리
-      this.handleNodeError(nodeId, error as Error);
+      this.handleExecutionError(nodeId, error as Error);
       throw error; // 즉시 중단 (Fail-Fast)
     }
   }
@@ -545,19 +523,7 @@ export class WorkflowExecutor {
  * 워크플로우 실행 헬퍼 함수
  */
 export function createWorkflowExecutor(
-  nodes: WorkflowNode[],
-  edges: WorkflowEdge[],
-  mode: ExecutionMode,
-  onStateChange: (state: ExecutionState) => void,
-  onNodeUpdate?: (nodeId: string, executorData: ExecutorData) => void,
-  onEdgeUpdate?: (edgeId: string, data: Partial<WorkflowEdge["data"]>) => void
+  config: WorkflowExecutorConfig
 ): WorkflowExecutor {
-  return new WorkflowExecutor(
-    nodes,
-    edges,
-    mode,
-    onStateChange,
-    onNodeUpdate,
-    onEdgeUpdate
-  );
+  return new WorkflowExecutor(config);
 }

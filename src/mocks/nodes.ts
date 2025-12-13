@@ -33,7 +33,7 @@ export const initialNodes: WorkflowNode[] = [
         { id: "input", position: Position.Top, type: "target" as const },
         { id: "output", position: Position.Bottom, type: "source" as const },
       ],
-      executor: {
+      execution: {
         config: createTypedExecutor<unknown, unknown>(
           `// Example: Transform data
 return "REST API";`
@@ -65,7 +65,7 @@ return "REST API";`
         },
       ],
 
-      executor: {
+      execution: {
         config: createTypedExecutor<unknown, unknown>(
           `//
   
@@ -110,7 +110,7 @@ return "REST API";`
         { id: "output", position: Position.Bottom, type: "source" as const },
       ],
 
-      executor: {
+      execution: {
         config: createTypedExecutor<unknown, unknown>(
           `// Example: Async API call with full context (auto-detected from 'await' keyword)
   const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
