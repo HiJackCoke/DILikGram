@@ -52,4 +52,5 @@ export type ExecutorData = {
   // result?: ExecutorResult;
   state?: ExecutorState;
   config?: ExecutorConfig; // Executor function configuration
+  error?: ExecutorError; // NEW: Store execution errors for UI display
 };

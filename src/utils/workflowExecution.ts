@@ -5,6 +5,7 @@ import type {
   ExecutorResult,
   ExecutorFunction,
   ExecutorState,
+  ExecutorData,
 } from "@/types/executor";
 import { compileExecutor, executeFunction } from "./executorRuntime";
 
@@ -36,10 +37,7 @@ export class WorkflowExecutor {
   private executionState: ExecutionState;
   private abortController: AbortController | null = null;
 
-  private onNodeUpdate?: (
-    nodeId: string,
-    update: { result: ExecutorResult; state: ExecutorState }
-  ) => void;
+  private onNodeUpdate?: (nodeId: string, executorData: ExecutorData) => void;
   private onEdgeUpdate?: (
     edgeId: string,
     data: Partial<WorkflowEdge["data"]>
@@ -53,10 +51,7 @@ export class WorkflowExecutor {
     edges: WorkflowEdge[],
     mode: ExecutionMode,
     onStateChange: (state: ExecutionState) => void,
-    onNodeUpdate?: (
-      nodeId: string,
-      update: { result: ExecutorResult; state: ExecutorState }
-    ) => void,
+    onNodeUpdate?: (nodeId: string, executorData: ExecutorData) => void,
     onEdgeUpdate?: (edgeId: string, data: Partial<WorkflowEdge["data"]>) => void
   ) {
     this.nodes = nodes;
@@ -172,14 +167,36 @@ export class WorkflowExecutor {
 
     // 노드에 에러 표시
     if (this.onNodeUpdate) {
-      this.onNodeUpdate(nodeId, {
-        result: {
-          success: false,
-          error: executionError,
-          executionTime: timestamp,
+      const executorData = this.buildExecutorData(
+        nodeId,
+        "executed",
+        undefined, // No output data on error
+        executionError // Pass error
+      );
+      this.onNodeUpdate(nodeId, executorData);
+      this.syncNodeAfterUpdate(nodeId, executorData);
+    }
+  }
+
+  /**
+   * Sync this.nodes with React state after update
+   * Ensures getNodeInput() reads fresh data from this.nodes
+   */
+  private syncNodeAfterUpdate(
+    nodeId: string,
+    executorData: ExecutorData
+  ): void {
+    const nodeIndex = this.nodes.findIndex((n) => n.id === nodeId);
+
+    if (nodeIndex !== -1) {
+      // Create updated node (immutable pattern)
+      this.nodes[nodeIndex] = {
+        ...this.nodes[nodeIndex],
+        data: {
+          ...this.nodes[nodeIndex].data,
+          executor: executorData,
         },
-        state: "executed",
-      });
+      };
     }
   }
 
@@ -237,10 +254,64 @@ export class WorkflowExecutor {
       return null; // Start 노드는 input 없음
     }
 
+    // Primary: Get from parent node's config.nodeData.outputData
+    const parentNode = this.nodes.find((n) => n.id === node.parentNode);
+    const parentOutputData =
+      parentNode?.data.executor?.config?.nodeData?.outputData;
+
+    if (parentOutputData !== undefined) {
+      return parentOutputData;
+    }
+
+    // Fallback: Get from executionState.context.outputs
     const parentOutput = this.executionState.context.outputs.get(
       node.parentNode
     );
+
     return parentOutput?.data ?? null;
+  }
+
+  /**
+   * Build complete ExecutorData by merging execution result with existing config
+   *
+   * @param nodeId - Node being updated
+   * @param executionState - Current execution state
+   * @param resultData - Data to store (input or output)
+   * @param error - Optional execution error
+   * @returns Complete ExecutorData ready to assign
+   */
+  private buildExecutorData(
+    nodeId: string,
+    executionState: ExecutorState,
+    resultData: unknown,
+    error?: ExecutorError
+  ): ExecutorData {
+    // Find existing node to preserve config
+    const existingNode = this.nodes.find((n) => n.id === nodeId);
+    const existingExecutor = existingNode?.data.executor;
+    const existingConfig = existingExecutor?.config;
+
+    // Determine if updating input (executing) or output (executed)
+    const isInputUpdate = executionState === "executing";
+    const dataKey = isInputUpdate ? "inputData" : "outputData";
+
+    // Merge new data with existing nodeData
+    const nodeData = {
+      ...existingConfig?.nodeData,
+      [dataKey]: resultData,
+    };
+
+    // Build complete ExecutorData
+    return {
+      state: executionState,
+      config: {
+        functionCode: existingConfig?.functionCode ?? "",
+        lastModified: existingConfig?.lastModified ?? Date.now(),
+        isAsync: existingConfig?.isAsync ?? false,
+        nodeData,
+      },
+      error, // Include error if present
+    };
   }
 
   /**
@@ -262,14 +333,13 @@ export class WorkflowExecutor {
 
       // 2. 노드에 inputData 표시
       if (this.onNodeUpdate) {
-        this.onNodeUpdate(nodeId, {
-          result: {
-            success: true,
-            data: inputData,
-            executionTime: startTime,
-          },
-          state: "executing",
-        });
+        const executorData = this.buildExecutorData(
+          nodeId,
+          "executing",
+          inputData
+        );
+        this.onNodeUpdate(nodeId, executorData);
+        this.syncNodeAfterUpdate(nodeId, executorData);
       }
 
       // 4. Execute node with custom executor or default behavior
@@ -316,17 +386,17 @@ export class WorkflowExecutor {
 
       // 6. 노드에 결과 표시
       if (this.onNodeUpdate) {
-        this.onNodeUpdate(nodeId, {
-          result: {
-            success: true,
-            data: outputData,
-            executionTime,
-          },
-          state: "executed",
-        });
+        const executorData = this.buildExecutorData(
+          nodeId,
+          "executed",
+          outputData
+        );
+        this.onNodeUpdate(nodeId, executorData);
+        this.syncNodeAfterUpdate(nodeId, executorData);
       }
 
       // 8. 다음 노드 실행
+
       await this.executeNextNodes(nodeId);
     } catch (error) {
       // 에러 처리
@@ -479,10 +549,7 @@ export function createWorkflowExecutor(
   edges: WorkflowEdge[],
   mode: ExecutionMode,
   onStateChange: (state: ExecutionState) => void,
-  onNodeUpdate?: (
-    nodeId: string,
-    update: { result: ExecutorResult; state: ExecutorState }
-  ) => void,
+  onNodeUpdate?: (nodeId: string, executorData: ExecutorData) => void,
   onEdgeUpdate?: (edgeId: string, data: Partial<WorkflowEdge["data"]>) => void
 ): WorkflowExecutor {
   return new WorkflowExecutor(

@@ -20,11 +20,7 @@ import {
   type ExecutionMode,
 } from "@/utils/workflowExecution";
 import type { WorkflowEdge } from "@/types/edges";
-import type {
-  ExecutorResult,
-  ExecutorState,
-  ExecutorConfig,
-} from "@/types/executor";
+import type { ExecutorConfig, ExecutorData } from "@/types/executor";
 
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
@@ -91,37 +87,13 @@ export default function WorkflowPage() {
 
   // 노드 업데이트 콜백
   const handleNodeUpdate = useCallback(
-    (
-      nodeId: string,
-      executor: { result: ExecutorResult; state: ExecutorState }
-    ) => {
+    (nodeId: string, executorData: ExecutorData) => {
       setNodes((prevNodes) =>
-        prevNodes.map((node) => {
-          if (node.id === nodeId) {
-            const isInput = executor.state === "executing";
-            const dataType = isInput ? "inputData" : "outputData";
-
-            const newNode = {
-              ...node,
-              data: {
-                ...node.data,
-                executor: {
-                  ...node.data.executor,
-                  state: executor.state,
-                },
-              },
-            };
-
-            const clone = structuredClone(newNode);
-            Reflect.set(clone.data.executor.config || {}, "nodeData", {
-              ...clone.data.executor?.config?.nodeData,
-              [dataType]: executor.result.data,
-            });
-
-            return clone;
-          }
-          return node;
-        })
+        prevNodes.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, executor: executorData } }
+            : node
+        )
       );
     },
     [setNodes]
@@ -259,16 +231,6 @@ export default function WorkflowPage() {
   const executeWorkflow = (mode: ExecutionMode) => {
     if (executionState.isRunning) return;
 
-    // 기존 실행 상태 초기화
-    setExecutionState({
-      isRunning: false,
-      context: {
-        outputs: new Map(),
-        errors: new Map(),
-        startTime: 0,
-      },
-    });
-
     // Executor 생성 및 실행
     executorRef.current = createWorkflowExecutor(
       nodes as WorkflowNode[],
@@ -328,7 +290,7 @@ export default function WorkflowPage() {
       },
     };
   });
-  // onSave={handleExecutorSave}
+
   return (
     <>
       <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
