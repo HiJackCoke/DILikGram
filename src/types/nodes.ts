@@ -103,6 +103,13 @@ export type ServiceType = "api" | "database" | "email" | "webhook" | "custom";
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 export type EditMode = "code" | "panel";
 
+export type HttpConfig = {
+  method?: HttpMethod;
+  endpoint?: string;
+  headers?: HeadersInit;
+  body?: Record<string, unknown>;
+};
+
 export type ServiceNodeData = {
   icon?: ReactNode;
   title: string;
@@ -111,10 +118,7 @@ export type ServiceNodeData = {
   status?: NodeStatus;
   serviceType?: ServiceType;
   mode?: EditMode;
-  headers?: HeadersInit;
-  body?: Record<string, unknown>;
-  method?: HttpMethod;
-  endpoint?: string;
+  http?: HttpConfig;
   timeout?: number;
   retry?: {
     count: number;

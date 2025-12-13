@@ -89,13 +89,15 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         description: "Service description",
         serviceType: "api",
         mode: "panel",
-        method: "POST",
-        endpoint: "",
-        // status: "idle",
-        headers: {
-          "Content-Type": "application/json",
+        http: {
+          method: "POST",
+          endpoint: "",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: {},
         },
-        body: {},
+        // status: "idle",
         retry: {
           count: 3,
           delay: 1000,
@@ -290,7 +292,7 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
         value: "panel",
         options: [
           {
-            key: "method",
+            key: "http.method",
             type: "select",
             label: "HTTP Method",
             options: [
@@ -301,13 +303,13 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
             ],
           },
           {
-            key: "endpoint",
+            key: "http.endpoint",
             type: "text",
             label: "Endpoint",
             placeholder: "Enter API endpoint",
           },
           {
-            key: "headers",
+            key: "http.headers",
             type: "keyvalue",
             label: "Headers",
             keySchema: {
@@ -323,7 +325,7 @@ const SERVICE_NODE_FIELDS: Record<string, FieldConfig> = {
             },
           },
           {
-            key: "body",
+            key: "http.body",
             type: "keyvalue",
             label: "Body",
           },

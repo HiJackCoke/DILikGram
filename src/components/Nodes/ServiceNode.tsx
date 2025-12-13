@@ -160,12 +160,12 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
 
         {/* Service Info */}
         <div className="space-y-2">
-          {data.method && (
+          {data.http?.method && (
             <div className="flex items-center gap-2">
               <span
-                className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${methodColors[data.method]}`}
+                className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${methodColors[data.http.method]}`}
               >
-                {data.method}
+                {data.http.method}
               </span>
               <span className="text-xs text-gray-400 capitalize">
                 {data.serviceType || "api"}
@@ -173,9 +173,9 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
             </div>
           )}
 
-          {data.endpoint && (
+          {data.http?.endpoint && (
             <div className="text-xs text-gray-600 font-mono bg-gray-50 px-3 py-1.5 rounded-lg truncate">
-              {data.endpoint}
+              {data.http.endpoint}
             </div>
           )}
         </div>

@@ -89,7 +89,7 @@ export function PropertiesPanelProvider({
 }
 
 // Hook exported separately to satisfy react-refresh rules
-// eslint-disable-next-line react-refresh/only-export-components
+
 export function usePropertiesPanelContext() {
   const context = useContext(PropertiesPanelContext);
   if (!context) {

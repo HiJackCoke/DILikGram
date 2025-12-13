@@ -94,13 +94,15 @@ return "REST API";`
       description: "처리된 데이터를 서버에 전송합니다",
       serviceType: "api" as const,
       mode: "panel",
-      method: "POST" as const,
-      endpoint: "/api/v1/data",
-      // status: "running" as const,
-      headers: {
-        "Content-Type": "application/json",
+      http: {
+        method: "POST" as const,
+        endpoint: "/api/v1/data",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {},
       },
-      body: {},
+      // status: "running" as const,
       retry: {
         count: 3,
         delay: 2000,

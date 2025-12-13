@@ -128,9 +128,10 @@ export function stringifyForDisplay(value: unknown): string {
 }
 
 export function generateFunctionCodeFromPanel(
-  input: Pick<ServiceNodeData, "headers" | "body" | "endpoint" | "method">
+  input: Pick<ServiceNodeData, "http">
 ): string {
-  const { headers = {}, body = {}, endpoint = "", method = "GET" } = input;
+  const { http = {} } = input;
+  const { headers = {}, body = {}, endpoint = "", method = "GET" } = http;
 
   const headersStr = JSON.stringify(headers, null, 2);
   const isGetMethod = method === "GET";

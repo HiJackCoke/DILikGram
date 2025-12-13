@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
@@ -30,28 +30,8 @@ export default function DynamicNodeEditor({
   edges,
   onSave,
 }: DynamicNodeEditorProps) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
-
-  // Compute initial data from node.data using useMemo
-  const initialData = useMemo(() => {
-    const data: Record<string, unknown> = {};
-    Object.entries(node.data).forEach(([key, value]) => {
-      // Exclude readOnly fields
-      if (!node.type) return;
-
-      const fieldConfig = getFieldConfig(node.type, key);
-
-      if (fieldConfig) {
-        data[key] = value;
-      }
-    });
-    return data;
-  }, [node.data, node.type]);
-
-  // Sync formData when initialData changes
-  useEffect(() => {
-    setFormData(initialData);
-  }, [initialData]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [formData, setFormData] = useState<Record<string, any>>(node.data);
 
   const handleFieldChange = (key: string, value: unknown) => {
     setFormData((prev) => updateStateByNestedPath(prev, key, value));
@@ -65,6 +45,7 @@ export default function DynamicNodeEditor({
       // Save with generated code
       onSave({
         ...formData,
+
         execution: {
           ...node.data.execution,
           config: {
@@ -218,7 +199,10 @@ export default function DynamicNodeEditor({
             if (!fieldDef.key) return null;
 
             // Hide body field when method is GET
-            if (fieldDef.key === "body" && formData.method === "GET") {
+            if (
+              fieldDef.key === "http.body" &&
+              formData.http?.method === "GET"
+            ) {
               return null;
             }
 
