@@ -21,7 +21,7 @@ import type {
   ExecutionData,
   WorkflowRuntimeState,
   WorkflowMode,
-} from "@/types/execution";
+} from "@/types/workflow";
 
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { NodeProps, Position, Node } from "react-cosmos-diagram";
-import type { ExecutionData } from "./execution";
+import type { ExecutionData } from "./workflow";
 
 // ============================================
 // Port 타입 정의

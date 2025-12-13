@@ -6,7 +6,7 @@ import {
   useRef,
 } from "react";
 import type { ReactNode } from "react";
-import type { ExecutionConfig } from "@/types/execution";
+import type { ExecutionConfig } from "@/types/workflow";
 import ExecutorEditorModal from "@/components/ExecutorEditor";
 import type { WorkflowNodeProps } from "@/types/nodes";
 import type { ExecutorEditorState, ExecutorOnSave } from "./type";
@@ -86,7 +86,7 @@ export function ExecutorEditorProvider({
 }
 
 // Hook exported separately to satisfy react-refresh rules
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 export function useExecutorEditorContext() {
   const context = useContext(ExecutorEditorContext);
   if (!context) {

@@ -5,7 +5,7 @@ import type {
   ExecutionConfig,
   ExecutorFunction,
   ExecutionResult,
-} from "@/types/execution";
+} from "@/types/workflow";
 import type { WorkflowNodeType } from "@/types/nodes";
 
 /**

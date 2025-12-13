@@ -11,7 +11,7 @@ import {
   stringifyForDisplay,
 } from "@/utils/workflow";
 
-import type { ExecutionConfig } from "@/types/execution";
+import type { ExecutionConfig } from "@/types/workflow";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> & {

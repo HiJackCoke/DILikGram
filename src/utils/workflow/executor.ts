@@ -11,7 +11,7 @@ import type {
   OnNodeUpdateCallback,
   OnEdgeUpdateCallback,
   WorkflowExecutorConfig,
-} from "@/types/execution";
+} from "@/types/workflow";
 import { compileExecutor, executeFunction } from "./runtime";
 
 /**

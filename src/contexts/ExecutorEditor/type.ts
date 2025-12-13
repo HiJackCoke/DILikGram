@@ -1,4 +1,4 @@
-import type { ExecutionConfig } from "@/types/execution";
+import type { ExecutionConfig } from "@/types/workflow";
 import type { WorkflowNodeType } from "@/types/nodes";
 
 export interface ExecutorEditorState {

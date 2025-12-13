@@ -4,7 +4,7 @@
  * These helpers provide TypeScript type inference for executor functions
  * while maintaining string-based storage for serialization.
  */
-import type { ExecutionConfig } from "@/types/execution";
+import type { ExecutionConfig } from "@/types/workflow";
 import type { ServiceNodeData } from "@/types/nodes";
 
 /**

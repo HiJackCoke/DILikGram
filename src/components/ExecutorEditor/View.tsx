@@ -1,5 +1,5 @@
 import { Play, AlertTriangle, Zap, Code } from "lucide-react";
-import type { ExecutionConfig } from "@/types/execution";
+import type { ExecutionConfig } from "@/types/workflow";
 import type { WorkflowNodeType } from "@/types/nodes";
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 
