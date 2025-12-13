@@ -91,6 +91,7 @@ export type TaskNodeProps = WorkflowNodeProps<TaskNodeData>;
 export type DecisionNodeData = {
   title: string;
   condition?: string;
+  mode?: EditMode;
 };
 
 export type DecisionNodeProps = WorkflowNodeProps<DecisionNodeData>;
@@ -100,7 +101,7 @@ export type DecisionNodeProps = WorkflowNodeProps<DecisionNodeData>;
 // ============================================
 export type ServiceType = "api" | "database" | "email" | "webhook" | "custom";
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
-export type ServiceNodeMode = "code" | "panel";
+export type EditMode = "code" | "panel";
 
 export type ServiceNodeData = {
   icon?: ReactNode;
@@ -109,7 +110,7 @@ export type ServiceNodeData = {
 
   status?: NodeStatus;
   serviceType?: ServiceType;
-  mode?: ServiceNodeMode;
+  mode?: EditMode;
   headers?: HeadersInit;
   body?: Record<string, unknown>;
   method?: HttpMethod;

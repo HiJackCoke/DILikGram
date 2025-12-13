@@ -17,7 +17,7 @@ import { generateFunctionCodeFromPanel } from "@/utils/workflow";
 import type { WorkflowNode, NodePort } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 import type { FieldConfig, TabOption } from "@/types/editor";
-import type { KeysOfUnion } from "@/types/utils";
+import type { DeepKeysOfUnion } from "@/types/utils";
 
 interface DynamicNodeEditorProps {
   node: WorkflowNode;
@@ -84,7 +84,7 @@ export default function DynamicNodeEditor({
   const renderFieldByConfig = (config: FieldConfig, fieldKey: string) => {
     const fieldValue =
       getValueByNestedPath(formData, fieldKey) ??
-      node.data[fieldKey as keyof typeof node.data];
+      getValueByNestedPath(node.data, fieldKey);
 
     switch (config.type) {
       case "text":
@@ -178,7 +178,7 @@ export default function DynamicNodeEditor({
   };
 
   const renderField = (
-    key: KeysOfUnion<WorkflowNode["data"]>,
+    key: DeepKeysOfUnion<WorkflowNode["data"]>,
     value: unknown
   ) => {
     // Get field config from fixtures only
@@ -236,7 +236,7 @@ export default function DynamicNodeEditor({
   return (
     <div className="space-y-4">
       {Object.entries(node.data).map(([key, value]) =>
-        renderField(key as KeysOfUnion<WorkflowNode["data"]>, value)
+        renderField(key as DeepKeysOfUnion<WorkflowNode["data"]>, value)
       )}
 
       <button

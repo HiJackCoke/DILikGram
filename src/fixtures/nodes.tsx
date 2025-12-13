@@ -68,6 +68,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
       data: {
         title: "Decision",
         condition: "Enter condition",
+        mode: "panel",
         ports: [
           { id: "input", position: Position.Top, type: "target" },
           { id: "yes", position: Position.Right, type: "source", label: "Yes" },
@@ -207,25 +208,53 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Condition",
     placeholder: "Enter decision condition",
   },
+  mode: {
+    type: "tab",
+    label: "Editing Mode",
+    options: [
+      {
+        label: "Panel",
+        value: "panel",
+        options: [
+          {
+            key: "execution.config.nodeData.inputData",
+            type: "keyvalue",
+            label: "Condition",
+            keySchema: {
+              inputData: {
+                valueType: "text",
+                readOnly: false,
+              },
+              outputData: {
+                valueType: "text",
+                readOnly: true,
+              },
+            },
+          },
+        ],
+      },
+      { label: "Code", value: "code", options: [] },
+    ],
+  },
+  // "execution.config.nodeData.inputData": {
+  //   type: "keyvalue",
+  //   label: "Type Metadata",
+  //   keySchema: {
+  //     inputData: {
+  //       valueType: "text",
+  //       readOnly: false,
+  //     },
+  //     outputData: {
+  //       valueType: "text",
+  //       readOnly: true,
+  //     },
+  //   },
+  //   // editable: false,
+  // },
   ports: {
     type: "port",
     label: "Ports",
     readOnly: true,
-  },
-  "execution.config.nodeData.inputData": {
-    type: "keyvalue",
-    label: "Type Metadata",
-    keySchema: {
-      inputData: {
-        valueType: "text",
-        readOnly: false,
-      },
-      outputData: {
-        valueType: "text",
-        readOnly: true,
-      },
-    },
-    // editable: false,
   },
 };
 

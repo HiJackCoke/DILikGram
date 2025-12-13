@@ -1,6 +1,6 @@
 import type { KeySchema } from "@/components/KeyValueEditor/types";
 import type { WorkflowNode } from "./nodes";
-import type { KeysOfUnion } from "./utils";
+import type { DeepKeysOfUnion } from "./utils";
 
 export type FieldType =
   | "text"
@@ -13,7 +13,7 @@ export type FieldType =
   | "port";
 
 type TabItemOptions = FieldConfig & {
-  key: KeysOfUnion<WorkflowNode["data"]>;
+  key: DeepKeysOfUnion<WorkflowNode["data"]>;
 };
 export interface TabOption {
   label: string;

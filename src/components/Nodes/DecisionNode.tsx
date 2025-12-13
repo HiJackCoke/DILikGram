@@ -87,11 +87,12 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
               <GitBranch className="w-6 h-6 text-yellow-900" />
               {/* Executor Configuration Button */}
               <button
+                disabled={data.mode === "panel"}
                 onClick={handleOpenExecutorEditor}
-                className={`p-0.5 rounded transition ${
-                  hasExecutor
+                className={`p-1 rounded transition ${
+                  hasExecutor && data.mode === "code"
                     ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                    : "bg-white/20 text-white hover:bg-white/30"
                 }`}
                 title="Configure evaluator function"
               >

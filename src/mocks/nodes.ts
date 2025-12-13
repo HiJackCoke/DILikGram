@@ -49,6 +49,7 @@ return "REST API";`
     data: {
       title: "데이터 검증",
       condition: "isValid?",
+      mode: "panel",
       ports: [
         { id: "input", position: Position.Top, type: "target" as const },
         {
