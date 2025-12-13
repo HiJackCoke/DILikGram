@@ -113,7 +113,7 @@ export default function WorkflowPage() {
     },
     [setEdges]
   );
-  console.log(nodes);
+
   // Handle execution config save
   const handleExecutorSave = useCallback(
     (nodeId: string, config: ExecutionConfig) => {

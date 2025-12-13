@@ -50,6 +50,11 @@ export type OnEdgeUpdateCallback = (
 ) => void;
 
 /**
+ * Callback invoked when all workflow execution is complete with final node states
+ */
+export type OnNodeUpdateEndCallback = (nodes: WorkflowNode[]) => void;
+
+/**
  * Configuration object for WorkflowExecutor
  */
 export type WorkflowExecutorConfig = {
@@ -65,6 +70,8 @@ export type WorkflowExecutorConfig = {
   onNodeUpdate?: OnNodeUpdateCallback;
   /** Optional callback invoked when edge data updates */
   onEdgeUpdate?: OnEdgeUpdateCallback;
+  /** Optional callback invoked when all execution is complete with final nodes */
+  onNodeUpdateEnd?: OnNodeUpdateEndCallback;
 };
 
 export type ExecutionError = {

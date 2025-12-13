@@ -10,6 +10,7 @@ import type {
   OnStateChangeCallback,
   OnNodeUpdateCallback,
   OnEdgeUpdateCallback,
+  OnNodeUpdateEndCallback,
   WorkflowExecutorConfig,
 } from "@/types/workflow";
 import { compileExecutor, executeFunction } from "./runtime";
@@ -27,6 +28,7 @@ export class WorkflowExecutor {
   private onStateChange: OnStateChangeCallback;
   private onNodeUpdate?: OnNodeUpdateCallback;
   private onEdgeUpdate?: OnEdgeUpdateCallback;
+  private onNodeUpdateEnd?: OnNodeUpdateEndCallback;
 
   // Executor function cache
   private executionCache = new Map<string, ExecutorFunction>();
@@ -38,6 +40,7 @@ export class WorkflowExecutor {
     this.onStateChange = config.onStateChange;
     this.onNodeUpdate = config.onNodeUpdate;
     this.onEdgeUpdate = config.onEdgeUpdate;
+    this.onNodeUpdateEnd = config.onNodeUpdateEnd;
     this.executionState = {
       isRunning: false,
       context: {
@@ -76,6 +79,11 @@ export class WorkflowExecutor {
 
       this.executionState.context.endTime = Date.now();
       this.notifyStateChange();
+
+      // 모든 실행이 끝나면 최종 노드 상태를 전달
+      if (this.onNodeUpdateEnd) {
+        this.onNodeUpdateEnd([...this.nodes]);
+      }
     }
   }
 
