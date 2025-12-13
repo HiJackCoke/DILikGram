@@ -3,6 +3,8 @@ import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 import DynamicNodeEditor from "./Editor";
 
+import useKeyPress from "@/hooks/useKeyPress";
+
 interface PropertiesPanelModalProps {
   node?: WorkflowNode;
   edges: WorkflowEdge[];
@@ -18,6 +20,10 @@ export default function PropertiesPanelModal({
   onSave,
   onClose,
 }: PropertiesPanelModalProps) {
+  useKeyPress("escape", () => {
+    onClose();
+  });
+
   const renderEditor = () => {
     if (!node) return null;
 
@@ -54,7 +60,7 @@ export default function PropertiesPanelModal({
             )}
           </div>
           <button
-            onClick={onClose}
+            onClick={() => onClose()}
             className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-slate-400" />
