@@ -12,7 +12,7 @@ import {
   getValueByNestedPath,
   updateStateByNestedPath,
 } from "@/utils/formFieldInference";
-import { generateFunctionCodeFromPanel } from "@/utils/executorHelpers";
+import { generateFunctionCodeFromPanel } from "@/utils/workflow";
 
 import type { WorkflowNode, NodePort } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";

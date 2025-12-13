@@ -14,7 +14,7 @@ import { initialEdges } from "@/mocks/edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
-import { createWorkflowExecutor } from "@/utils/workflowExecution";
+import { createWorkflowExecutor } from "@/utils/workflow";
 import type { WorkflowEdge } from "@/types/edges";
 import type {
   ExecutionConfig,

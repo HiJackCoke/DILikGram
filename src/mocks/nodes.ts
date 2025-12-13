@@ -1,6 +1,6 @@
 import type { WorkflowNode } from "@/types/nodes";
 import { Position } from "react-cosmos-diagram";
-import { createTypedExecutor } from "@/utils/executorHelpers";
+import { createTypedExecutor } from "@/utils/workflow";
 
 export const initialNodes: WorkflowNode[] = [
   {

@@ -5,11 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import Modal from "@/components/Modal";
 import ExecutorEditorView from "./View";
 
-import { compileExecutor, detectAsync } from "@/utils/executorRuntime";
+import {
+  compileExecutor,
+  detectAsync,
+  stringifyForDisplay,
+} from "@/utils/workflow";
 
 import type { ExecutionConfig } from "@/types/execution";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
-import { stringifyForDisplay } from "@/utils/executorHelpers";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> & {
   open: boolean;

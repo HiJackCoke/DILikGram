@@ -1,7 +1,7 @@
 import { Play, AlertTriangle, Zap, Code } from "lucide-react";
 import type { ExecutionConfig } from "@/types/execution";
 import type { WorkflowNodeType } from "@/types/nodes";
-import { inferType, stringifyForDisplay } from "@/utils/executorHelpers";
+import { inferType, stringifyForDisplay } from "@/utils/workflow";
 
 type ExecutorEditorViewProps = {
   meta: ExecutionConfig["nodeData"];

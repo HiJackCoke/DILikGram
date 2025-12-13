@@ -12,7 +12,7 @@ import type {
   OnEdgeUpdateCallback,
   WorkflowExecutorConfig,
 } from "@/types/execution";
-import { compileExecutor, executeFunction } from "./executorRuntime";
+import { compileExecutor, executeFunction } from "./runtime";
 
 /**
  * 워크플로우 실행을 위한 유틸리티
