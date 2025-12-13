@@ -19,8 +19,17 @@ export default function KeyValueEditor({
   );
 
   const handleAdd = () => {
-    // Generate unique key
-    const newKey = `key${pairs.length + 1}`;
+    const globalConfig = keySchema["*"];
+
+    let newKey: string;
+    if (globalConfig?.keyType === "select" && globalConfig.keyOptions) {
+      // Use first option as default key
+      newKey = globalConfig.keyOptions[0]?.value || `key${pairs.length + 1}`;
+    } else {
+      // Generate unique key
+      newKey = `key${pairs.length + 1}`;
+    }
+
     onChange({ ...value, [newKey]: "" });
   };
 

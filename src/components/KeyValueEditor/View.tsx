@@ -24,23 +24,37 @@ export default function KeyValueEditorView({
       {/* Key-Value Pairs */}
       <div className="space-y-2">
         {pairs.map((pair, index) => {
-          const config = keySchema[pair.key] || {};
+          const config = keySchema["*"] || keySchema[pair.key] || {};
           const isKeyReadonly = config.readOnly ?? false;
           const valueType = config.valueType ?? "text";
+          const keyType = config.keyType ?? "text";
 
           return (
             <div key={index} className="flex gap-2 items-start">
-              {/* Key Input */}
+              {/* Key Input/Select */}
               <div className="flex-1">
-                <Input
-                  label=""
-                  value={pair.key}
-                  onChange={(newKey) =>
-                    onEdit(pair.key, newKey as string, pair.value)
-                  }
-                  placeholder={placeholder.key || "Key"}
-                  disabled={disabled || isKeyReadonly}
-                />
+                {keyType === "select" ? (
+                  <Select
+                    label=""
+                    value={pair.key}
+                    onChange={(newKey) => {
+                      if (newKey) onEdit(pair.key, newKey, pair.value);
+                    }}
+                    options={config.keyOptions || []}
+                    disabled={disabled || isKeyReadonly}
+                    searchable={false}
+                  />
+                ) : (
+                  <Input
+                    label=""
+                    value={pair.key}
+                    onChange={(newKey) =>
+                      onEdit(pair.key, newKey as string, pair.value)
+                    }
+                    placeholder={placeholder.key || "Key"}
+                    disabled={disabled || isKeyReadonly}
+                  />
+                )}
               </div>
 
               {/* Value Input */}

@@ -12,6 +12,8 @@ export interface KeySchema {
   valueType?: "text" | "number" | "select";
   readOnly?: boolean;
   options?: SelectOption[];
+  keyType?: "text" | "select";
+  keyOptions?: SelectOption[];
 }
 interface BaseKeyValueEditorProps {
   label: string;
