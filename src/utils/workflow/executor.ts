@@ -14,6 +14,7 @@ import type {
   WorkflowExecutorConfig,
 } from "@/types/workflow";
 import { compileExecutor, executeFunction } from "./runtime";
+import { getDataType } from "./helpers";
 
 /**
  * 워크플로우 실행을 위한 유틸리티
@@ -118,7 +119,7 @@ export class WorkflowExecutor {
 
     const transferData: EdgeTransferData = {
       payload: data,
-      dataType: typeof data,
+      dataType: getDataType(data),
       // size: this.getDataSize(data),
       timestamp: Date.now(),
     };

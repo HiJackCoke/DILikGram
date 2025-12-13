@@ -1,5 +1,5 @@
 import { getStepPath } from "react-cosmos-diagram";
-import { getEdgePaletteColor } from "./utils";
+import { getEdgePaletteColor, getFriendlyLabel } from "./utils";
 
 import type { WorkflowEdgeProps } from "@/types/edges";
 
@@ -35,6 +35,13 @@ export default function WorkflowEdge({
 
   const gradientId = `edge-gradient-${id}`;
 
+  const transferData = data?.transferData;
+
+  const dataIndicatorLabel = transferData
+    ? getFriendlyLabel(transferData.dataType)
+    : null;
+
+  const displayLabel = label ?? dataIndicatorLabel;
   return (
     <>
       {/* Gradient 정의 */}
@@ -71,13 +78,13 @@ export default function WorkflowEdge({
       />
 
       {/* 라벨 */}
-      {label && labelX && labelY && (
+      {displayLabel && labelX && labelY && (
         <g transform={`translate(${labelX}, ${labelY})`}>
           <rect
-            x={-20}
-            y={-10}
-            width={40}
-            height={20}
+            x={-35}
+            y={-15}
+            width={70}
+            height={30}
             rx={4}
             fill="white"
             stroke={COLORS.color}
@@ -93,7 +100,7 @@ export default function WorkflowEdge({
             fill="#374151"
             style={{ userSelect: "none" }}
           >
-            {label}
+            {displayLabel}
           </text>
         </g>
       )}
