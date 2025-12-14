@@ -12,7 +12,10 @@ import {
   getValueByNestedPath,
   updateStateByNestedPath,
 } from "@/utils/formFieldInference";
-import { generateFunctionCodeFromPanel } from "@/utils/workflow";
+import {
+  generateFunctionCodeFromPanel,
+  generateFunctionCodeFromDecisionPanel,
+} from "@/utils/workflow";
 
 import type { WorkflowNode, NodePort } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
@@ -39,7 +42,7 @@ export default function DynamicNodeEditor({
 
   const handleSave = () => {
     // For ServiceNode in Panel Mode, auto-generate functionCode
-    if (node.type === "service") {
+    if (node.type === "service" && formData.mode === "panel") {
       const functionCode = generateFunctionCodeFromPanel(formData);
 
       // Save with generated code
@@ -58,7 +61,27 @@ export default function DynamicNodeEditor({
       return;
     }
 
-    // Normal save for other nodes or Code Mode ServiceNode
+    // For DecisionNode in Panel Mode, auto-generate functionCode
+    if (node.type === "decision" && formData.mode === "panel") {
+      const functionCode = generateFunctionCodeFromDecisionPanel(formData);
+
+      // Save with generated code
+      onSave({
+        ...formData,
+
+        execution: {
+          ...node.data.execution,
+          config: {
+            ...node.data.execution?.config,
+            functionCode,
+            lastModified: Date.now(),
+          },
+        },
+      } as Partial<WorkflowNode["data"]>);
+      return;
+    }
+
+    // Normal save for other nodes or Code Mode
     onSave(formData as Partial<WorkflowNode["data"]>);
   };
 

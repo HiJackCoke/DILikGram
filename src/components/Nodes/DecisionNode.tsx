@@ -102,9 +102,11 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
             <div className="font-semibold text-yellow-900 text-sm max-w-[100px] truncate">
               {data.title}
             </div>
-            {data.condition && (
+            {data.condition && Object.keys(data.condition).length > 0 && (
               <div className="text-yellow-800 text-xs mt-1 max-w-[90px] truncate opacity-80">
-                {data.condition}
+                {Object.entries(data.condition)
+                  .map(([op, key]) => `${op} ${key}`)
+                  .join(", ")}
               </div>
             )}
           </div>

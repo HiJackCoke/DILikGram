@@ -5,7 +5,7 @@
  * while maintaining string-based storage for serialization.
  */
 import type { ExecutionConfig } from "@/types/workflow";
-import type { ServiceNodeData } from "@/types/nodes";
+import type { ServiceNodeData, DecisionNodeData } from "@/types/nodes";
 
 /**
  * Create a typed executor with full type inference
@@ -162,6 +162,67 @@ export function generateFunctionCodeFromPanel(
   code += `return response.json()`;
 
   return code;
+}
+
+export function generateFunctionCodeFromDecisionPanel(
+  input: Pick<DecisionNodeData, "condition">
+): string {
+  const { condition = {} } = input;
+
+  const entries = Object.entries(condition) as [
+    import("@/types/nodes").ConditionOperator,
+    string,
+  ][];
+
+  if (entries.length === 0) {
+    return `// No conditions specified\nreturn {\n  ...inputData,\n  success: false\n};`;
+  }
+
+  const conditionExpressions: string[] = [];
+
+  entries.forEach(([operator, key]) => {
+    if (!key) return;
+
+    let expression: string;
+    switch (operator) {
+      case "has":
+        expression = `"${key}" in inputData`;
+        break;
+      case "hasNot":
+        expression = `!("${key}" in inputData)`;
+        break;
+      case "truthy":
+        expression = `Boolean(inputData["${key}"])`;
+        break;
+      case "falsy":
+        expression = `!Boolean(inputData["${key}"])`;
+        break;
+      default:
+        return;
+    }
+    conditionExpressions.push(expression);
+  });
+
+  if (conditionExpressions.length === 0) {
+    return `// No valid conditions\nreturn {\n  ...inputData,\n  success: false\n};`;
+  }
+
+  const combinedExpression =
+    conditionExpressions.length === 1
+      ? conditionExpressions[0]
+      : conditionExpressions.join(" && ");
+
+  const conditionSummary = entries
+    .map(([op, key]) => `${op} ${key}`)
+    .join(", ");
+
+  return `// Auto-generated conditions: ${conditionSummary}
+const success = ${combinedExpression};
+
+return {
+  ...inputData,
+  success
+};`;
 }
 
 export function getDataType(value: unknown) {

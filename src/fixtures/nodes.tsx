@@ -67,7 +67,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
       type: "decision",
       data: {
         title: "Decision",
-        condition: "Enter condition",
+        condition: {},
         mode: "panel",
         ports: [
           { id: "input", position: Position.Top, type: "target" },
@@ -205,11 +205,6 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Title",
     placeholder: "Enter decision title",
   },
-  condition: {
-    type: "textarea",
-    label: "Condition",
-    placeholder: "Enter decision condition",
-  },
   mode: {
     type: "tab",
     label: "Editing Mode",
@@ -219,17 +214,19 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
         value: "panel",
         options: [
           {
-            key: "execution.config.nodeData.inputData",
+            key: "condition",
             type: "keyvalue",
-            label: "Condition",
+            label: "Conditions",
             keySchema: {
-              inputData: {
+              "*": {
+                keyType: "select",
+                keyOptions: [
+                  { label: "Has", value: "has" },
+                  { label: "Has Not", value: "hasNot" },
+                  { label: "Truthy", value: "truthy" },
+                  { label: "Falsy", value: "falsy" },
+                ],
                 valueType: "text",
-                readOnly: false,
-              },
-              outputData: {
-                valueType: "text",
-                readOnly: true,
               },
             },
           },
@@ -238,21 +235,6 @@ const DECISION_NODE_FIELDS: Record<string, FieldConfig> = {
       { label: "Code", value: "code", options: [] },
     ],
   },
-  // "execution.config.nodeData.inputData": {
-  //   type: "keyvalue",
-  //   label: "Type Metadata",
-  //   keySchema: {
-  //     inputData: {
-  //       valueType: "text",
-  //       readOnly: false,
-  //     },
-  //     outputData: {
-  //       valueType: "text",
-  //       readOnly: true,
-  //     },
-  //   },
-  //   // editable: false,
-  // },
   ports: {
     type: "port",
     label: "Ports",

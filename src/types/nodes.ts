@@ -90,7 +90,7 @@ export type TaskNodeProps = WorkflowNodeProps<TaskNodeData>;
 // ============================================
 export type DecisionNodeData = {
   title: string;
-  condition?: string;
+  condition?: ConditionConfig;
   mode?: EditMode;
 };
 
@@ -109,6 +109,10 @@ export type HttpConfig = {
   headers?: HeadersInit;
   body?: Record<string, unknown>;
 };
+
+export type ConditionOperator = "has" | "hasNot" | "truthy" | "falsy";
+
+export type ConditionConfig = Partial<Record<ConditionOperator, string>>;
 
 export type ServiceNodeData = {
   icon?: ReactNode;
