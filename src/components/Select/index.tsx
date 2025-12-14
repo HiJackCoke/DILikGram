@@ -3,6 +3,23 @@ import SelectView from "./View";
 import type { SelectProps, SelectOption } from "./types";
 
 export default function Select<T = string>(props: SelectProps<T>) {
+  const {
+    label,
+    placeholder,
+    required,
+    disabled,
+    status,
+    errorMessage,
+    options,
+    searchable,
+    searchPlaceholder,
+    maxHeight,
+    mode,
+    size,
+    value,
+    onChange,
+  } = props;
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedIndexState, setFocusedIndexState] = useState(0);
@@ -12,37 +29,37 @@ export default function Select<T = string>(props: SelectProps<T>) {
 
   // Get selected values as array for consistent handling
   const selectedValues = useMemo(() => {
-    if (props.mode === "multiple") {
-      return props.value;
+    if (mode === "multiple") {
+      return value;
     } else {
-      return props.value !== null ? [props.value] : [];
+      return value !== null ? [value] : [];
     }
-  }, [props.mode, props.value]);
+  }, [mode, value]);
 
   const filteredOptions = searchQuery.trim()
-    ? props.options.filter((o) =>
+    ? options.filter((o) =>
         o.label.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : props.options;
+    : options;
   const maxIndex = Math.max(0, filteredOptions.length - 1);
   const focusedIndex = Math.min(focusedIndexState ?? 0, maxIndex);
 
   // Display value formatting
   const displayValue = useMemo(() => {
-    if (props.mode === "multiple") {
-      const count = props.value.length;
+    if (mode === "multiple") {
+      const count = value.length;
       if (count === 0) return "";
       if (count === 1) {
-        const option = props.options.find((o) => o.value === props.value[0]);
+        const option = options.find((o) => o.value === value[0]);
         return option?.label || "";
       }
       return `${count} items selected`;
     } else {
-      if (!props.value) return "";
-      const option = props.options.find((o) => o.value === props.value);
+      if (!value) return "";
+      const option = options.find((o) => o.value === value);
       return option?.label || "";
     }
-  }, [props.value, props.options, props.mode]);
+  }, [value, options, mode]);
 
   // Click-outside detection using onBlur
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -84,13 +101,13 @@ export default function Select<T = string>(props: SelectProps<T>) {
   // Auto-focus search input or dropdown when it opens
   useLayoutEffect(() => {
     if (isOpen) {
-      if (props.searchable && searchInputRef.current) {
+      if (searchable && searchInputRef.current) {
         searchInputRef.current.focus();
       } else if (dropdownRef.current) {
         dropdownRef.current.focus();
       }
     }
-  }, [isOpen, props.searchable]);
+  }, [isOpen, searchable]);
 
   const handleTriggerClick = () => {
     setIsOpen(!isOpen);
@@ -107,52 +124,53 @@ export default function Select<T = string>(props: SelectProps<T>) {
   const handleOptionClick = (option: SelectOption<T>) => {
     if (option.disabled) return;
 
-    if (props.mode === "multiple") {
-      const isSelected = props.value.includes(option.value);
+    if (mode === "multiple") {
+      const isSelected = value.includes(option.value);
 
       if (isSelected) {
         // Remove from selection
-        props.onChange(props.value.filter((v) => v !== option.value));
+        onChange(value.filter((v) => v !== option.value));
       } else {
         // Add to selection (check maxSelections)
-        if (props.maxSelections && props.value.length >= props.maxSelections) {
+        if (props.maxSelections && value.length >= props.maxSelections) {
           return; // Already at max
         }
-        props.onChange([...props.value, option.value]);
+        onChange([...value, option.value]);
       }
       // Keep dropdown open in multiple-select
     } else {
-      props.onChange(option.value);
+      onChange(option.value);
       setIsOpen(false);
       setSearchQuery("");
     }
   };
 
-  const handleRemoveTag = (value: T) => {
-    if (props.mode === "multiple") {
-      props.onChange(props.value.filter((v) => v !== value));
+  const handleRemoveTag = (tag: T) => {
+    if (mode === "multiple") {
+      onChange(value.filter((v) => v !== tag));
     }
   };
 
   return (
     <SelectView
-      label={props.label}
+      label={label}
+      placeholder={placeholder}
+      required={required}
+      disabled={disabled}
+      status={status}
+      errorMessage={errorMessage}
+      options={options}
+      searchable={searchable}
+      searchPlaceholder={searchPlaceholder}
+      maxHeight={maxHeight}
+      mode={mode}
+      size={size}
       displayValue={displayValue}
-      placeholder={props.placeholder}
-      required={props.required}
-      disabled={props.disabled}
-      status={props.status || "default"}
-      errorMessage={props.errorMessage}
       isOpen={isOpen}
       focusedIndex={focusedIndex}
-      options={props.options}
       filteredOptions={filteredOptions}
       selectedValues={selectedValues}
-      searchable={props.searchable || false}
       searchQuery={searchQuery}
-      searchPlaceholder={props.searchPlaceholder}
-      maxHeight={props.maxHeight}
-      mode={props.mode || "single"}
       dropdownRef={dropdownRef}
       searchInputRef={searchInputRef}
       onTriggerClick={handleTriggerClick}

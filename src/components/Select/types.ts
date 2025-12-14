@@ -1,5 +1,6 @@
 export type SelectStatus = "default" | "error" | "valid";
 export type Mode = "single" | "multiple";
+export type SelectSize = "sm" | "md" | "lg";
 
 export interface SelectOption<T = string> {
   label: string;
@@ -9,7 +10,8 @@ export interface SelectOption<T = string> {
 
 // Base props shared by single and multi-select
 interface BaseSelectProps<T = string> {
-  label: string;
+  mode?: Mode;
+  label?: string;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -18,6 +20,7 @@ interface BaseSelectProps<T = string> {
   searchable?: boolean;
   searchPlaceholder?: string;
   maxHeight?: number;
+  size?: SelectSize;
   options: SelectOption<T>[];
 }
 
@@ -49,8 +52,6 @@ export interface SelectViewProps<T = string> extends BaseSelectProps<T> {
   filteredOptions: SelectOption<T>[];
   selectedValues: T[];
   searchQuery: string;
-
-  mode: Mode;
 
   dropdownRef: React.RefObject<HTMLDivElement | null>;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
