@@ -13,8 +13,8 @@ import {
   updateStateByNestedPath,
 } from "@/utils/formFieldInference";
 import {
-  generateFunctionCodeFromPanel,
-  generateFunctionCodeFromDecisionPanel,
+  generatePanelCode,
+  supportsPanelCodeGeneration,
 } from "@/utils/workflow";
 
 import type { WorkflowNode, NodePort } from "@/types/nodes";
@@ -41,47 +41,32 @@ export default function DynamicNodeEditor({
   };
 
   const handleSave = () => {
-    // For ServiceNode in Panel Mode, auto-generate functionCode
-    if (node.type === "service" && formData.mode === "panel") {
-      const functionCode = generateFunctionCodeFromPanel(formData);
+    // Unified panel code generation for all supported node types
+    if (
+      formData.mode === "panel" &&
+      node.type &&
+      supportsPanelCodeGeneration(node.type)
+    ) {
+      const functionCode = generatePanelCode(node.type, formData);
 
-      // Save with generated code
-      onSave({
-        ...formData,
-
-        execution: {
-          ...node.data.execution,
-          config: {
-            ...node.data.execution?.config,
-            functionCode,
-            lastModified: Date.now(),
+      if (functionCode) {
+        // Save with generated code
+        onSave({
+          ...formData,
+          execution: {
+            ...node.data.execution,
+            config: {
+              ...node.data.execution?.config,
+              functionCode,
+              lastModified: Date.now(),
+            },
           },
-        },
-      } as Partial<WorkflowNode["data"]>);
-      return;
+        } as Partial<WorkflowNode["data"]>);
+        return;
+      }
     }
 
-    // For DecisionNode in Panel Mode, auto-generate functionCode
-    if (node.type === "decision" && formData.mode === "panel") {
-      const functionCode = generateFunctionCodeFromDecisionPanel(formData);
-
-      // Save with generated code
-      onSave({
-        ...formData,
-
-        execution: {
-          ...node.data.execution,
-          config: {
-            ...node.data.execution?.config,
-            functionCode,
-            lastModified: Date.now(),
-          },
-        },
-      } as Partial<WorkflowNode["data"]>);
-      return;
-    }
-
-    // Normal save for other nodes or Code Mode
+    // Normal save for other cases (Code Mode or unsupported node types)
     onSave(formData as Partial<WorkflowNode["data"]>);
   };
 
