@@ -8,7 +8,6 @@ import "react-cosmos-diagram/dist/style.css";
 import { Square, Play } from "lucide-react";
 
 import Button from "@/components/Button";
-import Select from "@/components/Select";
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 import { initialNodes } from "@/mocks/nodes";
@@ -80,7 +79,6 @@ export default function WorkflowPage() {
       startTime: 0,
     },
   });
-  const [selectedMode, setSelectedMode] = useState<WorkflowMode>("auto");
   const executionRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
     null
   );
@@ -324,28 +322,12 @@ export default function WorkflowPage() {
               <option value="failure">실패 모드</option>
             </select> */}
 
-            <Select<WorkflowMode>
-              value={selectedMode}
-              options={[
-                { value: "auto", label: "자동 분기" },
-                { value: "success", label: "성공 모드" },
-                { value: "failure", label: "실패 모드" },
-              ]}
-              size="md"
-              disabled={executionState.isRunning}
-              onChange={(value) => {
-                if (value !== null) {
-                  setSelectedMode(value);
-                }
-              }}
-            />
-
             {/* Execute Button */}
             <Button
               palette="primary"
               icon={<Play />}
               iconPosition="left"
-              onClick={() => executeWorkflow(selectedMode)}
+              onClick={() => executeWorkflow("auto")}
               disabled={executionState.isRunning}
             >
               실행

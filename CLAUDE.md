@@ -95,15 +95,16 @@ All nodes share a common `WorkflowNodeState` which includes:
 The execution system (`src/utils/workflowExecution.ts`) uses a `WorkflowExecutor` class that:
 
 - Simulates workflow execution with 1-second delays per node
-- Supports two execution modes: "success" and "failure" for decision branching
 - Tracks execution state (current node, executed nodes, active edges)
 - Provides abort capability via AbortController
 - Animates edges during traversal
 
-Decision nodes automatically select branches based on execution mode:
+Decision nodes automatically select branches based on executor output:
 
-- Success mode follows "yes" edges
-- Failure mode follows "no" edges
+- Extracts `success` field from executor's outputData
+- `success: true` follows "yes" edges
+- `success: false` follows "no" edges
+- If success field is missing, defaults to "yes" path
 
 #### 3. Flow Highlighting System
 

@@ -5,7 +5,6 @@ import type {
   ExecutorFunction,
   ExecutionState,
   ExecutionData,
-  WorkflowMode,
   WorkflowRuntimeState,
   OnStateChangeCallback,
   OnNodeUpdateCallback,
@@ -22,7 +21,6 @@ import { getDataType } from "./helpers";
 export class WorkflowExecutor {
   private nodes: WorkflowNode[];
   private edges: WorkflowEdge[];
-  private mode: WorkflowMode;
   private executionState: WorkflowRuntimeState;
   private abortController: AbortController | null = null;
 
@@ -37,7 +35,7 @@ export class WorkflowExecutor {
   constructor(config: WorkflowExecutorConfig) {
     this.nodes = config.nodes;
     this.edges = config.edges;
-    this.mode = config.mode;
+    // mode is always "auto" now - no need to store it
     this.onStateChange = config.onStateChange;
     this.onNodeUpdate = config.onNodeUpdate;
     this.onEdgeUpdate = config.onEdgeUpdate;
@@ -317,12 +315,7 @@ export class WorkflowExecutor {
       );
     }
 
-    // Forced mode (not auto)
-    if (this.mode !== "auto") {
-      return this.mode === "success";
-    }
-
-    // Auto mode: extract from outputData
+    // Extract from outputData
     if (typeof outputData !== "object" || outputData === null) {
       console.warn(
         `Decision node ${node.id}: outputData is not an object. Falling back to true.`
@@ -613,9 +606,8 @@ export class WorkflowExecutor {
         (e.sourcePort === "no" || e.label === "No")
     );
 
-    // Use success field, fallback to mode if not set
-    const shouldTakeYesPath =
-      success !== undefined ? success : this.mode === "success";
+    // Use success field, fallback to true if not set
+    const shouldTakeYesPath = success !== undefined ? success : true;
 
     if (shouldTakeYesPath && yesEdge) {
       return children.find((c) => c.id === yesEdge.target) || null;

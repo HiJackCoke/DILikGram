@@ -44,10 +44,10 @@ return { ...nodeInput, apiData: data };
 
 #### Test 5: Decision Node Evaluator
 
-- [ ] Configure decision-1 evaluator: `return nodeInput`
-- [ ] Run workflow in success mode
+- [ ] Configure decision-1 evaluator: `return { success: true }`
+- [ ] Run workflow
 - [ ] Verify it takes "Yes" path (to service-1)
-- [ ] Modify evaluator to return false
+- [ ] Modify evaluator to return `{ success: false }`
 - [ ] Run again, verify it takes "No" path (to task-2)
 
 #### Test 6: Compilation Error Handling
@@ -85,7 +85,7 @@ return nodeInput;
 - [ ] Run workflow
 - [ ] Verify node uses default behavior:
   - Task/Service: identity function (output = input)
-  - Decision: mode-based (success/failure buttons)
+  - Decision: defaults to "yes" path
 
 #### Test 10: Data Flow Visualization
 

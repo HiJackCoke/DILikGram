@@ -7,11 +7,9 @@ import type { WorkflowEdge } from "./edges";
 
 /**
  * Workflow execution mode
- * - "auto": Decision nodes branch based on function result (outputData.success)
- * - "success": Force all Decision nodes to take "yes" path (debug/test mode)
- * - "failure": Force all Decision nodes to take "no" path (debug/test mode)
+ * Decision nodes branch based on function result (outputData.success)
  */
-export type WorkflowMode = "auto" | "success" | "failure";
+export type WorkflowMode = "auto";
 
 /**
  * Workflow runtime state
