@@ -302,9 +302,176 @@ export class WorkflowExecutor {
   }
 
   /**
-   * 특정 노드 실행
+   * Extract success value from decision node output
+   * Uses early return pattern to avoid nested if statements
+   * IMPORTANT: Should only be called for decision nodes
+   */
+  private extractDecisionSuccess(
+    node: WorkflowNode,
+    outputData: unknown
+  ): boolean {
+    // Assertion: this method should only be called for decision nodes
+    if (node.type !== "decision") {
+      throw new Error(
+        `extractDecisionSuccess should only be called for decision nodes, got ${node.type}`
+      );
+    }
+
+    // Forced mode (not auto)
+    if (this.mode !== "auto") {
+      return this.mode === "success";
+    }
+
+    // Auto mode: extract from outputData
+    if (typeof outputData !== "object" || outputData === null) {
+      console.warn(
+        `Decision node ${node.id}: outputData is not an object. Falling back to true.`
+      );
+      return true;
+    }
+
+    if (!("success" in outputData)) {
+      console.warn(
+        `Decision node ${node.id}: outputData has no success field. Falling back to true.`
+      );
+      return true;
+    }
+
+    const successValue = (outputData as { success: unknown }).success;
+    if (typeof successValue !== "boolean") {
+      console.warn(
+        `Decision node ${node.id}: success field is not boolean (${typeof successValue}). Falling back to true.`
+      );
+      return true;
+    }
+
+    return successValue;
+  }
+
+  /**
+   * Compute node output based on node type and executor
+   */
+  private async computeNodeOutput(
+    node: WorkflowNode,
+    inputData: unknown
+  ): Promise<{ outputData: unknown; success: boolean }> {
+    if (node.type === "start") {
+      return { outputData: null, success: true };
+    }
+
+    const execution = this.getExecutorForNode(node);
+
+    if (execution) {
+      return await this.runCustomExecution(node, execution, inputData);
+    } else {
+      return this.runDefaultExecution(node, inputData);
+    }
+  }
+
+  /**
+   * Run custom executor function
+   */
+  private async runCustomExecution(
+    node: WorkflowNode,
+    execution: ExecutorFunction,
+    inputData: unknown
+  ): Promise<{ outputData: unknown; success: boolean }> {
+    await this.delay(500);
+    const result = await executeFunction(execution, inputData, 30000);
+
+    if (!result.success) {
+      throw new Error(result.error?.message || "Execution failed");
+    }
+
+    const outputData = result.data;
+
+    // Only extract success for decision nodes
+    if (node.type === "decision") {
+      const success = this.extractDecisionSuccess(node, outputData);
+      return { outputData, success };
+    }
+
+    // Task/Service nodes: execution succeeded if we reach here
+    return { outputData, success: true };
+  }
+
+  /**
+   * Run default identity execution (no custom executor)
+   */
+  private runDefaultExecution(
+    node: WorkflowNode,
+    inputData: unknown
+  ): { outputData: unknown; success: boolean } {
+    if (node.type === "decision") {
+      console.warn(
+        `Decision node ${node.id}: no executor configured. Falling back to success=true.`
+      );
+      return { outputData: inputData, success: true };
+    }
+
+    // Task/Service nodes succeed by default (no custom executor)
+    return { outputData: inputData, success: true };
+  }
+
+  /**
+   * Notify UI that node is executing (show inputData)
+   */
+  private async notifyNodeExecuting(
+    nodeId: string,
+    inputData: unknown
+  ): Promise<void> {
+    if (!this.onNodeUpdate) return;
+
+    const executionData = this.buildExecutorData(
+      nodeId,
+      "executing",
+      inputData
+    );
+    this.onNodeUpdate(nodeId, executionData);
+    this.syncNodeAfterUpdate(nodeId, executionData);
+  }
+
+  /**
+   * Notify UI that node finished executing (show outputData)
+   */
+  private async notifyNodeExecuted(
+    nodeId: string,
+    outputData: unknown
+  ): Promise<void> {
+    if (!this.onNodeUpdate) return;
+
+    const executionData = this.buildExecutorData(
+      nodeId,
+      "executed",
+      outputData
+    );
+    this.onNodeUpdate(nodeId, executionData);
+    this.syncNodeAfterUpdate(nodeId, executionData);
+  }
+
+  /**
+   * Store execution output in context
+   */
+  private storeOutput(
+    nodeId: string,
+    outputData: unknown,
+    success: boolean,
+    startTime: number
+  ): void {
+    const executionTime = Date.now() - startTime;
+    this.executionState.context.outputs.set(nodeId, {
+      data: outputData,
+      timestamp: Date.now(),
+      executionTime,
+      success,
+    });
+  }
+
+  /**
+   * Execute a single node (orchestration only)
    */
   private async executeNode(nodeId: string): Promise<void> {
+    // 1. Pre-execution checks
     if (this.abortController?.signal.aborted) {
       throw new Error("Execution aborted");
     }
@@ -315,154 +482,107 @@ export class WorkflowExecutor {
     const startTime = Date.now();
 
     try {
-      // 1. Input 데이터 가져오기
+      // 2. Get input data
       const inputData = this.getNodeInput(nodeId);
 
-      // 2. 노드에 inputData 표시
-      if (this.onNodeUpdate) {
-        const executionData = this.buildExecutorData(
-          nodeId,
-          "executing",
-          inputData
-        );
-        this.onNodeUpdate(nodeId, executionData);
-        this.syncNodeAfterUpdate(nodeId, executionData);
-      }
+      // 3. Notify UI: node is executing
+      await this.notifyNodeExecuting(nodeId, inputData);
 
-      // 4. Execute node with custom execution or default behavior
-      let outputData: unknown;
-      let success: boolean = false; // Track success for DecisionNode
+      // 4. Execute node logic
+      const { outputData, success } = await this.computeNodeOutput(
+        node,
+        inputData
+      );
 
-      if (node.type === "start") {
-        // Start node: no transformation, pass null
-        outputData = null;
-      } else {
-        // Task/Service node: transform data
+      // 5. Store output
+      this.storeOutput(nodeId, outputData, success, startTime);
 
-        const execution = this.getExecutorForNode(node);
-        if (execution) {
-          await this.delay(500);
-          const result = await executeFunction(execution, inputData, 30000);
+      // 6. Notify UI: node finished
+      await this.notifyNodeExecuted(nodeId, outputData);
 
-          if (!result.success) {
-            throw new Error(result.error?.message || "Execution failed");
-          }
-
-          success =
-            node.type === "decision" && this.mode === "failure"
-              ? false
-              : result.success;
-          outputData = result.data;
-        } else {
-          // Default: identity function
-          await this.delay(1000);
-          outputData = inputData;
-        }
-      }
-
-      // if (!success) throw new Error("Execution failed");
-
-      // 5. Output 저장
-      const executionTime = Date.now() - startTime;
-      this.executionState.context.outputs.set(nodeId, {
-        data: outputData,
-        timestamp: Date.now(),
-        executionTime,
-        success, // Include success for DecisionNode
-      });
-
-      // 6. 노드에 결과 표시
-      if (this.onNodeUpdate) {
-        const executionData = this.buildExecutorData(
-          nodeId,
-          "executed",
-          outputData
-        );
-        this.onNodeUpdate(nodeId, executionData);
-        this.syncNodeAfterUpdate(nodeId, executionData);
-      }
-
-      // 8. 다음 노드 실행
-
+      // 7. Execute next nodes
       await this.executeNextNodes(nodeId);
     } catch (error) {
-      // 에러 처리
       this.handleExecutionError(nodeId, error as Error);
-      throw error; // 즉시 중단 (Fail-Fast)
+      throw error; // Fail-Fast
     }
   }
 
   /**
-   * 다음 노드들 실행
+   * Get list of children to execute based on node type
+   * - Decision nodes: returns single child selected by branch mode
+   * - Normal nodes: returns all children
+   */
+  private getChildrenToExecute(currentNode: WorkflowNode): WorkflowNode[] {
+    const allChildren = this.nodes.filter(
+      (node) => node.parentNode === currentNode.id
+    );
+
+    if (allChildren.length === 0) return [];
+
+    // Decision node: select one branch
+    if (currentNode.type === "decision") {
+      const selectedChild = this.selectBranchByMode(
+        currentNode.id,
+        allChildren
+      );
+      return selectedChild ? [selectedChild] : [];
+    }
+
+    // Normal node: all children
+    return allChildren;
+  }
+
+  /**
+   * Execute a child node with edge data transfer visualization
+   */
+  private async executeChildWithEdge(
+    currentNodeId: string,
+    child: WorkflowNode
+  ): Promise<void> {
+    // Find edge connecting current node to child
+    const edge = this.edges.find(
+      (e) => e.source === currentNodeId && e.target === child.id
+    );
+
+    // Transfer data through edge if exists
+    if (edge) {
+      const currentOutput =
+        this.executionState.context.outputs.get(currentNodeId);
+      const outputData = currentOutput?.data;
+
+      await this.transferDataThroughEdge(edge.id, outputData);
+      this.notifyStateChange();
+      await this.delay(500);
+    }
+
+    // Execute child node
+    await this.executeNode(child.id);
+
+    // Deactivate edge animation
+    if (edge) {
+      this.notifyStateChange();
+    }
+  }
+
+  /**
+   * Execute next nodes in workflow (orchestration only)
    */
   private async executeNextNodes(currentNodeId: string): Promise<void> {
     const currentNode = this.nodes.find((n) => n.id === currentNodeId);
     if (!currentNode) return;
 
-    // End 노드면 종료
+    // End node terminates execution
     if (currentNode.type === "end") {
       return;
     }
 
-    // 현재 노드의 자식 노드들 찾기
-    const children = this.nodes.filter(
-      (node) => node.parentNode === currentNodeId
-    );
+    // Get children to execute (decision node selects one, normal node gets all)
+    const childrenToExecute = this.getChildrenToExecute(currentNode);
 
-    if (children.length === 0) return;
-
-    // Decision 노드인 경우: 모킹 모드에 따라 분기 선택
-    if (currentNode.type === "decision") {
-      const selectedChild = this.selectBranchByMode(currentNodeId, children);
-      if (selectedChild) {
-        // 엣지 찾아서 데이터 전달 시각화
-        const edge = this.edges.find(
-          (e) => e.source === currentNodeId && e.target === selectedChild.id
-        );
-        if (edge) {
-          // 현재 노드의 output 가져오기
-          const currentOutput =
-            this.executionState.context.outputs.get(currentNodeId);
-          const outputData = currentOutput?.data;
-
-          await this.transferDataThroughEdge(edge.id, outputData); // 추가
-          this.notifyStateChange();
-          await this.delay(500);
-        }
-
-        await this.executeNode(selectedChild.id);
-
-        // 엣지 애니메이션 비활성화
-        if (edge) {
-          this.notifyStateChange();
-        }
-      }
-    } else {
-      // 일반 노드: 모든 자식 순차 실행
-      for (const child of children) {
-        // 엣지 애니메이션 활성화
-        const edge = this.edges.find(
-          (e) => e.source === currentNodeId && e.target === child.id
-        );
-
-        if (edge) {
-          // 현재 노드의 output 가져오기
-          const currentOutput =
-            this.executionState.context.outputs.get(currentNodeId);
-          const outputData = currentOutput?.data;
-
-          await this.transferDataThroughEdge(edge.id, outputData); // 추가
-          this.notifyStateChange();
-          await this.delay(500);
-        }
-
-        await this.executeNode(child.id);
-
-        // 엣지 애니메이션 비활성화
-        if (edge) {
-          this.notifyStateChange();
-        }
-      }
+    // Execute all children with edge visualization
+    for (const child of childrenToExecute) {
+      await this.executeChildWithEdge(currentNode.id, child);
     }
   }
 

@@ -5,8 +5,10 @@ import ReactDiagram, {
   useStore,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
-import { Square, CheckCircle, XCircle } from "lucide-react";
+import { Square, Play } from "lucide-react";
 
+import Button from "@/components/Button";
+import Select from "@/components/Select";
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 import { initialNodes } from "@/mocks/nodes";
@@ -78,6 +80,7 @@ export default function WorkflowPage() {
       startTime: 0,
     },
   });
+  const [selectedMode, setSelectedMode] = useState<WorkflowMode>("auto");
   const executionRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
     null
   );
@@ -309,30 +312,55 @@ export default function WorkflowPage() {
 
           {/* Execution Controls */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => executeWorkflow("success")}
+            {/* Mode Selector Dropdown */}
+            {/* <select
+              value={selectedMode}
+              onChange={(e) => setSelectedMode(e.target.value as WorkflowMode)}
               disabled={executionState.isRunning}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+              className="px-3 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 hover:bg-slate-600 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
-              <CheckCircle className="w-4 h-4" />
-              성공 실행
-            </button>
-            <button
-              onClick={() => executeWorkflow("failure")}
+              <option value="auto">자동 분기</option>
+              <option value="success">성공 모드</option>
+              <option value="failure">실패 모드</option>
+            </select> */}
+
+            <Select<WorkflowMode>
+              value={selectedMode}
+              options={[
+                { value: "auto", label: "자동 분기" },
+                { value: "success", label: "성공 모드" },
+                { value: "failure", label: "실패 모드" },
+              ]}
+              size="md"
               disabled={executionState.isRunning}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+              onChange={(value) => {
+                if (value !== null) {
+                  setSelectedMode(value);
+                }
+              }}
+            />
+
+            {/* Execute Button */}
+            <Button
+              palette="primary"
+              icon={<Play />}
+              iconPosition="left"
+              onClick={() => executeWorkflow(selectedMode)}
+              disabled={executionState.isRunning}
             >
-              <XCircle className="w-4 h-4" />
-              실패 실행
-            </button>
+              실행
+            </Button>
+
+            {/* Stop Button */}
             {executionState.isRunning && (
-              <button
+              <Button
+                palette="warning"
+                icon={<Square />}
+                iconPosition="left"
                 onClick={stopExecution}
-                className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors text-sm"
               >
-                <Square className="w-4 h-4" />
                 중단
-              </button>
+              </Button>
             )}
           </div>
 
