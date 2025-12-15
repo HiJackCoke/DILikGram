@@ -55,12 +55,8 @@ export function EndNode({ data, selected }: EndNodeProps) {
         bg-gradient-to-br ${gradient}
         flex items-center justify-center 
         shadow-lg transition-all duration-200 cursor-pointer
-        ${
-          selected
-            ? `ring-4 ${ring} scale-110 ${shadow} shadow-xl`
-            : "hover:scale-105 hover:shadow-xl"
-        }
-        ${data.state?.highlighted ? `ring-4 ${ring} scale-110` : ""}
+        ${selected ? `ring-4 ${ring} ${shadow} shadow-xl` : `hover:shadow-xl hover:${ring} hover:${shadow}`}
+        ${data.state?.highlighted ? `ring-4 ${ring}` : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
         ${executionStyles[data.execution?.state || "idle"]}
       `}

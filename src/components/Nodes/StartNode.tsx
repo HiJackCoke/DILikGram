@@ -25,10 +25,10 @@ export function StartNode({ data, selected }: StartNodeProps) {
         shadow-lg transition-all duration-200 cursor-pointer
         ${
           selected
-            ? "ring-4 ring-green-300 scale-110 shadow-green-200 shadow-xl"
-            : "hover:scale-105 hover:shadow-xl"
+            ? "ring-4 ring-green-300 shadow-green-200 shadow-xl"
+            : "hover:shadow-xl hover:ring-green-300 hover:shadow-green-200"
         }
-        ${data.state?.highlighted ? "ring-4 ring-green-400 scale-110" : ""}
+        ${data.state?.highlighted ? "ring-4 ring-green-400" : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
         ${executionStyles[data.execution?.state || "idle"]}
       `}

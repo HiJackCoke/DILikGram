@@ -41,35 +41,17 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
   };
 
   return (
-    <div className="decision-node relative">
+    <div className="decision-node relative group">
       {/* Diamond Shape Container */}
       <div
         className={`
+          group 
           relative w-36 h-36
           transition-all duration-200
-          ${selected ? "scale-110" : "hover:scale-105"}
-          ${data.state?.highlighted ? "scale-110" : ""}
           ${data.state?.dimmed ? "opacity-30" : ""}
           ${executionStyles[data.execution?.state || "idle"]}
         `}
       >
-        {/* Diamond Background */}
-        <div
-          className={`
-            absolute inset-0 transform rotate-45
-            bg-gradient-to-br from-palette-warning-bg to-palette-warning-border
-            rounded-lg shadow-lg
-            border-2 transition-all duration-200
-            ${
-              selected
-                ? "border-palette-warning-border shadow-yellow-200 shadow-xl"
-                : "border-palette-warning-bg hover:shadow-xl"
-            }
-            ${data.state?.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
-            ${executionRingStyles[data.execution?.state || "idle"]}
-          `}
-        />
-
         {/* Ports */}
         {ports.map((port) => (
           <Port
@@ -79,6 +61,24 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
             type={port.type}
           />
         ))}
+
+        {/* Diamond Background */}
+        <div
+          className={`
+            group-hover:shadow-xl group-hover:border-palette-warning-border group-hover:shadow-yellow-200
+            absolute inset-0 transform rotate-45
+            bg-gradient-to-br from-palette-warning-bg to-palette-warning-border
+            rounded-lg shadow-lg
+            border-2 transition-all duration-200
+            ${
+              selected
+                ? "border-palette-warning-border shadow-yellow-200 shadow-xl"
+                : "border-palette-warning-bg"
+            }
+            ${data.state?.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
+            ${executionRingStyles[data.execution?.state || "idle"]}
+          `}
+        />
 
         {/* Content - stays upright */}
         <div className="absolute inset-0 flex items-center justify-center">
