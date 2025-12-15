@@ -88,10 +88,10 @@ const PANEL_CODE_GENERATORS: Partial<
       let expression: string;
       switch (operator) {
         case "has":
-          expression = `"${key}" in inputData`;
+          expression = `(typeof inputData === "object" && inputData !== null ? ("${key}" in inputData) : false)`;
           break;
         case "hasNot":
-          expression = `!("${key}" in inputData)`;
+          expression = `(typeof inputData === "object" && inputData !== null ? !("${key}" in inputData) : true)`;
           break;
         case "truthy":
           expression = `Boolean(inputData["${key}"])`;

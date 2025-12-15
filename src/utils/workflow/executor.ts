@@ -372,13 +372,24 @@ export class WorkflowExecutor {
     await this.delay(500);
     const result = await executeFunction(execution, inputData, 30000);
 
+    // Handle execution errors differently based on node type
     if (!result.success) {
+      // Decision nodes: treat error as success: false (take "no" branch)
+      if (node.type === "decision") {
+        console.warn(
+          `Decision node ${node.id}: executor threw error. Treating as success: false.`,
+          result.error
+        );
+        return { outputData: result.error, success: false };
+      }
+
+      // Task/Service nodes: fail-fast (stop workflow)
       throw new Error(result.error?.message || "Execution failed");
     }
 
     const outputData = result.data;
 
-    // Only extract success for decision nodes
+    // Extract success from outputData for Decision nodes
     if (node.type === "decision") {
       const success = this.extractDecisionSuccess(node, outputData);
       return { outputData, success };
