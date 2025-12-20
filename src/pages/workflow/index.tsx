@@ -3,6 +3,10 @@ import ReactDiagram, {
   useNodesState,
   useEdgesState,
   useStore,
+  type Connection,
+  addEdge,
+  updateEdge,
+  MarkerType,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
 import { Square, Play } from "lucide-react";
@@ -10,8 +14,8 @@ import { Square, Play } from "lucide-react";
 import Button from "@/components/Button";
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
-import { initialNodes } from "@/mocks/nodes";
-import { initialEdges } from "@/mocks/edges";
+// import { initialNodes } from "@/mocks/nodes";
+// import { initialEdges } from "@/mocks/edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
@@ -68,8 +72,12 @@ function getNodeDimensions(type: string): { width: number; height: number } {
 }
 
 export default function WorkflowPage() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const edgeUpdateSuccessful = useRef(true);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode["data"]>(
+    []
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const [executionState, setExecutionState] = useState<WorkflowRuntimeState>({
     isRunning: false,
@@ -164,6 +172,59 @@ export default function WorkflowPage() {
   useEffect(() => {
     updateEdges(edges);
   }, [edges]);
+
+  const onConnect = (params: Connection) => {
+    setNodes((prevNodes) => {
+      const { source, target } = params;
+      if (!source || !target) return prevNodes;
+
+      const sourceNode = nodes.find((node) => node.id === source);
+      if (!sourceNode) return prevNodes;
+
+      return prevNodes.map((node) => {
+        if (!sourceNode.positionAbsolute) return node;
+
+        return node.id === target
+          ? {
+              ...node,
+              parentNode: source,
+              position: {
+                x: node.position.x - sourceNode.positionAbsolute.x,
+                y: node.position.y - sourceNode.positionAbsolute.y,
+              },
+            }
+          : node;
+      });
+    });
+
+    setEdges((eds) =>
+      addEdge(
+        { ...params, type: "workflow", markerEnd: { type: MarkerType.Arrow } },
+        eds
+      )
+    );
+  };
+
+  const onEdgeUpdateStart = useCallback(() => {
+    edgeUpdateSuccessful.current = false;
+  }, []);
+
+  const onEdgeUpdate = (
+    originEdge: WorkflowEdge,
+    newConnection: Connection
+  ) => {
+    edgeUpdateSuccessful.current = true;
+
+    setEdges((els) => updateEdge(originEdge, newConnection, els));
+  };
+
+  const onEdgeUpdateEnd = (_c: unknown, edge: WorkflowEdge) => {
+    if (!edgeUpdateSuccessful.current) {
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    }
+
+    edgeUpdateSuccessful.current = true;
+  };
 
   // DND 핸들러
   const handleDragOver = (e: React.DragEvent) => {
@@ -457,6 +518,10 @@ export default function WorkflowPage() {
           onPaneClick={resetSelectedElements}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onConnect={onConnect}
+          onEdgeUpdate={onEdgeUpdate}
+          onEdgeUpdateStart={onEdgeUpdateStart}
+          onEdgeUpdateEnd={onEdgeUpdateEnd}
         />
       </div>
     </>

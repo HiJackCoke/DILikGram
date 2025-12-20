@@ -14,7 +14,7 @@
   "dependencies": {
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
-    "react-cosmos-diagram": "^0.8.1",
+    "react-cosmos-diagram": "^0.8.2",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
     "vite-react-routes": "^0.5.0",
