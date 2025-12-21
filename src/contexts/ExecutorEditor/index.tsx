@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-} from "react";
+import { createContext, useState, useCallback, useRef, use } from "react";
 import type { ReactNode } from "react";
 import type { ExecutionConfig } from "@/types/workflow";
 import ExecutorEditorModal from "@/components/ExecutorEditor";
@@ -71,7 +65,7 @@ export function ExecutorEditorProvider({
   );
 
   return (
-    <ExecutorEditorContext.Provider value={{ open, close, registerOnSave }}>
+    <ExecutorEditorContext value={{ open, close, registerOnSave }}>
       {children}
 
       <ExecutorEditorModal
@@ -81,14 +75,14 @@ export function ExecutorEditorProvider({
         onSave={handleSave}
         onClose={close}
       />
-    </ExecutorEditorContext.Provider>
+    </ExecutorEditorContext>
   );
 }
 
 // Hook exported separately to satisfy react-refresh rules
- 
+
 export function useExecutorEditorContext() {
-  const context = useContext(ExecutorEditorContext);
+  const context = use(ExecutorEditorContext);
   if (!context) {
     throw new Error(
       "useExecutorEditorContext must be used within ExecutorEditorProvider"

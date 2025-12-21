@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { usePropertiesPanelContext } from "@/contexts/PropertiesPanel";
+import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import type { PropertiesOnSave } from "@/contexts/PropertiesPanel/type";
 
 export function usePropertiesOnSave(handler: PropertiesOnSave) {
-  const { registerOnSave } = usePropertiesPanelContext();
+  const { registerOnSave } = usePropertiesPanel();
 
   useEffect(() => {
     const unregister = registerOnSave(handler);

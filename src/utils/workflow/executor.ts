@@ -23,6 +23,7 @@ export class WorkflowExecutor {
   private edges: WorkflowEdge[];
   private executionState: WorkflowRuntimeState;
   private abortController: AbortController | null = null;
+  private startNodeId?: string;
 
   private onStateChange: OnStateChangeCallback;
   private onNodeUpdate?: OnNodeUpdateCallback;
@@ -35,6 +36,7 @@ export class WorkflowExecutor {
   constructor(config: WorkflowExecutorConfig) {
     this.nodes = config.nodes;
     this.edges = config.edges;
+    this.startNodeId = config.startNodeId;
     // mode is always "auto" now - no need to store it
     this.onStateChange = config.onStateChange;
     this.onNodeUpdate = config.onNodeUpdate;
@@ -61,9 +63,24 @@ export class WorkflowExecutor {
 
     try {
       // Start 노드 찾기
-      const startNode = this.nodes.find((node) => node.type === "start");
-      if (!startNode) {
-        throw new Error("Start node not found");
+      let startNode: WorkflowNode | undefined;
+
+      if (this.startNodeId) {
+        // Find the specific Start node by ID
+        startNode = this.nodes.find(
+          (node) => node.id === this.startNodeId && node.type === "start"
+        );
+        if (!startNode) {
+          throw new Error(
+            `Start node with ID ${this.startNodeId} not found`
+          );
+        }
+      } else {
+        // Fallback: Find first Start node (backward compatible)
+        startNode = this.nodes.find((node) => node.type === "start");
+        if (!startNode) {
+          throw new Error("Start node not found");
+        }
       }
 
       await this.executeNode(startNode.id);

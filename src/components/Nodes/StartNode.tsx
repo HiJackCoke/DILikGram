@@ -1,12 +1,27 @@
 import { Port, Position } from "react-cosmos-diagram";
 import { Play } from "lucide-react";
 import type { StartNodeProps, NodePort } from "@/types/nodes";
+import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 
-export function StartNode({ data, selected }: StartNodeProps) {
+export function StartNode({ data, selected, id }: StartNodeProps) {
+  const { executeFromStartNode, isExecuting, executingStartNodeId } =
+    useWorkflowExecution();
+
   const defaultPorts: NodePort[] = [
     { id: "output", position: Position.Bottom, type: "source" },
   ];
   const ports = data.ports || defaultPorts;
+
+  const isThisNodeExecuting = isExecuting && executingStartNodeId === id;
+  const isAnyExecuting = isExecuting;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't trigger diagram selection
+
+    if (isAnyExecuting) return; // Prevent multiple executions
+
+    executeFromStartNode(id);
+  };
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
@@ -18,11 +33,14 @@ export function StartNode({ data, selected }: StartNodeProps) {
   return (
     <div
       className={`
-        start-node
-        relative w-24 h-24 rounded-full 
+        start-node group
+        relative w-24 h-24 rounded-full
         bg-gradient-to-br from-palette-success-bg to-palette-success-border
-        flex items-center justify-center 
+        flex items-center justify-center
         shadow-lg transition-all duration-200 cursor-pointer
+        ${isThisNodeExecuting ? "scale-110 ring-4 ring-green-400 animate-pulse" : ""}
+        ${isAnyExecuting && !isThisNodeExecuting ? "opacity-50 cursor-not-allowed" : ""}
+        ${!isAnyExecuting ? "hover:scale-105 hover:shadow-xl active:scale-95" : ""}
         ${
           selected
             ? "ring-4 ring-green-300 shadow-green-200 shadow-xl"
@@ -32,6 +50,12 @@ export function StartNode({ data, selected }: StartNodeProps) {
         ${data.state?.dimmed ? "opacity-30" : ""}
         ${executionStyles[data.execution?.state || "idle"]}
       `}
+      onClick={handleClick}
+      title={
+        isAnyExecuting
+          ? "Execution in progress..."
+          : "Click to execute this flow"
+      }
     >
       {/* Ports */}
       {ports.map((port) => (
@@ -50,6 +74,18 @@ export function StartNode({ data, selected }: StartNodeProps) {
           {data.title || "Start"}
         </span>
       </div>
+
+      {/* Execution indicator */}
+      {isThisNodeExecuting && (
+        <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 rounded-full animate-ping" />
+      )}
+
+      {/* Hover hint */}
+      {!isAnyExecuting && (
+        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-green-300 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          Click to execute
+        </div>
+      )}
     </div>
   );
 }

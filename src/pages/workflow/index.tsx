@@ -1,38 +1,30 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import ReactDiagram, {
   useNodesState,
   useEdgesState,
   useStore,
-  type Connection,
   addEdge,
   updateEdge,
   MarkerType,
+  type Connection,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
-import { Square, Play } from "lucide-react";
 
-import Button from "@/components/Button";
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
-// import { initialNodes } from "@/mocks/nodes";
-// import { initialEdges } from "@/mocks/edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
-import { createWorkflowExecutor } from "@/utils/workflow";
 import type { WorkflowEdge } from "@/types/edges";
-import type {
-  ExecutionConfig,
-  ExecutionData,
-  WorkflowRuntimeState,
-  WorkflowMode,
-} from "@/types/workflow";
+import type { ExecutionConfig } from "@/types/workflow";
 
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
 import { usePropertiesOnSave } from "@/hooks/usePropertiesOnSave";
-import { usePropertiesPanelContext } from "@/contexts/PropertiesPanel";
+import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
+
+import ExecutionHeader from "./Header";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -78,96 +70,14 @@ export default function WorkflowPage() {
     []
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel();
 
-  const [executionState, setExecutionState] = useState<WorkflowRuntimeState>({
-    isRunning: false,
-    context: {
-      outputs: new Map(),
-      errors: new Map(),
-      startTime: 0,
-    },
-  });
-  const executionRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
-    null
-  );
+  useExecutorOnSave(handleExecutorSave);
+  usePropertiesOnSave(handlePropertiesSave);
 
   const resetSelectedElements = useStore(
     (store) => store.resetSelectedElements
   );
-
-  // 노드 업데이트 콜백
-  const handleNodeUpdate = useCallback(
-    (nodeId: string, executionData: ExecutionData) => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) =>
-          node.id === nodeId
-            ? { ...node, data: { ...node.data, execution: executionData } }
-            : node
-        )
-      );
-    },
-    [setNodes]
-  );
-
-  // 엣지 업데이트 콜백
-  const handleEdgeUpdate = useCallback(
-    (edgeId: string, data: Partial<WorkflowEdge["data"]>) => {
-      setEdges((prevEdges) =>
-        prevEdges.map((edge) =>
-          edge.id === edgeId
-            ? { ...edge, data: { ...edge.data, ...data } }
-            : edge
-        )
-      );
-    },
-    [setEdges]
-  );
-
-  // Handle execution config save
-  const handleExecutorSave = useCallback(
-    (nodeId: string, config: ExecutionConfig) => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => {
-          if (node.id === nodeId) {
-            const nodeData = node.data;
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                execution: {
-                  ...nodeData.execution,
-                  config,
-                },
-              },
-            };
-          }
-          return node;
-        })
-      );
-    },
-    [setNodes]
-  );
-  useExecutorOnSave(handleExecutorSave);
-
-  // Handle properties save
-  const handlePropertiesSave = useCallback(
-    (nodeId: string, data: Partial<WorkflowNode["data"]>) => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) =>
-          node.id === nodeId
-            ? { ...node, data: { ...node.data, ...data } }
-            : node
-        )
-      );
-    },
-    [setNodes]
-  );
-
-  usePropertiesOnSave(handlePropertiesSave);
-
-  // PropertiesPanel context
-  const { open: openPropertiesPanel, updateEdges } =
-    usePropertiesPanelContext();
 
   useEffect(() => {
     updateEdges(edges);
@@ -282,44 +192,45 @@ export default function WorkflowPage() {
     setNodes((prevNodes) => [...prevNodes, newNode]);
   };
 
-  // 선택된 노드 ID 추출
-  const selectedNodeId = nodes.find((node) => node.selected)?.id;
+  // Handle execution config save
+  function handleExecutorSave(nodeId: string, config: ExecutionConfig) {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
+        if (node.id === nodeId) {
+          const nodeData = node.data;
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              execution: {
+                ...nodeData.execution,
+                config,
+              },
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }
+
+  // Handle properties save
+  function handlePropertiesSave(
+    nodeId: string,
+    data: Partial<WorkflowNode["data"]>
+  ) {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) =>
+        node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
+      )
+    );
+  }
 
   // 선택된 노드의 플로우 경로 계산
   const { highlightedNodeIds, highlightedEdgeIds } = findFlowPath(
     nodes as WorkflowNode[],
     edges
   );
-  // 워크플로우 실행
-  const executeWorkflow = (mode: WorkflowMode) => {
-    if (executionState.isRunning) return;
-
-    // Executor 생성 및 실행
-    executionRef.current = createWorkflowExecutor({
-      nodes: nodes as WorkflowNode[],
-      edges,
-      mode,
-      onStateChange: (state) => {
-        setExecutionState(state);
-      },
-      onNodeUpdate: handleNodeUpdate,
-      onEdgeUpdate: handleEdgeUpdate,
-    });
-
-    executionRef.current.execute();
-  };
-  // 실행 중단
-  const stopExecution = () => {
-    executionRef.current?.abort();
-    setExecutionState({
-      isRunning: false,
-      context: {
-        outputs: new Map(),
-        errors: new Map(),
-        startTime: 0,
-      },
-    });
-  };
 
   // 노드에 하이라이트 상태 추가 (execution.state는 handleNodeUpdate에서 관리)
   const enhancedNodes = nodes.map((node) => ({
@@ -344,7 +255,7 @@ export default function WorkflowPage() {
       style: {
         ...edge.style,
         opacity:
-          hasSelectedNode(nodes as WorkflowNode[]) && !isHighlighted
+          hasSelectedNode(nodes) && !isHighlighted
             ? 0.2
             : edge.data?.animated
               ? 1
@@ -355,175 +266,32 @@ export default function WorkflowPage() {
   });
 
   return (
-    <>
-      <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        {/* Sidebar */}
-        <Sidebar />
+    <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <Sidebar />
 
-        {/* Header */}
-        <div className="absolute top-4 left-20 z-10 space-y-3">
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Workflow Builder
-            </h1>
-            <p className="text-slate-400 text-sm">react-cosmos-diagram</p>
-          </div>
+      <ExecutionHeader nodes={nodes} setNodes={setNodes} setEdges={setEdges} />
 
-          {/* Execution Controls */}
-          <div className="flex items-center gap-2">
-            {/* Mode Selector Dropdown */}
-            {/* <select
-              value={selectedMode}
-              onChange={(e) => setSelectedMode(e.target.value as WorkflowMode)}
-              disabled={executionState.isRunning}
-              className="px-3 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 hover:bg-slate-600 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-            >
-              <option value="auto">자동 분기</option>
-              <option value="success">성공 모드</option>
-              <option value="failure">실패 모드</option>
-            </select> */}
-
-            {/* Execute Button */}
-            <Button
-              palette="primary"
-              icon={<Play />}
-              iconPosition="left"
-              onClick={() => executeWorkflow("auto")}
-              disabled={executionState.isRunning}
-            >
-              실행
-            </Button>
-
-            {/* Stop Button */}
-            {executionState.isRunning && (
-              <Button
-                palette="warning"
-                icon={<Square />}
-                iconPosition="left"
-                onClick={stopExecution}
-              >
-                중단
-              </Button>
-            )}
-          </div>
-
-          {/* Status */}
-          {executionState.isRunning &&
-            (() => {
-              const currentNode = nodes.find(
-                (n) => n.data.execution?.state === "executing"
-              );
-              return currentNode ? (
-                <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">
-                  실행 중:{" "}
-                  <span className="font-semibold">{currentNode.id}</span>
-                </div>
-              ) : null;
-            })()}
-
-          {selectedNodeId && !executionState.isRunning && (
-            <div className="px-3 py-1.5 bg-purple-600/90 text-white rounded-lg text-sm">
-              선택된 노드:{" "}
-              <span className="font-semibold">{selectedNodeId}</span>
-            </div>
-          )}
-
-          {/* Execution Statistics */}
-          {(() => {
-            const executedCount = nodes.filter(
-              (n) => n.data.execution?.state === "executed"
-            ).length;
-            return executedCount > 0 ? (
-              <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">
-                <div className="font-semibold text-slate-300 mb-1.5">
-                  실행 통계
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">완료된 노드:</span>
-                  <span className="font-semibold text-palette-success-color">
-                    {executedCount}
-                  </span>
-                </div>
-                {executionState.context.errors.size > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400">에러:</span>
-                    <span className="font-semibold text-palette-danger-color">
-                      {executionState.context.errors.size}
-                    </span>
-                  </div>
-                )}
-                {executionState.context.startTime > 0 &&
-                  executionState.context.endTime && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400">실행 시간:</span>
-                      <span className="font-semibold text-palette-primary-color">
-                        {(
-                          (executionState.context.endTime -
-                            executionState.context.startTime) /
-                          1000
-                        ).toFixed(2)}
-                        s
-                      </span>
-                    </div>
-                  )}
-              </div>
-            ) : null;
-          })()}
-        </div>
-
-        {/* Legend */}
-        <div className="absolute top-4 right-4 z-10 bg-slate-800/80 rounded-lg p-4 border border-slate-700">
-          <p className="text-slate-300 text-xs font-semibold mb-2">
-            Edge Types
-          </p>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-0.5 bg-palette-neutral-bg rounded" />
-              <span className="text-palette-neutral-color text-xs">
-                Default
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-0.5 bg-palette-success-bg rounded" />
-              <span className="text-palette-neutral-color text-xs">
-                Success
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-0.5 bg-palette-danger-bg rounded" />
-              <span className="text-palette-neutral-color text-xs">Error</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-0.5 bg-palette-warning-bg rounded" />
-              <span className="text-palette-neutral-color text-xs">
-                Warning
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <ReactDiagram
-          nodes={enhancedNodes}
-          edges={enhancedEdges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          connectionRadius={20}
-          minZoom={0.5}
-          maxZoom={2}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={(_event, node) => {
-            openPropertiesPanel(node as WorkflowNode);
-          }}
-          onPaneClick={resetSelectedElements}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onConnect={onConnect}
-          onEdgeUpdate={onEdgeUpdate}
-          onEdgeUpdateStart={onEdgeUpdateStart}
-          onEdgeUpdateEnd={onEdgeUpdateEnd}
-        />
-      </div>
-    </>
+      <ReactDiagram
+        nodes={enhancedNodes}
+        edges={enhancedEdges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        connectionRadius={20}
+        minZoom={0.5}
+        maxZoom={2}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={(_event, node) => {
+          openPropertiesPanel(node as WorkflowNode);
+        }}
+        onPaneClick={resetSelectedElements}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onConnect={onConnect}
+        onEdgeUpdate={onEdgeUpdate}
+        onEdgeUpdateStart={onEdgeUpdateStart}
+        onEdgeUpdateEnd={onEdgeUpdateEnd}
+      />
+    </div>
   );
 }

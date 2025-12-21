@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-} from "react";
+import { createContext, useState, useCallback, useRef, use } from "react";
 import type { ReactNode } from "react";
 import PropertiesPanelModal from "@/components/PropertiesPanel";
 import type { WorkflowNode } from "@/types/nodes";
@@ -72,7 +66,7 @@ export function PropertiesPanelProvider({
   );
 
   return (
-    <PropertiesPanelContext.Provider
+    <PropertiesPanelContext
       value={{ open, close, updateEdges, registerOnSave }}
     >
       {children}
@@ -84,17 +78,17 @@ export function PropertiesPanelProvider({
         onSave={handleSave}
         onClose={close}
       />
-    </PropertiesPanelContext.Provider>
+    </PropertiesPanelContext>
   );
 }
 
 // Hook exported separately to satisfy react-refresh rules
 
-export function usePropertiesPanelContext() {
-  const context = useContext(PropertiesPanelContext);
+export function usePropertiesPanel() {
+  const context = use(PropertiesPanelContext);
   if (!context) {
     throw new Error(
-      "usePropertiesPanelContext must be used within PropertiesPanelProvider"
+      "usePropertiesPanel must be used within PropertiesPanelProvider"
     );
   }
   return context;

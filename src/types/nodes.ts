@@ -151,7 +151,7 @@ export type WorkflowNode = Node<
     | DecisionNodeData
     | ServiceNodeData
   >,
-  WorkflowNodeType
+  WorkflowNodeType | string //react-cosmos-diagram 에서 type 엄격화가 안되어서 우선 string 추가
 >;
 
 // ============================================

@@ -65,6 +65,8 @@ export type WorkflowExecutorConfig = {
   edges: WorkflowEdge[];
   /** Execution mode: success or failure path simulation */
   mode: WorkflowMode;
+  /** Optional specific Start node ID to execute from */
+  startNodeId?: string;
   /** Callback invoked when execution state changes */
   onStateChange: OnStateChangeCallback;
   /** Optional callback invoked when node executor data updates */

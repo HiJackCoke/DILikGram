@@ -1,5 +1,6 @@
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditor";
 import { PropertiesPanelProvider } from "@/contexts/PropertiesPanel";
+import { WorkflowExecutionProvider } from "@/contexts/WorkflowExecution";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {
@@ -7,7 +8,9 @@ const Layout = () => {
     <ExecutorEditorProvider>
       <PropertiesPanelProvider>
         <div id="executor-modal" />
-        <Outlet />
+        <WorkflowExecutionProvider>
+          <Outlet />
+        </WorkflowExecutionProvider>
       </PropertiesPanelProvider>
     </ExecutorEditorProvider>
   );
