@@ -117,7 +117,7 @@ export function inferType(value: unknown): string {
 }
 
 export function stringifyForDisplay(value: unknown): string {
-  if (value === null || value === undefined) return "";
+  if (value === undefined) return "";
 
   try {
     return JSON.stringify(value, null, 2);

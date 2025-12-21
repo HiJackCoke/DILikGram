@@ -295,6 +295,17 @@ The Modal uses a two-state system for smooth animations:
 - **Easy Styling**: Modal, backdrop, and content styling separated
 - **Type Safety**: Full TypeScript support throughout
 
+## When to Generate a Commit Message
+
+Generate a commit message when **all requested changes are implemented and working**, such as:
+
+- A feature request has been fully implemented
+- A behavior or execution model has changed
+- A workflow or node interaction is now functional end-to-end
+- The system transitions from mocked behavior to real execution
+
+Do NOT generate commit messages for partial work or intermediate steps unless explicitly asked.
+
 ## Commit Convention
 
 This project enforces commit message format via Husky hook (`.husky/prepare-commit-msg`).
