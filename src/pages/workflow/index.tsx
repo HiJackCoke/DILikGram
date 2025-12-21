@@ -11,7 +11,6 @@ import ReactDiagram, {
 import "react-cosmos-diagram/dist/style.css";
 
 import { nodeTypes } from "@/components/Nodes";
-import { edgeTypes } from "@/components/Edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
@@ -25,6 +24,7 @@ import { usePropertiesOnSave } from "@/hooks/usePropertiesOnSave";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 
 import ExecutionHeader from "./Header";
+import { PALETTE } from "../../../tailwind.config";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -109,7 +109,14 @@ export default function WorkflowPage() {
 
     setEdges((eds) =>
       addEdge(
-        { ...params, type: "workflow", markerEnd: { type: MarkerType.Arrow } },
+        {
+          ...params,
+          type: "step",
+          markerEnd: {
+            type: MarkerType.Arrow,
+            color: PALETTE["neutral"].color,
+          },
+        },
         eds
       )
     );
@@ -275,7 +282,6 @@ export default function WorkflowPage() {
         nodes={enhancedNodes}
         edges={enhancedEdges}
         nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
         connectionRadius={20}
         minZoom={0.5}
         maxZoom={2}

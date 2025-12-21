@@ -1,5 +1,4 @@
 import { MarkerType } from "react-cosmos-diagram";
-import { getEdgePaletteColor } from "@/components/Edges";
 
 import type { WorkflowEdge } from "@/types/edges";
 
@@ -14,7 +13,6 @@ export const initialEdges: WorkflowEdge[] = [
     data: { edgeType: "default", animated: false },
     markerEnd: {
       type: MarkerType.Arrow,
-      color: getEdgePaletteColor("default").color,
     },
   },
   {
@@ -27,7 +25,6 @@ export const initialEdges: WorkflowEdge[] = [
     data: { edgeType: "success", animated: false },
     markerEnd: {
       type: MarkerType.Arrow,
-      color: getEdgePaletteColor("success").color,
     },
   },
   {
@@ -41,7 +38,6 @@ export const initialEdges: WorkflowEdge[] = [
     data: { edgeType: "success" },
     markerEnd: {
       type: MarkerType.Arrow,
-      color: getEdgePaletteColor("success").color,
     },
   },
   {
@@ -55,7 +51,6 @@ export const initialEdges: WorkflowEdge[] = [
     data: { edgeType: "error" },
     markerEnd: {
       type: MarkerType.Arrow,
-      color: getEdgePaletteColor("error").color,
     },
   },
   {
@@ -68,7 +63,6 @@ export const initialEdges: WorkflowEdge[] = [
     data: { edgeType: "success", animated: false },
     markerEnd: {
       type: MarkerType.Arrow,
-      color: getEdgePaletteColor("success").color,
     },
   },
   {
@@ -81,7 +75,6 @@ export const initialEdges: WorkflowEdge[] = [
     data: { edgeType: "error" },
     markerEnd: {
       type: MarkerType.Arrow,
-      color: getEdgePaletteColor("error").color,
     },
   },
 ];

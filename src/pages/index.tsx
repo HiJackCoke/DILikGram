@@ -6,7 +6,6 @@ import ReactDiagram, {
 } from "react-cosmos-diagram";
 
 import { nodeTypes } from "@/components/Nodes";
-import { edgeTypes } from "@/components/Edges";
 
 import { initialNodes } from "@/mocks/nodes";
 import { initialEdges } from "@/mocks/edges";
@@ -51,7 +50,6 @@ export default function WorkflowPage() {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
         connectionRadius={30}
         minZoom={0.5}
         maxZoom={2}
