@@ -1,7 +1,7 @@
 import { createContext, useState, useCallback, useRef, use } from "react";
 import type { ReactNode } from "react";
 import type { ExecutionConfig } from "@/types/workflow";
-import ExecutorEditorModal from "@/components/ExecutorEditor";
+import ExecutorEditorModal from "@/contexts/ExecutorEditor/ExecutorEditorModal";
 import type { WorkflowNodeProps } from "@/types/nodes";
 import type { ExecutorEditorState, ExecutorOnSave } from "./type";
 
