@@ -210,8 +210,8 @@ export function mapGeneratedToWorkflow(generated: GeneratedWorkflow): {
       ...generateDefaultEdge(sourceId, targetId),
       source: sourceId,
       target: targetId,
-      sourceHandle: edge.sourcePort,
-      targetHandle: edge.targetPort,
+      sourcePort: edge.sourcePort,
+      targetPort: edge.targetPort,
 
       data: {
         edgeType: "default",
