@@ -14,7 +14,10 @@ export default function Modal({
   children,
   onClose,
 }: ModalProps) {
-  const element = useMemo(() => document.querySelector(selector), [selector]);
+  const element = useMemo(
+    () => document.querySelector(selector),
+    [selector, open]
+  );
 
   useEffect(() => {
     if (!element) return;
