@@ -29,7 +29,7 @@ const VARIANT_CONFIG = {
     base: "border border-transparent",
     normal:
       "bg-[var(--btn-bg)] hover:bg-[var(--btn-hover)] active:bg-[var(--btn-active)]",
-    disabled: "bg-gray-600 cursor-not-allowed opacity-50",
+    disabled: "bg-gray-400 cursor-not-allowed opacity-60",
     text: "text-white",
   },
   outline: {

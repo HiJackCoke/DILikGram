@@ -5,12 +5,12 @@ import ReactDiagram, {
   useStore,
   addEdge,
   updateEdge,
-  MarkerType,
   type Connection,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
 
 import { nodeTypes } from "@/components/Nodes";
+import { edgeTypes } from "@/components/Edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
@@ -22,9 +22,13 @@ import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
 import { usePropertiesOnSave } from "@/hooks/usePropertiesOnSave";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
+import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
+import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
 
 import ExecutionHeader from "./Header";
-import { PALETTE } from "../../../tailwind.config";
+
+import { generateNodeId } from "@/utils/nodes";
+import { generateDefaultEdge } from "@/utils/edges";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -74,10 +78,19 @@ export default function WorkflowPage() {
 
   useExecutorOnSave(handleExecutorSave);
   usePropertiesOnSave(handlePropertiesSave);
+  useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
 
   const resetSelectedElements = useStore(
     (store) => store.resetSelectedElements
   );
+
+  // WorkflowGenerator integration
+  const { setExistingNodes } = useWorkflowGenerator();
+
+  // Update existing nodes for positioning calculations
+  useEffect(() => {
+    setExistingNodes(nodes);
+  }, [nodes, setExistingNodes]);
 
   useEffect(() => {
     updateEdges(edges);
@@ -107,19 +120,18 @@ export default function WorkflowPage() {
       });
     });
 
-    setEdges((eds) =>
-      addEdge(
+    setEdges((eds) => {
+      const { source, target } = params;
+      if (!source || !target) return eds;
+
+      return addEdge(
         {
           ...params,
-          type: "step",
-          markerEnd: {
-            type: MarkerType.Arrow,
-            color: PALETTE["neutral"].color,
-          },
+          ...generateDefaultEdge(source, target),
         },
         eds
-      )
-    );
+      );
+    });
   };
 
   const onEdgeUpdateStart = useCallback(() => {
@@ -191,13 +203,21 @@ export default function WorkflowPage() {
     if (!template) return;
 
     const newNode: WorkflowNode = {
-      id: `${type}-${Date.now()}`,
+      id: generateNodeId(nodes.length, type),
       ...template,
       position,
     };
 
     setNodes((prevNodes) => [...prevNodes, newNode]);
   };
+
+  function handleWorkflowGenerator(
+    newNodes: WorkflowNode[],
+    newEdges: WorkflowEdge[]
+  ) {
+    setNodes((prev) => [...prev, ...newNodes]);
+    setEdges((prev) => [...prev, ...newEdges]);
+  }
 
   // Handle execution config save
   function handleExecutorSave(nodeId: string, config: ExecutionConfig) {
@@ -282,6 +302,7 @@ export default function WorkflowPage() {
         nodes={enhancedNodes}
         edges={enhancedEdges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         connectionRadius={20}
         minZoom={0.5}
         maxZoom={2}

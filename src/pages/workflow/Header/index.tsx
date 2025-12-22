@@ -1,6 +1,7 @@
-import { Square } from "lucide-react";
+import { Square, Sparkles } from "lucide-react";
 import Button from "@/components/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
+import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
 import type { Dispatch, SetStateAction } from "react";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
+  const { open: openGenerator } = useWorkflowGenerator();
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
@@ -51,6 +53,17 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
 
       {/* Execution Controls */}
       <div className="flex items-center gap-2">
+        {/* AI Generate Button */}
+        <Button
+          palette="primary"
+          icon={<Sparkles />}
+          iconPosition="left"
+          onClick={openGenerator}
+          disabled={isExecuting}
+        >
+          Generate with AI
+        </Button>
+
         {/* Stop Button */}
         {isExecuting && (
           <Button
