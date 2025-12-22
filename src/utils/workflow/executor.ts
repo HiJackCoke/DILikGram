@@ -597,10 +597,12 @@ export class WorkflowExecutor {
     // Get children to execute (decision node selects one, normal node gets all)
     const childrenToExecute = this.getChildrenToExecute(currentNode);
 
-    // Execute all children with edge visualization
-    for (const child of childrenToExecute) {
-      await this.executeChildWithEdge(currentNode.id, child);
-    }
+    // Execute all children in parallel (each branch runs independently)
+    await Promise.all(
+      childrenToExecute.map((child) =>
+        this.executeChildWithEdge(currentNode.id, child)
+      )
+    );
   }
 
   /**
@@ -618,7 +620,8 @@ export class WorkflowExecutor {
     // Get success from stored output
     const storedOutput =
       this.executionState.context.outputs.get(decisionNodeId);
-    const success = storedOutput?.success;
+    const success =
+      storedOutput?.success !== undefined ? storedOutput.success : true;
 
     // Find ALL yes edges (not just one)
     const yesEdges = this.edges.filter(
