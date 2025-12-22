@@ -27,6 +27,7 @@ Port Configuration:
 - service nodes: "input" and "output" ports
 
 Rules:
+- A node can have only one parent node.
 - Do not generate or leave any isolated nodes; each node must participate in the flow with at least one edge
 - Always start with exactly 1 start node
 - Include at least 1 end node (status: success/failure based on context)

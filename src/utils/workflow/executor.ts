@@ -1,4 +1,4 @@
-import type { WorkflowNode } from "@/types/nodes";
+import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import type { EdgeTransferData, WorkflowEdge } from "@/types/edges";
 import type {
   ExecutionError,
@@ -206,7 +206,7 @@ export class WorkflowExecutor {
    */
   private getExecutorForNode(node: WorkflowNode): ExecutorFunction | null {
     // Start and End nodes don't have executions
-    if (node.type === "start" || node.type === "end") {
+    if (node.type === "start") {
       return null;
     }
 
@@ -227,10 +227,8 @@ export class WorkflowExecutor {
 
     // Compile and cache with node type validation
     try {
-      const nodeTypeForValidation = node.type as
-        | "task"
-        | "service"
-        | "decision";
+      const nodeTypeForValidation = node.type as WorkflowNodeType
+        
 
       const execution = compileExecutor(config, nodeTypeForValidation);
       this.executionCache.set(cacheKey, execution);

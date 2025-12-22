@@ -97,6 +97,10 @@ export default function WorkflowPage() {
   }, [edges]);
 
   const onConnect = (params: Connection) => {
+    const hasParent = edges.some((edge) => edge.target === params.target);
+
+    if (hasParent) return window.alert("A node can have only one parent node.");
+
     setNodes((prevNodes) => {
       const { source, target } = params;
       if (!source || !target) return prevNodes;
