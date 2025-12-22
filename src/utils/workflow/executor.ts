@@ -71,9 +71,7 @@ export class WorkflowExecutor {
           (node) => node.id === this.startNodeId && node.type === "start"
         );
         if (!startNode) {
-          throw new Error(
-            `Start node with ID ${this.startNodeId} not found`
-          );
+          throw new Error(`Start node with ID ${this.startNodeId} not found`);
         }
       } else {
         // Fallback: Find first Start node (backward compatible)
@@ -541,13 +539,13 @@ export class WorkflowExecutor {
 
     if (allChildren.length === 0) return [];
 
-    // Decision node: select one branch
+    // Decision node: select branch(es) - supports multiple edges per port
     if (currentNode.type === "decision") {
-      const selectedChild = this.selectBranchByMode(
+      const selectedChildren = this.selectChildrenByBranch(
         currentNode.id,
         allChildren
       );
-      return selectedChild ? [selectedChild] : [];
+      return selectedChildren;
     }
 
     // Normal node: all children
@@ -608,43 +606,46 @@ export class WorkflowExecutor {
   }
 
   /**
-   * Decision 노드에서 success 필드 또는 모드에 따라 분기 선택
+   * Decision 노드에서 선택된 브랜치의 모든 자식 노드 반환
+   * - success=true → yes port의 모든 edge
+   * - success=false → no port의 모든 edge
+   * - 같은 port에서 여러 edge가 나가면 모두 반환 (병렬 실행)
    */
-  private selectBranchByMode(
+  private selectChildrenByBranch(
     decisionNodeId: string,
     children: WorkflowNode[]
-  ): WorkflowNode | null {
-    if (children.length === 0) return null;
+  ): WorkflowNode[] {
+    if (children.length === 0) return [];
 
     // Get success from stored output
     const storedOutput =
       this.executionState.context.outputs.get(decisionNodeId);
     const success = storedOutput?.success;
 
-    // yes/no 엣지 찾기
-    const yesEdge = this.edges.find(
+    // Find ALL yes edges (not just one)
+    const yesEdges = this.edges.filter(
       (e) =>
         e.source === decisionNodeId &&
         (e.sourcePort === "yes" || e.label === "Yes")
     );
 
-    const noEdge = this.edges.find(
+    // Find ALL no edges (not just one)
+    const noEdges = this.edges.filter(
       (e) =>
         e.source === decisionNodeId &&
         (e.sourcePort === "no" || e.label === "No")
     );
 
-    // Use success field, fallback to true if not set
-    const shouldTakeYesPath = success !== undefined ? success : true;
+    // Select edges based on success value
+    const selectedEdges = success ? yesEdges : noEdges;
 
-    if (shouldTakeYesPath && yesEdge) {
-      return children.find((c) => c.id === yesEdge.target) || null;
-    } else if (!shouldTakeYesPath && noEdge) {
-      return children.find((c) => c.id === noEdge.target) || null;
-    }
+    // Get ALL children connected by selected edges
+    const selectedChildren = children.filter((child) =>
+      selectedEdges.some((edge) => edge.target === child.id)
+    );
 
-    // 기본값: 첫 번째 자식
-    return children[0];
+    // Fallback: if no children found, return first child
+    return selectedChildren.length > 0 ? selectedChildren : [children[0]];
   }
 
   /**
