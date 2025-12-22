@@ -154,6 +154,18 @@ export default function WorkflowPage() {
   const onEdgeUpdateEnd = (_c: unknown, edge: WorkflowEdge) => {
     if (!edgeUpdateSuccessful.current) {
       setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+      setNodes((nodes) =>
+        nodes.map((node) => {
+          if (node.id === edge.target) {
+            return {
+              ...node,
+              parentNode: undefined,
+              position: node.positionAbsolute || node.position,
+            };
+          }
+          return node;
+        })
+      );
     }
 
     edgeUpdateSuccessful.current = true;
