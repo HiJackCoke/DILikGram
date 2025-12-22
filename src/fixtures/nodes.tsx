@@ -1,4 +1,3 @@
-import { Position } from "react-cosmos-diagram";
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 
 import {
@@ -9,6 +8,7 @@ import {
   StopCircle,
 } from "lucide-react";
 import type { FieldConfig } from "@/types/editor";
+import { getDefaultPorts } from "@/utils/nodes";
 
 // 통합 노드 템플릿 타입
 export type UnifiedNodeTemplate = {
@@ -33,7 +33,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
       type: "start",
       data: {
         title: "Start",
-        ports: [{ id: "output", position: Position.Bottom, type: "source" }],
+        ports: getDefaultPorts("start"),
       },
     },
   },
@@ -51,10 +51,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         assignee: "",
         estimatedTime: 0,
         metadata: {},
-        ports: [
-          { id: "input", position: Position.Top, type: "target" },
-          { id: "output", position: Position.Bottom, type: "source" },
-        ],
+        ports: getDefaultPorts("task"),
       },
     },
   },
@@ -69,11 +66,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         title: "Decision",
         condition: {},
         mode: "panel",
-        ports: [
-          { id: "input", position: Position.Top, type: "target" },
-          { id: "yes", position: Position.Right, type: "source", label: "Yes" },
-          { id: "no", position: Position.Bottom, type: "source", label: "No" },
-        ],
+        ports: getDefaultPorts("decision"),
       },
     },
   },
@@ -104,10 +97,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         },
         timeout: 5000,
 
-        ports: [
-          { id: "input", position: Position.Top, type: "target" },
-          { id: "output", position: Position.Bottom, type: "source" },
-        ],
+        ports: getDefaultPorts("service"),
       },
     },
   },
@@ -121,7 +111,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
       data: {
         title: "End",
         status: "neutral",
-        ports: [{ id: "input", position: Position.Top, type: "target" }],
+        ports: getDefaultPorts("end"),
       },
     },
   },
