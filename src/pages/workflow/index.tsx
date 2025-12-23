@@ -163,90 +163,96 @@ export default function WorkflowPage() {
     edgeUpdateSuccessful.current = false;
   }, []);
 
-  const onEdgeUpdate = (
-    originEdge: WorkflowEdge,
-    newConnection: Connection
-  ) => {
-    edgeUpdateSuccessful.current = true;
+  const onEdgeUpdate = useCallback(
+    (originEdge: WorkflowEdge, newConnection: Connection) => {
+      edgeUpdateSuccessful.current = true;
 
-    setEdges((els) => updateEdge(originEdge, newConnection, els));
-  };
+      setEdges((els) => updateEdge(originEdge, newConnection, els));
+    },
+    [setEdges]
+  );
 
-  const onEdgeUpdateEnd = (_c: unknown, edge: WorkflowEdge) => {
-    if (!edgeUpdateSuccessful.current) {
-      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id === edge.target) {
-            return {
-              ...node,
-              parentNode: undefined,
-              position: node.positionAbsolute || node.position,
-            };
-          }
-          return node;
-        })
-      );
-    }
+  const onEdgeUpdateEnd = useCallback(
+    (_c: unknown, edge: WorkflowEdge) => {
+      if (!edgeUpdateSuccessful.current) {
+        setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+        setNodes((nodes) =>
+          nodes.map((node) => {
+            if (node.id === edge.target) {
+              return {
+                ...node,
+                parentNode: undefined,
+                position: node.positionAbsolute || node.position,
+              };
+            }
+            return node;
+          })
+        );
+      }
 
-    edgeUpdateSuccessful.current = true;
-  };
+      edgeUpdateSuccessful.current = true;
+    },
+    [setEdges, setNodes]
+  );
 
   // DND 핸들러
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
 
-    const type = e.dataTransfer.getData(
-      "application/nodeType"
-    ) as WorkflowNodeType;
-    if (!type) return;
+      const type = e.dataTransfer.getData(
+        "application/nodeType"
+      ) as WorkflowNodeType;
+      if (!type) return;
 
-    // JSON으로 저장된 비율 데이터 파싱
-    const distance = JSON.parse(
-      e.dataTransfer.getData("application/nodeDistance") || "{}"
-    );
-    const ratioX = distance.x || 0.5; // 기본값 중앙
-    const ratioY = distance.y || 0.5; // 기본값 중앙
+      // JSON으로 저장된 비율 데이터 파싱
+      const distance = JSON.parse(
+        e.dataTransfer.getData("application/nodeDistance") || "{}"
+      );
+      const ratioX = distance.x || 0.5; // 기본값 중앙
+      const ratioY = distance.y || 0.5; // 기본값 중앙
 
-    // 실제 노드 크기 가져오기
-    const nodeDimensions = getNodeDimensions(type);
+      // 실제 노드 크기 가져오기
+      const nodeDimensions = getNodeDimensions(type);
 
-    // Viewport 요소 쿼리 (.react-diagram__viewport)
-    const container = e.currentTarget as HTMLDivElement;
-    const viewport = container.querySelector(
-      ".react-diagram__viewport"
-    ) as HTMLDivElement;
+      // Viewport 요소 쿼리 (.react-diagram__viewport)
+      const container = e.currentTarget as HTMLDivElement;
+      const viewport = container.querySelector(
+        ".react-diagram__viewport"
+      ) as HTMLDivElement;
 
-    // Transform 값 추출 (translate + scale)
-    const translate = getTranslateValues(viewport?.style.transform);
+      // Transform 값 추출 (translate + scale)
+      const translate = getTranslateValues(viewport?.style.transform);
 
-    // 비율 × 실제 노드 크기 = 픽셀 offset
-    const offsetX = ratioX * nodeDimensions.width * translate.scale;
-    const offsetY = ratioY * nodeDimensions.height * translate.scale;
+      // 비율 × 실제 노드 크기 = 픽셀 offset
+      const offsetX = ratioX * nodeDimensions.width * translate.scale;
+      const offsetY = ratioY * nodeDimensions.height * translate.scale;
 
-    // Zoom(scale)과 비율 기반 offset을 모두 고려한 정확한 position 계산
-    const position = {
-      x: (e.clientX - offsetX - translate.x) / translate.scale,
-      y: (e.clientY - offsetY - translate.y) / translate.scale,
-    };
+      // Zoom(scale)과 비율 기반 offset을 모두 고려한 정확한 position 계산
+      const position = {
+        x: (e.clientX - offsetX - translate.x) / translate.scale,
+        y: (e.clientY - offsetY - translate.y) / translate.scale,
+      };
 
-    // Create new node from template
-    const template = UNIFIED_NODE_TEMPLATES[type]?.template;
-    if (!template) return;
+      // Create new node from template
+      const template = UNIFIED_NODE_TEMPLATES[type]?.template;
+      if (!template) return;
 
-    const newNode: WorkflowNode = {
-      id: generateNodeId(nodes.length, type),
-      ...template,
-      position,
-    };
+      const newNode: WorkflowNode = {
+        id: generateNodeId(nodes.length, type),
+        ...template,
+        position,
+      };
 
-    setNodes((prevNodes) => [...prevNodes, newNode]);
-  };
+      setNodes((prevNodes) => [...prevNodes, newNode]);
+    },
+    [nodes.length, setNodes]
+  );
 
   function handleWorkflowGenerator(
     newNodes: WorkflowNode[],
