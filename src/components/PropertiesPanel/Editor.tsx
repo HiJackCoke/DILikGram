@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
@@ -21,17 +22,20 @@ import type { WorkflowNode, NodePort } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 import type { FieldConfig, TabOption } from "@/types/editor";
 import type { DeepKeysOfUnion } from "@/types/utils";
+import PropertiesPanelDialog from "./Dialog";
 
 interface DynamicNodeEditorProps {
   node: WorkflowNode;
   edges: WorkflowEdge[];
   onSave: (data: Partial<WorkflowNode["data"]>) => void;
+  onDelete: (nodeId: string) => void;
 }
 
 export default function DynamicNodeEditor({
   node,
   edges,
   onSave,
+  onDelete,
 }: DynamicNodeEditorProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [formData, setFormData] = useState<Record<string, any>>(node.data);
@@ -166,6 +170,16 @@ export default function DynamicNodeEditor({
     }
   };
 
+  const handleDialog = async () => {
+    const confirm = await dialog.confirm(
+      "Confirm Node Deletion",
+      <PropertiesPanelDialog />
+    );
+
+    if (confirm) {
+      onDelete(node.id);
+    }
+  };
   const renderField = (
     key: DeepKeysOfUnion<WorkflowNode["data"]>,
     value: unknown
@@ -231,12 +245,23 @@ export default function DynamicNodeEditor({
         renderField(key as DeepKeysOfUnion<WorkflowNode["data"]>, value)
       )}
 
-      <button
-        onClick={handleSave}
-        className="w-full px-4 py-2 bg-palette-primary-bg hover:bg-palette-primary-color text-white rounded-lg font-medium transition-colors"
-      >
-        Save Changes
-      </button>
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleSave}
+          className="flex-1 px-4 py-2 bg-palette-primary-bg hover:bg-palette-primary-color text-white rounded-lg font-medium transition-colors"
+        >
+          Save Changes
+        </button>
+        <button
+          onClick={handleDialog}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          title="Delete Node"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete
+        </button>
+      </div>
     </div>
   );
 }

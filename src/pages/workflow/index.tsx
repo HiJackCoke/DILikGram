@@ -20,7 +20,6 @@ import type { ExecutionConfig } from "@/types/workflow";
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
-import { usePropertiesOnSave } from "@/hooks/usePropertiesOnSave";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
@@ -70,14 +69,17 @@ function getNodeDimensions(type: string): { width: number; height: number } {
 export default function WorkflowPage() {
   const edgeUpdateSuccessful = useRef(true);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode["data"]>(
-    []
-  );
+  const [nodes, setNodes, onNodesChange] = useNodesState<
+    WorkflowNode["data"],
+    WorkflowNodeType
+  >([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel();
+  const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel({
+    onSave: handlePropertiesSave,
+    onDelete: handleDeleteNode,
+  });
 
   useExecutorOnSave(handleExecutorSave);
-  usePropertiesOnSave(handlePropertiesSave);
   useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
 
   const resetSelectedElements = useStore(
@@ -269,11 +271,31 @@ export default function WorkflowPage() {
     );
   }
 
+  // Handle node delete
+  function handleDeleteNode(nodeId: string) {
+    setNodes((prevNodes) =>
+      prevNodes
+        .filter((n) => n.id !== nodeId)
+        .map((node) =>
+          node.parentNode === nodeId
+            ? {
+                ...node,
+                parentNode: undefined,
+                position: node.positionAbsolute || node.position,
+              }
+            : node
+        )
+    );
+
+    setEdges((prevEdges) =>
+      prevEdges.filter((e) => e.source !== nodeId && e.target !== nodeId)
+    );
+
+    resetSelectedElements();
+  }
+
   // 선택된 노드의 플로우 경로 계산
-  const { highlightedNodeIds, highlightedEdgeIds } = findFlowPath(
-    nodes as WorkflowNode[],
-    edges
-  );
+  const { highlightedNodeIds, highlightedEdgeIds } = findFlowPath(nodes, edges);
 
   // 노드에 하이라이트 상태 추가 (execution.state는 handleNodeUpdate에서 관리)
   const enhancedNodes = nodes.map((node) => ({
@@ -282,9 +304,7 @@ export default function WorkflowPage() {
       ...node.data,
       state: {
         highlighted: highlightedNodeIds.has(node.id),
-        dimmed:
-          hasSelectedNode(nodes as WorkflowNode[]) &&
-          !highlightedNodeIds.has(node.id),
+        dimmed: hasSelectedNode(nodes) && !highlightedNodeIds.has(node.id),
       },
     },
   }));

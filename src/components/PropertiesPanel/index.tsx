@@ -10,6 +10,7 @@ interface PropertiesPanelModalProps {
   edges: WorkflowEdge[];
   open: boolean;
   onSave: (data: Partial<WorkflowNode["data"]>) => void;
+  onDelete: (nodeId: string) => void;
   onClose: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function PropertiesPanelModal({
   edges,
   open,
   onSave,
+  onDelete,
   onClose,
 }: PropertiesPanelModalProps) {
   useKeyPress("escape", () => {
@@ -27,7 +29,14 @@ export default function PropertiesPanelModal({
   const renderEditor = () => {
     if (!node) return null;
 
-    return <DynamicNodeEditor node={node} edges={edges} onSave={onSave} />;
+    return (
+      <DynamicNodeEditor
+        node={node}
+        edges={edges}
+        onSave={onSave}
+        onDelete={onDelete}
+      />
+    );
   };
 
   return (
@@ -41,7 +50,7 @@ export default function PropertiesPanelModal({
       {/* Side Panel */}
       <div
         className={`
-          fixed right-0 top-0 h-full w-96 bg-slate-800 shadow-2xl z-50 flex flex-col
+          fixed right-0 top-0 h-full w-96 bg-slate-800 shadow-2xl z-40 flex flex-col
           transition-all duration-300 ease-out
           ${open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
         `}
