@@ -6,6 +6,7 @@ import ReactDiagram, {
   addEdge,
   updateEdge,
   type Connection,
+  type Node,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
 
@@ -28,6 +29,7 @@ import ExecutionHeader from "./Header";
 
 import { generateNodeId } from "@/utils/nodes";
 import { generateDefaultEdge } from "@/utils/edges";
+import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -74,6 +76,9 @@ export default function WorkflowPage() {
     WorkflowNodeType
   >([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const { executeFromStartNode, isExecuting, executingStartNodeId } =
+    useWorkflowExecution();
   const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel({
     onSave: handlePropertiesSave,
     onDelete: handleDeleteNode,
@@ -138,6 +143,20 @@ export default function WorkflowPage() {
         eds
       );
     });
+  };
+
+  const handleOpenPropertiesPanel = useCallback(
+    (_: unknown, node: Node) => {
+      openPropertiesPanel(node as WorkflowNode);
+    },
+    [openPropertiesPanel]
+  );
+
+  const executeNode = (_: unknown, node: Node) => {
+    if (node.type !== "start") return;
+    if (isExecuting) return;
+
+    executeFromStartNode(node.id);
   };
 
   const onEdgeUpdateStart = useCallback(() => {
@@ -344,9 +363,8 @@ export default function WorkflowPage() {
         maxZoom={2}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={(_event, node) => {
-          openPropertiesPanel(node as WorkflowNode);
-        }}
+        onNodeClick={handleOpenPropertiesPanel}
+        onNodeDoubleClick={executeNode}
         onPaneClick={resetSelectedElements}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
