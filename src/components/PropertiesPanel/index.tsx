@@ -26,19 +26,6 @@ export default function PropertiesPanelModal({
     onClose();
   });
 
-  const renderEditor = () => {
-    if (!node) return null;
-
-    return (
-      <DynamicNodeEditor
-        node={node}
-        edges={edges}
-        onSave={onSave}
-        onDelete={onDelete}
-      />
-    );
-  };
-
   return (
     <>
       {/* Backdrop */}
@@ -77,7 +64,17 @@ export default function PropertiesPanelModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">{renderEditor()}</div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {node && (
+            <DynamicNodeEditor
+              key={node.id}
+              node={node}
+              edges={edges}
+              onSave={onSave}
+              onDelete={onDelete}
+            />
+          )}
+        </div>
       </div>
     </>
   );

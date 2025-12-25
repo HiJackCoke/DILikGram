@@ -10,7 +10,12 @@ import type { ReactNode } from "react";
 import PropertiesPanelModal from "@/components/PropertiesPanel";
 import type { WorkflowNode } from "@/types/nodes";
 
-import type { PropertiesPanelState, PropertiesOnSave, PropertiesOnDelete, PropertiesPanelHandlers } from "./type";
+import type {
+  PropertiesPanelState,
+  PropertiesOnSave,
+  PropertiesOnDelete,
+  PropertiesPanelHandlers,
+} from "./type";
 import type { Edge } from "react-cosmos-diagram";
 
 interface PropertiesPanelContextValue {
