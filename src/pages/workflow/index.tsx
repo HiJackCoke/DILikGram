@@ -370,8 +370,8 @@ export default function WorkflowPage() {
         maxZoom={2}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={handleOpenPropertiesPanel}
-        onNodeDoubleClick={executeNode}
+        onNodeDoubleClick={handleOpenPropertiesPanel}
+        onNodeClick={executeNode}
         onPaneClick={resetSelectedElements}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
