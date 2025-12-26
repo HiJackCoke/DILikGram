@@ -50,18 +50,30 @@ const PANEL_CODE_GENERATORS: Partial<
     code += `const endpoint = ${JSON.stringify(endpoint)}\n`;
     code += `const method = ${JSON.stringify(method)}\n\n`;
 
-    // Build fetch options
-    code += `const response = await fetch(endpoint, {\n`;
-    code += `  method,\n`;
-    code += `  headers,\n`;
+    // Add try-catch wrapper for error handling
+    code += `try {\n`;
+    code += `  const response = await fetch(endpoint, {\n`;
+    code += `    method,\n`;
+    code += `    headers,\n`;
 
     // Only include body in fetch options for non-GET methods
     if (!isGetMethod) {
-      code += `  body: JSON.stringify(body),\n`;
+      code += `    body: JSON.stringify(body),\n`;
     }
 
-    code += `})\n\n`;
-    code += `return response.json()`;
+    code += `  })\n\n`;
+
+    // Check HTTP status code
+    code += `  if (!response.ok) {\n`;
+    code += `    throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)\n`;
+    code += `  }\n\n`;
+
+    code += `  return await response.json()\n`;
+
+    // Catch network errors, JSON parsing errors, and HTTP errors
+    code += `} catch (error) {\n`;
+    code += `  throw new Error(\`API Request Failed: \${error.message}\`)\n`;
+    code += `}\n`;
 
     return code;
   },
