@@ -2,7 +2,7 @@
  * Executor function type definitions
  */
 
-import type { WorkflowNode } from "./nodes";
+import type { WorkflowNode, WorkflowNodeType } from "./nodes";
 import type { WorkflowEdge } from "./edges";
 
 /**
@@ -119,11 +119,45 @@ export type ExecutionResult<T = unknown> = {
   executionTime?: number;
 };
 
+/**
+ * Node execution log entry for END node summary
+ */
+export type ExecutionLogEntry = {
+  nodeId: string;
+  nodeType: WorkflowNodeType;
+  timestamp: number;
+  executionTime: number;
+  outputData?: unknown;
+  success: boolean;
+};
+
+/**
+ * Aggregated execution summary for END nodes
+ * Contains complete workflow execution history and metrics
+ */
+export type ExecutionSummary = {
+  /** Execution path: ordered array of executed node IDs */
+  executedPath: string[];
+  /** Detailed execution logs for each node */
+  logs: ExecutionLogEntry[];
+  /** Total execution time from start to END node (ms) */
+  totalExecutionTime: number;
+  /** Count of successfully executed nodes */
+  successCount: number;
+  /** Map of all node outputs (nodeId -> ExecutionResult) */
+  outputs: Map<string, ExecutionResult>;
+  /** Workflow start timestamp */
+  startTime: number;
+  /** Workflow end timestamp (when END node is reached) */
+  endTime: number;
+};
+
 export type ExecutionState = "idle" | "executing" | "executed";
 
 export type ExecutionData = {
   // result?: NodeResult;
   state?: ExecutionState;
   config?: ExecutionConfig; // Executor function configuration
-  error?: ExecutionError; // NEW: Store execution errors for UI display
+  error?: ExecutionError; // Store execution errors for UI display
+  summary?: ExecutionSummary; // END node execution summary
 };

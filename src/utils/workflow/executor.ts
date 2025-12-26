@@ -11,6 +11,8 @@ import type {
   OnEdgeUpdateCallback,
   OnNodeUpdateEndCallback,
   WorkflowExecutorConfig,
+  ExecutionSummary,
+  ExecutionLogEntry,
 } from "@/types/workflow";
 import { compileExecutor, executeFunction } from "./runtime";
 import { getDataType } from "./helpers";
@@ -282,7 +284,8 @@ export class WorkflowExecutor {
     nodeId: string,
     executionState: ExecutionState,
     resultData: unknown,
-    error?: ExecutionError
+    error?: ExecutionError,
+    summary?: ExecutionSummary
   ): ExecutionData {
     // Find existing node to preserve config
     const existingNode = this.nodes.find((n) => n.id === nodeId);
@@ -309,6 +312,7 @@ export class WorkflowExecutor {
         nodeData,
       },
       error, // Include error if present
+      summary, // Include summary for END nodes
     };
   }
 
@@ -361,8 +365,15 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     inputData: unknown
   ): Promise<{ outputData: unknown; success: boolean }> {
+    // Start node doesn't have execution
     if (node.type === "start") {
       return { outputData: null, success: true };
+    }
+
+    // END node returns execution summary
+    if (node.type === "end") {
+      const summary = this.aggregateExecutionSummary();
+      return { outputData: summary, success: true };
     }
 
     const execution = this.getExecutorForNode(node);
@@ -457,10 +468,18 @@ export class WorkflowExecutor {
   ): Promise<void> {
     if (!this.onNodeUpdate) return;
 
+    // Check if this is an END node and outputData is the summary
+    const node = this.nodes.find((n) => n.id === nodeId);
+    const isEndNode = node?.type === "end";
+    const summary =
+      isEndNode && outputData ? (outputData as ExecutionSummary) : undefined;
+
     const executionData = this.buildExecutorData(
       nodeId,
       "executed",
-      outputData
+      outputData,
+      undefined,
+      summary
     );
     this.onNodeUpdate(nodeId, executionData);
     this.syncNodeAfterUpdate(nodeId, executionData);
@@ -594,8 +613,13 @@ export class WorkflowExecutor {
     const currentNode = this.nodes.find((n) => n.id === currentNodeId);
     if (!currentNode) return;
 
-    // End node terminates execution
+    // END node: aggregate execution summary
     if (currentNode.type === "end") {
+      const summary = this.aggregateExecutionSummary();
+
+      // Store summary in END node's execution data (now includes summary in ExecutionData)
+      await this.notifyNodeExecuted(currentNodeId, summary);
+
       return;
     }
 
@@ -665,6 +689,46 @@ export class WorkflowExecutor {
         reject(new Error("Execution aborted"));
       });
     });
+  }
+
+  /**
+   * Aggregate execution summary from current context
+   * Called when END node is reached
+   */
+  private aggregateExecutionSummary(): ExecutionSummary {
+    const { outputs, startTime } = this.executionState.context;
+    const endTime = Date.now();
+
+    // Extract execution path from outputs Map keys (insertion order preserved)
+    const executedPath = Array.from(outputs.keys());
+
+    // Build detailed logs array
+    const logs: ExecutionLogEntry[] = executedPath.map((nodeId) => {
+      const result = outputs.get(nodeId)!;
+      const node = this.nodes.find((n) => n.id === nodeId);
+
+      return {
+        nodeId,
+        nodeType: node?.type || "task",
+        timestamp: result.timestamp || 0,
+        executionTime: result.executionTime || 0,
+        outputData: result.data,
+        success: result.success,
+      };
+    });
+
+    // Count successful nodes
+    const successCount = logs.filter((log) => log.success).length;
+
+    return {
+      executedPath,
+      logs,
+      totalExecutionTime: endTime - startTime,
+      successCount,
+      outputs,
+      startTime,
+      endTime,
+    };
   }
 
   /**
