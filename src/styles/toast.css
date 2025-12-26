@@ -1,0 +1,24 @@
+@keyframes road-runner {
+  0% {
+    transform: translateX(100%) skewX(30deg);
+  }
+  7% {
+    transform: translateX(-10%) skewX(0deg);
+  }
+  10% {
+    transform: translateX(0%) skewX(0deg);
+  }
+  90% {
+    transform: translateX(0%) skewX(0deg);
+  }
+  93% {
+    transform: translateX(-10%) skewX(30deg);
+  }
+  100% {
+    transform: translateX(100%) skewX(0deg);
+  }
+}
+
+.toast-message {
+  animation: road-runner var(--animation-duration) ease-out;
+}
