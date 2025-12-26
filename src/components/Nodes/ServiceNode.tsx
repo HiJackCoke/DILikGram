@@ -90,6 +90,8 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
   const executionStyles = {
     executing: "ring-4 ring-palette-secondary-color animate-pulse scale-105",
     executed: "ring-2 ring-palette-secondary-color",
+    error:
+      "ring-4 ring-palette-danger-color border-palette-danger-bg shadow-red-200",
     idle: "",
   };
 
@@ -116,7 +118,7 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
         }
         ${data.state?.highlighted ? "border-palette-secondary-bg shadow-purple-200 shadow-xl ring-2 ring-purple-300" : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.execution?.state || "idle"]}
+        ${data.execution?.error ? executionStyles.error : executionStyles[data.execution?.state || "idle"]}
       `}
       >
         {/* Ports */}

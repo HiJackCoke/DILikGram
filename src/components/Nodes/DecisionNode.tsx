@@ -31,12 +31,14 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
   const executionStyles = {
     executing: "scale-125 animate-pulse",
     executed: "scale-115",
+    error: "scale-125",
     idle: "",
   };
 
   const executionRingStyles = {
     executing: "ring-4 ring-palette-warning-color",
     executed: "ring-2 ring-palette-warning-color ",
+    error: "ring-4 ring-palette-danger-color border-palette-danger-border",
     idle: "",
   };
 
@@ -49,7 +51,7 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
           relative w-36 h-36
           transition-all duration-200
           ${data.state?.dimmed ? "opacity-30" : ""}
-          ${executionStyles[data.execution?.state || "idle"]}
+          ${data.execution?.error ? executionStyles.error : executionStyles[data.execution?.state || "idle"]}
         `}
       >
         {/* Ports */}
@@ -76,7 +78,7 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
                 : "border-palette-warning-bg"
             }
             ${data.state?.highlighted ? "border-palette-warning-border shadow-yellow-200 shadow-xl ring-2 ring-yellow-300" : ""}
-            ${executionRingStyles[data.execution?.state || "idle"]}
+            ${data.execution?.error ? executionRingStyles.error : executionRingStyles[data.execution?.state || "idle"]}
           `}
         />
 

@@ -69,6 +69,7 @@ export function TaskNode(nodeProps: TaskNodeProps) {
   const executionStyles = {
     executing: "ring-4 ring-palette-primary-color animate-pulse scale-105",
     executed: "ring-2 ring-palette-primary-color",
+    error: "ring-4 ring-palette-danger-color border-palette-danger-bg shadow-red-200",
     idle: "",
   };
 
@@ -95,7 +96,7 @@ export function TaskNode(nodeProps: TaskNodeProps) {
         }
         ${data.state?.highlighted ? "border-palette-primary-bg shadow-blue-200 shadow-xl ring-2 ring-blue-300" : ""}
         ${data.state?.dimmed ? "opacity-30" : ""}
-        ${executionStyles[data.execution?.state || "idle"]}
+        ${data.execution?.error ? executionStyles.error : executionStyles[data.execution?.state || "idle"]}
       `}
       >
         {/* Header */}
