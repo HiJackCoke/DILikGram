@@ -59,6 +59,7 @@ export class WorkflowExecutor {
     this.abortController = new AbortController();
     this.executionState.isRunning = true;
     this.executionState.context.startTime = Date.now();
+
     this.notifyStateChange();
 
     try {
@@ -227,8 +228,7 @@ export class WorkflowExecutor {
 
     // Compile and cache with node type validation
     try {
-      const nodeTypeForValidation = node.type as WorkflowNodeType
-        
+      const nodeTypeForValidation = node.type as WorkflowNodeType;
 
       const execution = compileExecutor(config, nodeTypeForValidation);
       this.executionCache.set(cacheKey, execution);
@@ -497,6 +497,7 @@ export class WorkflowExecutor {
     if (!node) return;
 
     const startTime = Date.now();
+    let currentNodeFailed = false;
 
     try {
       // 2. Get input data
@@ -506,10 +507,12 @@ export class WorkflowExecutor {
       await this.notifyNodeExecuting(nodeId, inputData);
 
       // 4. Execute node logic
+      currentNodeFailed = true;
       const { outputData, success } = await this.computeNodeOutput(
         node,
         inputData
       );
+      currentNodeFailed = false;
 
       // 5. Store output
       this.storeOutput(nodeId, outputData, success, startTime);
@@ -520,7 +523,9 @@ export class WorkflowExecutor {
       // 7. Execute next nodes
       await this.executeNextNodes(nodeId);
     } catch (error) {
-      this.handleExecutionError(nodeId, error as Error);
+      if (currentNodeFailed) {
+        this.handleExecutionError(nodeId, error as Error);
+      }
       throw error; // Fail-Fast
     }
   }

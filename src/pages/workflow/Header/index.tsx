@@ -41,6 +41,9 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
   });
 
   const selectedNodeId = nodes.find((node) => node.selected)?.id;
+  const executedCount = nodes.filter(
+    (n) => n.data.execution?.state === "executed"
+  ).length;
 
   return (
     <div className="absolute top-4 left-20 z-10 space-y-3">
@@ -97,43 +100,39 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
       )}
 
       {/* Execution Statistics */}
-      {(() => {
-        const executedCount = nodes.filter(
-          (n) => n.data.execution?.state === "executed"
-        ).length;
-        return executedCount > 0 ? (
-          <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">
-            <div className="font-semibold text-slate-300 mb-1.5">실행 통계</div>
+
+      {executedCount > 0 && (
+        <div className="px-3 py-2 bg-slate-800/90 border border-slate-700 text-white rounded-lg text-sm space-y-1">
+          <div className="font-semibold text-slate-300 mb-1.5">실행 통계</div>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">완료된 노드:</span>
+            <span className="font-semibold text-palette-success-color">
+              {executionState.context.outputs.size}
+            </span>
+          </div>
+          {executionState.context.errors.size > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-slate-400">완료된 노드:</span>
-              <span className="font-semibold text-palette-success-color">
-                {executedCount}
+              <span className="text-slate-400">에러:</span>
+              <span className="font-semibold text-palette-danger-color">
+                {executionState.context.errors.size}
               </span>
             </div>
-            {executionState.context.errors.size > 0 && (
+          )}
+          {executionState.context.startTime > 0 &&
+            executionState.context.endTime && (
               <div className="flex items-center gap-2">
-                <span className="text-slate-400">에러:</span>
-                <span className="font-semibold text-palette-danger-color">
-                  {executionState.context.errors.size}
+                <span className="text-slate-400">실행 시간:</span>
+                <span className="font-semibold text-palette-primary-color">
+                  {(
+                    (executionState.context.endTime -
+                      executionState.context.startTime) /
+                    1000
+                  ).toFixed(2)}
                 </span>
               </div>
             )}
-            {executionState.context.startTime > 0 &&
-              executionState.context.endTime && (
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">실행 시간:</span>
-                  <span className="font-semibold text-palette-primary-color">
-                    {(
-                      (executionState.context.endTime -
-                        executionState.context.startTime) /
-                      1000
-                    ).toFixed(2)}
-                  </span>
-                </div>
-              )}
-          </div>
-        ) : null;
-      })()}
+        </div>
+      )}
     </div>
   );
 }

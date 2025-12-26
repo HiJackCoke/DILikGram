@@ -30,6 +30,8 @@ import ExecutionHeader from "./Header";
 import { generateNodeId } from "@/utils/nodes";
 import { generateDefaultEdge } from "@/utils/edges";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
+import { initialNodes } from "@/mocks/nodes";
+import { initialEdges } from "@/mocks/edges";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -74,11 +76,10 @@ export default function WorkflowPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<
     WorkflowNode["data"],
     WorkflowNodeType
-  >([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  >(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const { executeFromStartNode, isExecuting, executingStartNodeId } =
-    useWorkflowExecution();
+  const { executeFromStartNode, isExecuting } = useWorkflowExecution();
   const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel({
     onSave: handlePropertiesSave,
     onDelete: handleDeleteNode,
