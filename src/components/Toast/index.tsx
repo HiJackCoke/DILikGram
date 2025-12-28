@@ -30,8 +30,8 @@ declare global {
     toast: ToastReturnType;
   }
   const toast: {
-    success(message: string): void;
-    alert(message: string): void;
+    success(message: string, onClick: () => void): void;
+    alert(message: string, onClick: () => void): void;
   };
 }
 
@@ -56,7 +56,7 @@ class Toast {
     }
   }
 
-  show(type: ToastType, message: string) {
+  show(type: ToastType, message: string, onClick?: () => void) {
     if (!this.#root) return;
     const id = uuid();
     const toast: ToastProps = { id, message, type };
@@ -67,17 +67,18 @@ class Toast {
         duration={TOAST_DURATION}
         toasts={this.#toasts}
         closeMessage={this.#closeMessage.bind(this)}
+        onClick={onClick}
       />
     );
     this.#autoCloseMessage(TOAST_DURATION, id);
   }
 
-  success(message: string) {
-    this.show("success", message);
+  success(message: string, onClick?: () => void) {
+    this.show("success", message, onClick);
   }
 
-  alert(message: string) {
-    this.show("alert", message);
+  alert(message: string, onClick?: () => void) {
+    this.show("alert", message, onClick);
   }
 
   #closeMessage(id: string) {

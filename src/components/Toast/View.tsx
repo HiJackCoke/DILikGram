@@ -1,22 +1,29 @@
 import { CheckCircle, AlertCircle, X } from "lucide-react";
-import type { ToastViewProps, ToastProps } from "@/components/Toast/type";
+import type {
+  ToastViewProps,
+  ToastMessageProps,
+} from "@/components/Toast/type";
 
 import "@/styles/toast.css";
 
-interface ToastMessageProps {
-  toast: ToastProps;
-  duration: number;
-  onClose: () => void;
-}
+const COLOR_PROPS = {
+  success: {
+    bg: "bg-palette-success-bg",
+    border: "border-palette-success-bg",
+  },
+  alert: {
+    bg: "bg-palette-danger-bg",
+    border: "border-palette-danger-bg",
+  },
+};
 
-function ToastMessage({ toast, duration, onClose }: ToastMessageProps) {
-  const bgColor =
-    toast.type === "alert" ? "bg-palette-danger-bg" : "bg-palette-success-bg";
-
-  const borderColor =
-    toast.type === "alert"
-      ? "border-palette-danger-border"
-      : "border-palette-success-border";
+function ToastMessage({
+  toast,
+  duration,
+  onClose,
+  onClick,
+}: ToastMessageProps) {
+  const colors = COLOR_PROPS[toast.type];
 
   return (
     <div
@@ -25,16 +32,19 @@ function ToastMessage({ toast, duration, onClose }: ToastMessageProps) {
         relative flex items-center gap-2.5
         w-[22rem] max-w-[70vw] h-14
         px-2 py-2 rounded-lg
-        ${bgColor} ${borderColor} border
+        ${colors.bg} ${colors.border} border
         text-white
         toast-message
         z-10
+        cursor-pointer
+        hover:opacity-75
       `}
       style={
         {
           "--animation-duration": `${duration}ms`,
         } as React.CSSProperties
       }
+      onClick={onClick}
     >
       {/* Icon */}
       <div className="flex-shrink-0">
@@ -60,7 +70,12 @@ function ToastMessage({ toast, duration, onClose }: ToastMessageProps) {
   );
 }
 
-const ToastView = ({ toasts, duration, closeMessage }: ToastViewProps) => {
+const ToastView = ({
+  toasts,
+  duration,
+  closeMessage,
+  onClick,
+}: ToastViewProps) => {
   return (
     <>
       <div className="fixed top-4 right-4 grid gap-4 z-[9999]">
@@ -70,6 +85,7 @@ const ToastView = ({ toasts, duration, closeMessage }: ToastViewProps) => {
             toast={toast}
             duration={duration}
             onClose={() => closeMessage(toast.id)}
+            onClick={() => onClick?.()}
           />
         ))}
       </div>
