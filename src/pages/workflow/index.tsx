@@ -24,14 +24,13 @@ import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
+import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 
 import ExecutionHeader from "./Header";
 
 import { generateNodeId } from "@/utils/nodes";
 import { generateDefaultEdge } from "@/utils/edges";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
-import { initialNodes } from "@/mocks/nodes";
-import { initialEdges } from "@/mocks/edges";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -76,14 +75,15 @@ export default function WorkflowPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<
     WorkflowNode["data"],
     WorkflowNodeType
-  >(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  >([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const { executeFromStartNode, isExecuting } = useWorkflowExecution();
   const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel({
     onSave: handlePropertiesSave,
     onDelete: handleDeleteNode,
   });
+  const { open: openExecutionSummary } = useExecutionSummary();
 
   useExecutorOnSave(handleExecutorSave);
   useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
@@ -153,11 +153,23 @@ export default function WorkflowPage() {
     [openPropertiesPanel]
   );
 
-  const executeNode = (_: unknown, node: Node) => {
-    if (node.type !== "start") return;
-    if (isExecuting) return;
+  const handleNodeClick = (_: unknown, node: Node) => {
+    // Handle START node - execute workflow
+    if (node.type === "start") {
+      if (isExecuting) return;
+      executeFromStartNode(node.id);
+      return;
+    }
 
-    executeFromStartNode(node.id);
+    // Handle END node - show execution summary modal
+    if (node.type === "end") {
+      const endNode = node as WorkflowNode;
+      const summary = endNode.data?.execution?.summary;
+
+      if (summary) {
+        openExecutionSummary(summary);
+      }
+    }
   };
 
   const onEdgeUpdateStart = useCallback(() => {
@@ -371,7 +383,7 @@ export default function WorkflowPage() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDoubleClick={handleOpenPropertiesPanel}
-        onNodeClick={executeNode}
+        onNodeClick={handleNodeClick}
         onPaneClick={resetSelectedElements}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
