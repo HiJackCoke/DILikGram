@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 
+import { AIWorkflowEditorProvider } from "@/contexts/AIWorkflowEditor";
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditor";
 import { ExecutionSummaryProvider } from "@/contexts/ExecutionSummary";
 import { PropertiesPanelProvider } from "@/contexts/PropertiesPanel";
@@ -15,12 +16,14 @@ const Layout = () => {
         <ExecutorEditorProvider>
           <ExecutionSummaryProvider>
             <PropertiesPanelProvider>
-              <WorkflowGeneratorProvider>
-                <WorkflowExecutionProvider>
-                  <div className="modal-root" id="modal-root" />
-                  <Outlet />
-                </WorkflowExecutionProvider>
-              </WorkflowGeneratorProvider>
+              <AIWorkflowEditorProvider>
+                <WorkflowGeneratorProvider>
+                  <WorkflowExecutionProvider>
+                    <div className="modal-root" id="modal-root" />
+                    <Outlet />
+                  </WorkflowExecutionProvider>
+                </WorkflowGeneratorProvider>
+              </AIWorkflowEditorProvider>
             </PropertiesPanelProvider>
           </ExecutionSummaryProvider>
         </ExecutorEditorProvider>
