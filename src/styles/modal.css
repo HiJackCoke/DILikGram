@@ -94,10 +94,10 @@
   transform: scale(0) translateY(200px);
 }
 
-.modal-root .modal-container.active {
+.modal-root.active .modal-container {
   animation: scale-up 0.4s forwards cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-.modal-root .modal-container.inactive {
+.modal-root.inactive .modal-container {
   animation: scale-down 0.4s forwards cubic-bezier(0.165, 0.84, 0.44, 1);
 }

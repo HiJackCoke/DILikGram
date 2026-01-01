@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
+
 import ModalView from "./View";
 
 import type { ModalProps } from "@/types/modal";
@@ -14,6 +15,7 @@ export default function Modal({
   children,
   onClose,
 }: ModalProps) {
+  const [clear, setClear] = useState(false);
   const element = useMemo(
     () => document.querySelector(selector),
     [selector, open]
@@ -21,6 +23,17 @@ export default function Modal({
 
   useEffect(() => {
     if (!element) return;
+
+    const handleOnAnimationStart = () => {
+      if (!open) return;
+      setClear(false);
+    };
+
+    const handleOnAnimationEnd = () => {
+      if (open) return;
+      setClear(true);
+    };
+
     if (open) {
       element.classList.remove("inactive");
       element.classList.add(`active`);
@@ -28,6 +41,14 @@ export default function Modal({
       element.classList.add("inactive");
       element.classList.remove("active");
     }
+
+    element.addEventListener("animationstart", handleOnAnimationStart);
+    element.addEventListener("animationend", handleOnAnimationEnd);
+
+    return () => {
+      element.removeEventListener("animationstart", handleOnAnimationStart);
+      element.removeEventListener("animationend", handleOnAnimationEnd);
+    };
   }, [element, open]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -39,14 +60,13 @@ export default function Modal({
   return (
     element &&
     ReactDOM.createPortal(
-      <div
-        className={`modal-container ${open ? "active" : "inactive"}`}
-        onMouseDown={handleBackdropClick}
-      >
-        <ModalView title={title} description={description} onClose={onClose}>
-          {open && children}
-        </ModalView>
-      </div>,
+      clear ? null : (
+        <div className="modal-container" onMouseDown={handleBackdropClick}>
+          <ModalView title={title} description={description} onClose={onClose}>
+            {open && children}
+          </ModalView>
+        </div>
+      ),
       element
     )
   );

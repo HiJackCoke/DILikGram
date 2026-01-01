@@ -55,7 +55,7 @@ export default function WorkflowGeneratorModal({
 
   return (
     <Modal
-      selector="#workflow-generator-modal"
+      // selector="#workflow-generator-modal"
       open={open}
       title={<WorkflowGeneratorView.Header />}
       onClose={onClose}

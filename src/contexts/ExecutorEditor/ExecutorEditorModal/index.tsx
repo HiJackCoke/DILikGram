@@ -110,7 +110,6 @@ export default function ExecutorEditorModal({
 
   return (
     <Modal
-      selector="#executor-modal"
       title={<ExecutorEditorView.Title />}
       description={`Node: ${nodeId} (${nodeType})`}
       open={open}
