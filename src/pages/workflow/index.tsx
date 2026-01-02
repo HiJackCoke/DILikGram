@@ -25,6 +25,8 @@ import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
+import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
+import AIEditPanel from "@/components/AIEditPanel";
 
 import ExecutionHeader from "./Header";
 
@@ -84,6 +86,15 @@ export default function WorkflowPage() {
     onDelete: handleDeleteNode,
   });
   const { open: openExecutionSummary } = useExecutionSummary();
+  const {
+    state: aiEditState,
+    isEditing,
+    error: aiEditError,
+    open: openAIEdit,
+    close: closeAIEdit,
+    setCurrentWorkflow,
+    handleEdit,
+  } = useAIWorkflowEditor();
 
   useExecutorOnSave(handleExecutorSave);
   useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
@@ -103,6 +114,11 @@ export default function WorkflowPage() {
   useEffect(() => {
     updateEdges(edges);
   }, [edges]);
+
+  // Update AIWorkflowEditor with current workflow state
+  useEffect(() => {
+    setCurrentWorkflow(nodes, edges);
+  }, [nodes, edges, setCurrentWorkflow]);
 
   const onConnect = (params: Connection) => {
     const hasParent = edges.some((edge) => edge.target === params.target);
@@ -171,6 +187,21 @@ export default function WorkflowPage() {
       }
     }
   };
+
+  const handleNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+
+      // Don't allow editing START and END nodes
+      if (node.type === "start" || node.type === "end") {
+        return;
+      }
+
+      // Open AI edit panel at cursor position
+      openAIEdit(node.id, { x: event.clientX, y: event.clientY });
+    },
+    [openAIEdit]
+  );
 
   const onEdgeUpdateStart = useCallback(() => {
     edgeUpdateSuccessful.current = false;
@@ -384,6 +415,7 @@ export default function WorkflowPage() {
         onEdgesChange={onEdgesChange}
         onNodeDoubleClick={handleOpenPropertiesPanel}
         onNodeClick={handleNodeClick}
+        onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={resetSelectedElements}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
@@ -391,6 +423,16 @@ export default function WorkflowPage() {
         onEdgeUpdate={onEdgeUpdate}
         onEdgeUpdateStart={onEdgeUpdateStart}
         onEdgeUpdateEnd={onEdgeUpdateEnd}
+      />
+
+      <AIEditPanel
+        open={aiEditState.isOpen}
+        position={aiEditState.nodePosition}
+        nodeId={aiEditState.nodeId}
+        isEditing={isEditing}
+        error={aiEditError}
+        onSubmit={handleEdit}
+        onClose={closeAIEdit}
       />
     </div>
   );

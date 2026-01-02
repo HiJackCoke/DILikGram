@@ -20,6 +20,7 @@ const Layout = () => {
                 <WorkflowGeneratorProvider>
                   <WorkflowExecutionProvider>
                     <div className="modal-root" id="modal-root" />
+           
                     <Outlet />
                   </WorkflowExecutionProvider>
                 </WorkflowGeneratorProvider>

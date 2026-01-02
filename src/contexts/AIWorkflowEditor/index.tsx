@@ -39,14 +39,17 @@ export function AIWorkflowEditorProvider({
   const currentNodesRef = useRef<WorkflowNode[]>([]);
   const currentEdgesRef = useRef<WorkflowEdge[]>([]);
 
-  const open = useCallback((nodeId: string, position: { x: number; y: number }) => {
-    setState({
-      isOpen: true,
-      nodeId,
-      nodePosition: position,
-    });
-    setError(null);
-  }, []);
+  const open = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      setState({
+        isOpen: true,
+        nodeId,
+        nodePosition: position,
+      });
+      setError(null);
+    },
+    []
+  );
 
   const close = useCallback(() => {
     setState({
@@ -119,6 +122,7 @@ export function AIWorkflowEditorProvider({
         handleEdit,
       }}
     >
+      <div id="floating-panel-root" />
       {children}
     </AIWorkflowEditorContext>
   );

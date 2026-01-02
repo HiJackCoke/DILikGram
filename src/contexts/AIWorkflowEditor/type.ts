@@ -4,6 +4,7 @@
 
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
+import type { XYPosition } from "react-cosmos-diagram";
 
 /**
  * AI Workflow Editor state
@@ -11,7 +12,7 @@ import type { WorkflowEdge } from "@/types/edges";
 export interface AIWorkflowEditorState {
   isOpen: boolean;
   nodeId: string | null;
-  nodePosition: { x: number; y: number } | null;
+  nodePosition: XYPosition | null;
 }
 
 /**
