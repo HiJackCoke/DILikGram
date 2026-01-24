@@ -1,41 +1,28 @@
 import { Port, Position } from "react-cosmos-diagram";
-import { Square, CheckCircle, XCircle } from "lucide-react";
+import { Square } from "lucide-react";
 import { Tooltip } from "@/components/Tooltip";
 
-import type {
-  ExecutionSummary,
-  EndNodeProps,
-  EndNodeStatus,
-  NodePort,
-} from "@/types";
+import type { ExecutionSummary, EndNodeProps, NodePort } from "@/types";
 
-const statusStyles: Record<
-  EndNodeStatus,
-  {
-    gradient: string;
-    ring: string;
-    shadow: string;
-    Icon: typeof Square;
-  }
-> = {
-  success: {
-    gradient: "from-palette-success-bg to-palette-success-border",
-    ring: "ring-green-300",
-    shadow: "shadow-green-200",
-    Icon: CheckCircle,
-  },
-  failure: {
-    gradient: "from-palette-danger-bg to-palette-danger-border",
-    ring: "ring-red-300",
-    shadow: "shadow-red-200",
-    Icon: XCircle,
-  },
-  neutral: {
-    gradient: "from-palette-neutral-bg to-palette-neutral-border",
-    ring: "ring-gray-300",
-    shadow: "shadow-gray-200",
-    Icon: Square,
-  },
+// success: {
+//   gradient: "from-palette-success-bg to-palette-success-border",
+//   ring: "ring-green-300",
+//   shadow: "shadow-green-200",
+//   Icon: CheckCircle,
+// },
+// failure: {
+//   gradient: "from-palette-danger-bg to-palette-danger-border",
+//   ring: "ring-red-300",
+//   shadow: "shadow-red-200",
+//   Icon: XCircle,
+// },
+
+// Single neutral style for all END nodes
+const endNodeStyle = {
+  gradient: "from-palette-neutral-bg to-palette-neutral-border",
+  ring: "ring-gray-300",
+  shadow: "shadow-gray-200",
+  Icon: Square,
 };
 
 interface ExecutionSummaryTooltipProps {
@@ -71,8 +58,10 @@ function TooltipContent({ summary }: ExecutionSummaryTooltipProps) {
 }
 
 export function EndNode({ data, selected }: EndNodeProps) {
-  const status = data.status || "neutral";
-  const { gradient, ring, shadow, Icon } = statusStyles[status];
+  const summary = data.execution?.summary;
+  const hasSummary = !!summary;
+
+  const { gradient, ring, shadow, Icon } = endNodeStyle;
 
   const defaultPorts: NodePort[] = [
     { id: "input", position: Position.Top, type: "target" },
@@ -81,13 +70,10 @@ export function EndNode({ data, selected }: EndNodeProps) {
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
-    executing: `ring-4 ${status === "success" ? "ring-palette-success-color" : "ring-palette-danger-color"} animate-pulse scale-110`,
-    executed: `ring-2 ${status === "success" ? "ring-palette-success-color" : "ring-palette-danger-color"} scale-110`,
+    executing: `ring-4 ring-palette-neutral-color animate-pulse scale-110`,
+    executed: `ring-2 ring-palette-neutral-color scale-110`,
     idle: "",
   };
-
-  const summary = data.execution?.summary;
-  const hasSummary = !!summary;
 
   // Node content
 

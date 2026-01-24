@@ -43,6 +43,7 @@ type WorkflowNodeData<T> = T & {
   state?: WorkflowNodeState;
   execution?: ExecutionData;
   ports?: NodePort[];
+  branchLabel?: "yes" | "no";
 };
 
 export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {
@@ -60,11 +61,9 @@ export type StartNodeProps = WorkflowNodeProps<StartNodeData>;
 // ============================================
 // EndNode
 // ============================================
-export type EndNodeStatus = "success" | "failure" | "neutral";
 
 export type EndNodeData = {
   title?: string;
-  status?: EndNodeStatus;
 };
 
 export type EndNodeProps = WorkflowNodeProps<EndNodeData>;
