@@ -27,14 +27,16 @@ import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
-import AIEditPanel from "@/components/AIEditPanel";
 
 import ExecutionHeader from "./Header";
 
 import { generateNodeId } from "@/utils/nodes";
-import { generateEdgeId } from "@/utils/edges";
+
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
+import { generateEdgeId } from "@/utils/edges";
 import { PALETTE } from "../../../tailwind.config";
+// import { initialNodes } from "@/mocks/nodes";
+// import { initialEdges } from "@/mocks/edges";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -88,15 +90,12 @@ export default function WorkflowPage() {
     onDelete: handleDeleteNode,
   });
   const { open: openExecutionSummary } = useExecutionSummary();
-  const {
-    state: aiEditState,
-    isEditing,
-    error: aiEditError,
-    open: openAIEdit,
-    close: closeAIEdit,
-    setCurrentWorkflow,
-    handleEdit,
-  } = useAIWorkflowEditor();
+  const { open: openAIEdit, setCurrentWorkflow } = useAIWorkflowEditor({
+    onEdit: (nodes, edges) => {
+      setNodes(nodes);
+      setEdges(edges);
+    },
+  });
 
   useExecutorOnSave(handleExecutorSave);
   useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
@@ -430,16 +429,6 @@ export default function WorkflowPage() {
         onEdgeUpdate={onEdgeUpdate}
         onEdgeUpdateStart={onEdgeUpdateStart}
         onEdgeUpdateEnd={onEdgeUpdateEnd}
-      />
-
-      <AIEditPanel
-        open={aiEditState.isOpen}
-        position={aiEditState.nodePosition}
-        nodeId={aiEditState.nodeId}
-        isEditing={isEditing}
-        error={aiEditError}
-        onSubmit={handleEdit}
-        onClose={closeAIEdit}
       />
     </div>
   );

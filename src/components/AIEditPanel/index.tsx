@@ -9,56 +9,53 @@ import { useState } from "react";
 import ReactDOM from "react-dom";
 
 import AIEditPanelView from "./View";
-import type { XYPosition } from "react-cosmos-diagram";
+
+import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 
 interface AIEditPanelProps {
-  open: boolean;
-  position: XYPosition | null;
-  nodeId: string | null;
-  isEditing: boolean;
-  error: string | null;
-  onSubmit: (apiKey: string, nodeId: string, prompt: string) => void;
-  onClose: () => void;
+  onSubmit?: (apiKey: string, nodeId: string, prompt: string) => void;
+  onClose?: () => void;
 }
 
-export default function AIEditPanel({
-  open,
-  position,
-  nodeId,
-  isEditing,
-  error,
-  onSubmit,
-  onClose,
-}: AIEditPanelProps) {
+export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
   const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
 
+  const {
+    state: { isOpen, nodeId, nodePosition },
+    isEditing,
+    error,
+    close,
+    update,
+  } = useAIWorkflowEditor();
+
   const handleSubmit = () => {
     if (apiKey.trim() && prompt.trim() && nodeId) {
-      onSubmit(apiKey.trim(), nodeId, prompt.trim());
+      update(apiKey.trim(), nodeId, prompt.trim());
+      onSubmit?.(apiKey.trim(), nodeId, prompt.trim());
     }
   };
 
   const handleClose = () => {
     setApiKey("");
     setPrompt("");
-    onClose();
+    close();
+    onClose?.();
   };
 
   const element = document.querySelector("#floating-panel-root");
 
-  if (!element || !open || !position) {
+  if (!element || !isOpen || !nodePosition) {
     return null;
   }
 
   return ReactDOM.createPortal(
     <AIEditPanelView
-      position={position}
+      position={nodePosition}
       apiKey={apiKey}
       prompt={prompt}
       isEditing={isEditing}
       error={error}
-
       onApiKeyChange={setApiKey}
       onPromptChange={setPrompt}
       onSubmit={handleSubmit}

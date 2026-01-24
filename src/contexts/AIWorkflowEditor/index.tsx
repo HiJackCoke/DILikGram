@@ -5,16 +5,26 @@
  * and orchestrates the edit pipeline.
  */
 
-import { createContext, useState, useCallback, useRef, use } from "react";
+import {
+  createContext,
+  useState,
+  useCallback,
+  useRef,
+  use,
+  useEffect,
+} from "react";
 import type { ReactNode } from "react";
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 
 import type {
   AIWorkflowEditorContextValue,
+  AIWorkflowEditorHandlers,
   AIWorkflowEditorState,
   OnWorkflowEditCallback,
 } from "./type";
+
+import AIEditPanel from "@/components/AIEditPanel";
 
 interface AIWorkflowEditorProviderProps {
   children: ReactNode;
@@ -78,7 +88,7 @@ export function AIWorkflowEditorProvider({
     []
   );
 
-  const handleEdit = useCallback(
+  const update = useCallback(
     async (apiKey: string, nodeId: string, prompt: string) => {
       setIsEditing(true);
       setError(null);
@@ -86,7 +96,7 @@ export function AIWorkflowEditorProvider({
       try {
         // TODO: Implement in Stage 2
         // This is a placeholder for now
-        console.log("Edit request:", { apiKey: "***", nodeId, prompt });
+        console.log("Edit request:", { apiKey, nodeId, prompt });
 
         // Simulate edit completion
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -119,11 +129,12 @@ export function AIWorkflowEditorProvider({
         close,
         registerOnEdit,
         setCurrentWorkflow,
-        handleEdit,
+        update,
       }}
     >
-      <div id="floating-panel-root" />
       {children}
+      <div id="floating-panel-root" />
+      <AIEditPanel />
     </AIWorkflowEditorContext>
   );
 }
@@ -133,12 +144,30 @@ export function AIWorkflowEditorProvider({
  *
  * @throws Error if used outside AIWorkflowEditorProvider
  */
-export function useAIWorkflowEditor(): AIWorkflowEditorContextValue {
+export function useAIWorkflowEditor(
+  handlers?: AIWorkflowEditorHandlers
+): AIWorkflowEditorContextValue {
   const context = use(AIWorkflowEditorContext);
   if (!context) {
     throw new Error(
       "useAIWorkflowEditor must be used within AIWorkflowEditorProvider"
     );
   }
+
+  const { registerOnEdit } = context;
+
+  useEffect(() => {
+    const unregisterFns: (() => void)[] = [];
+
+    if (handlers?.onEdit) {
+      unregisterFns.push(registerOnEdit(handlers.onEdit));
+    }
+
+    return () => {
+      unregisterFns.forEach((fn) => fn());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return context;
 }
