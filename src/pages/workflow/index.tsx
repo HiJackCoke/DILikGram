@@ -7,6 +7,7 @@ import ReactDiagram, {
   updateEdge,
   type Connection,
   type Node,
+  MarkerType,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
 
@@ -31,8 +32,9 @@ import AIEditPanel from "@/components/AIEditPanel";
 import ExecutionHeader from "./Header";
 
 import { generateNodeId } from "@/utils/nodes";
-import { generateDefaultEdge } from "@/utils/edges";
+import { generateEdgeId } from "@/utils/edges";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
+import { PALETTE } from "../../../tailwind.config";
 
 // Viewport transform 값 추출 헬퍼 함수
 function getTranslateValues(transformString: string) {
@@ -155,7 +157,12 @@ export default function WorkflowPage() {
       return addEdge(
         {
           ...params,
-          ...generateDefaultEdge(source, target),
+          id: generateEdgeId(source, target),
+          type: "workflow",
+          markerEnd: {
+            type: MarkerType.Arrow,
+            color: PALETTE["neutral"].color,
+          },
         },
         eds
       );
