@@ -154,7 +154,7 @@ return "REST API";`
     parentNode: "service-1",
     data: {
       title: "완료",
-      status: "success" as const,
+
       ports: [{ id: "input", position: Position.Top, type: "target" as const }],
     },
     position: { x: 550, y: 600 },
@@ -165,7 +165,7 @@ return "REST API";`
     parentNode: "task-2",
     data: {
       title: "실패",
-      status: "failure" as const,
+
       ports: [{ id: "input", position: Position.Top, type: "target" as const }],
     },
     position: { x: 250, y: 750 },

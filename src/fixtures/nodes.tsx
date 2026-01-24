@@ -110,7 +110,7 @@ export const UNIFIED_NODE_TEMPLATES: Record<
       type: "end",
       data: {
         title: "End",
-        status: "neutral",
+        // status: "neutral",
         ports: getDefaultPorts("end"),
       },
     },
@@ -357,15 +357,15 @@ const END_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Title",
     placeholder: "Enter title",
   },
-  status: {
-    type: "select",
-    label: "Status",
-    options: [
-      { label: "Success", value: "success" },
-      { label: "Failure", value: "failure" },
-      { label: "Neutral", value: "neutral" },
-    ],
-  },
+  // status: {
+  //   type: "select",
+  //   label: "Status",
+  //   options: [
+  //     { label: "Success", value: "success" },
+  //     { label: "Failure", value: "failure" },
+  //     { label: "Neutral", value: "neutral" },
+  //   ],
+  // },
   ports: {
     type: "port",
     label: "Ports",
