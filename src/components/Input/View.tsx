@@ -38,12 +38,14 @@ export default function InputView({
   })();
 
   return (
-    <div className="">
+    <div className="space-y-1.5">
       {/* Label */}
-      <label className="block text-sm font-medium text-slate-200 transition-colors duration-200">
-        {label}
-        {required && <span className="text-red-400 ml-1">*</span>}
-      </label>
+      {label && (
+        <label className="block text-sm font-medium text-slate-200 transition-colors duration-200">
+          {label}
+          {required && <span className="text-red-400 ml-1">*</span>}
+        </label>
+      )}
 
       {/* Input */}
       <div className="relative">
