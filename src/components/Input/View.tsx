@@ -38,7 +38,7 @@ export default function InputView({
   })();
 
   return (
-    <div className="space-y-1.5">
+    <div className="">
       {/* Label */}
       <label className="block text-sm font-medium text-slate-200 transition-colors duration-200">
         {label}

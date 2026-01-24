@@ -30,7 +30,7 @@ export default function KeyValueEditorView({
           const keyType = config.keyType ?? "text";
 
           return (
-            <div key={index} className="flex gap-2 items-start">
+            <div key={index} className="flex gap-2">
               {/* Key Input/Select */}
               <div className="flex-1">
                 {keyType === "select" ? (
@@ -98,7 +98,7 @@ export default function KeyValueEditorView({
                 type="button"
                 onClick={() => onRemove(pair.key)}
                 disabled={disabled || isKeyReadonly || !editable}
-                className="mt-1.5 p-2 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Remove pair"
               >
                 <Trash2 className="w-4 h-4" />

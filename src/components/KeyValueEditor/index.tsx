@@ -23,8 +23,17 @@ export default function KeyValueEditor({
 
     let newKey: string;
     if (globalConfig?.keyType === "select" && globalConfig.keyOptions) {
+      const keys = Object.keys(value);
+      const nextKey = globalConfig.keyOptions.find(
+        (option) => !keys.includes(option.value)
+      );
+
       // Use first option as default key
-      newKey = globalConfig.keyOptions[0]?.value || `key${pairs.length + 1}`;
+      if (!nextKey) {
+        return;
+      }
+
+      newKey = nextKey?.value;
     } else {
       // Generate unique key
       newKey = `key${pairs.length + 1}`;
