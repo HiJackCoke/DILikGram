@@ -58,7 +58,7 @@ function WorkflowGeneratorView({
   const canGenerate = apiKey.trim() && prompt.trim() && !isGenerating;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-scroll">
       {/* Header */}
 
       {/* API Key Setup */}
