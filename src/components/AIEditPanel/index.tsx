@@ -29,18 +29,26 @@ export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
     update,
   } = useAIWorkflowEditor();
 
+  const reset = () => {
+    setApiKey("");
+    setPrompt("");
+  };
+
   const handleSubmit = () => {
     if (apiKey.trim() && prompt.trim() && nodeId) {
       update(apiKey.trim(), nodeId, prompt.trim());
+
       onSubmit?.(apiKey.trim(), nodeId, prompt.trim());
+
+      reset();
     }
   };
 
   const handleClose = () => {
-    setApiKey("");
-    setPrompt("");
     close();
     onClose?.();
+
+    reset();
   };
 
   const element = document.querySelector("#floating-panel-root");
