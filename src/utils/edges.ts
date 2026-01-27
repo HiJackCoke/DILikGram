@@ -1,6 +1,7 @@
 import { MarkerType } from "react-cosmos-diagram";
 import { PALETTE } from "../../tailwind.config";
 import type { WorkflowEdge } from "@/types/edges";
+import type { WorkflowNode } from "@/types";
 
 export function generateEdgeId(sourceId: string, targetId: string): string {
   return `edge-${sourceId}-${targetId}`;
@@ -12,6 +13,8 @@ export function createDefaultEdge(edge: Partial<WorkflowEdge>): WorkflowEdge {
     throw new Error("Edge must have source and target");
   }
 
+
+  
   return {
     id: edge.id || generateEdgeId(edge.source, edge.target),
     type: edge.type || "workflow", // Ensure type is set
@@ -28,4 +31,21 @@ export function createDefaultEdge(edge: Partial<WorkflowEdge>): WorkflowEdge {
       animated: false,
     },
   };
+}
+
+
+export function createWorkflowEdge(node: WorkflowNode) {
+  const source = node.parentNode;
+  const target = node.id;
+
+  const targetPort = "input";
+  const type = "workflow";
+
+  return createDefaultEdge({
+    source,
+    target,
+    sourcePort: node.data.branchLabel || "output",
+    targetPort,
+    type,
+  });
 }

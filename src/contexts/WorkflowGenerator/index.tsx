@@ -13,10 +13,12 @@ import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
 } from "./type";
-import { generateWorkflow } from "@/ai/utils/openai";
-import { processGeneratedWorkflow } from "@/ai/utils/workflowGenerator";
+import { generateWorkflow } from "@/ai/utils/aiClient";
+import {
+  createWorkflow,
+  // parseWorkflowFromAI,
+} from "@/ai/utils/workflowProcessor";
 import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
-
 
 interface WorkflowGeneratorProviderProps {
   children: ReactNode;
@@ -68,20 +70,14 @@ export function WorkflowGeneratorProvider({
       setError(null);
 
       try {
-        const existingNodes = existingNodesRef.current;
-
         // 1. Call OpenAI API
-        const generated = await generateWorkflow(
+        const generated = await generateWorkflow({
           apiKey,
           prompt,
-          existingNodes.length
-        );
+        });
 
         // 2. Process workflow (validate, layout, and map to WorkflowNode/Edge)
-        const { nodes, edges } = processGeneratedWorkflow(
-          generated,
-          existingNodes
-        );
+        const { nodes, edges } = createWorkflow(generated.nodes);
 
         // 3. Notify listeners
         listeners.current.forEach((listener) => listener(nodes, edges));

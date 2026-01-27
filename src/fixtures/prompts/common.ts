@@ -117,6 +117,7 @@ export const PARENT_CHILD_RULES = `
 export const COMMON_VALIDATION_RULES = `
 VALIDATION CHECKLIST (Self-Correction):
 
+□ **Correct ID Format?** (node-\${type}-\${uuid}) // uuid format: [8-4-4-4-12 char]
 □ **No "edges" field?** (System handles edges)
 □ **No "start" or "end" nodes?** (System handles them)
 □ **All nodes have valid \`parentNode\`?** (Except the root of a new flow)

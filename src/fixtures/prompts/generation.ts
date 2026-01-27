@@ -19,7 +19,7 @@ User: "Create a document review process where if approved it goes to shipping, o
   "nodes": [
     // 1. Root Node (No parentNode)
     {
-      "id": "node-review",
+      "id": "node-\${type}-\${uuid}",
       "type": "task",
       "position": { "x": 0, "y": 0 },
       "data": {
@@ -44,7 +44,7 @@ User: "Create a document review process where if approved it goes to shipping, o
     },
     // 2. Decision Node (Parent is Review)
     {
-      "id": "node-check",
+      "id": "node-\${type}-\${uuid}",
       "type": "decision",
       "parentNode": "node-review",
       "position": { "x": 0, "y": 150 },
@@ -76,7 +76,7 @@ User: "Create a document review process where if approved it goes to shipping, o
     },
     // 3. Yes Branch (Parent is Decision)
     {
-      "id": "node-shipping",
+      "id": "node-\${type}-\${uuid}",
       "type": "service",
       "parentNode": "node-check",
       "position": { "x": 200, "y": 300 },
@@ -102,7 +102,7 @@ User: "Create a document review process where if approved it goes to shipping, o
     },
     // 4. No Branch (Parent is Decision)
     {
-      "id": "node-draft",
+      "id": "node-\${type}-\${uuid}",
       "type": "task",
       "parentNode": "node-check",
       "position": { "x": -200, "y": 300 },

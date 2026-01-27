@@ -24,6 +24,8 @@ import type {
   OnWorkflowEditCallback,
 } from "./type";
 
+import { updateWorkflow } from "@/ai/utils/aiClient";
+import { mergeWorkflow } from "@/ai/utils/workflowProcessor";
 import AIEditPanel from "@/components/AIEditPanel";
 
 interface AIWorkflowEditorProviderProps {
@@ -94,18 +96,24 @@ export function AIWorkflowEditorProvider({
       setError(null);
 
       try {
-        // TODO: Implement in Stage 2
-        // This is a placeholder for now
-        console.log("Edit request:", { apiKey, nodeId, prompt });
+        const currentNodes = currentNodesRef.current;
+        // const currentEdges = currentEdgesRef.current;
 
-        // Simulate edit completion
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const editResult = await updateWorkflow({
+          apiKey,
+          nodeId,
+          prompt,
+          nodes: currentNodes,
+        });
 
-        // For now, just notify listeners with current workflow
-        listeners.current.forEach((listener) =>
-          listener(currentNodesRef.current, currentEdgesRef.current)
-        );
+        // Step 4: Merge edit result into current workflow (ParentNode-First)
+        // Context is used to derive edges from parentNode if not provided in editResult
+        const { nodes, edges } = mergeWorkflow(currentNodes, editResult);
 
+        // Step 5: Notify listeners with updated workflow
+        listeners.current.forEach((listener) => listener(nodes, edges));
+
+        // Step 6: Close panel
         close();
       } catch (err) {
         const errorMessage =

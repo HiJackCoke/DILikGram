@@ -1,8 +1,13 @@
-import { Position } from "react-cosmos-diagram";
-import type { WorkflowNode } from "@/types/nodes";
+import { v4 as uuid } from "uuid";
 
-export function generateNodeId(index: number, type: string): string {
-  return `${type}-${Date.now()}-${index}`;
+import { Position } from "react-cosmos-diagram";
+
+import type { WorkflowNode } from "@/types/nodes";
+import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
+
+export function generateNodeId(type: string): string {
+  const id = uuid();
+  return `node-${type}-${id}`;
 }
 
 export function getDefaultPorts(type: string) {
@@ -64,4 +69,32 @@ export function findAllDescendantNodes(
   }
 
   return result;
+}
+
+export function findLeafNodes(nodes: WorkflowNode[]): WorkflowNode[] {
+  // 1. parent로 사용된 node id들을 수집
+  const parentNodeSet = new Set<string>();
+
+  nodes.forEach((node) => {
+    if (node.parentNode) {
+      parentNodeSet.add(node.parentNode);
+    }
+  });
+
+  // 2. parent로 한 번도 등장하지 않은 노드가 leaf
+  return nodes.filter((node) => !parentNodeSet.has(node.id));
+}
+
+export function createDefaultNode(node: Partial<WorkflowNode>) {
+  const type = node.type || "start";
+  const template = UNIFIED_NODE_TEMPLATES[type].template;
+
+  const newNode: WorkflowNode = {
+    id: node.id || generateNodeId(type),
+    position: { x: 0, y: 0 },
+    ...template,
+    ...node,
+  };
+
+  return newNode;
 }

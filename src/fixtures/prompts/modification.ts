@@ -32,7 +32,7 @@ Response (Insert Decision BEFORE Task A):
   "nodes": {
     "create": [
       {
-        "id": "new-decision",
+        "id": "new-decision", // ID Format: node-\${type}-\${uuid}
         "type": "decision",
         "parentNode": "original-parent-of-task-a", // Inherit parent of Task A
         "position": { "x": 100, "y": 100 },
@@ -63,7 +63,7 @@ Response (Insert Decision BEFORE Task A):
         }
       },
       {
-        "id": "new-bypass",
+        "id": "new-bypass", // ID Format: node-\${type}-\${uuid}
         "type": "task",
         "parentNode": "new-decision",
         "position": { "x": 300, "y": 200 },
@@ -91,7 +91,7 @@ Response (Insert Decision BEFORE Task A):
     ],
     "update": [
       {
-        "nodeId": "task-a",
+        "id": "task-a", // ID Format: node-\${type}-\${uuid}
         "parentNode": "new-decision", // Rewire Task A to be child of Decision
         "data": {
            "branchLabel": "yes" // Decision Branch 2 (Task A becomes Yes path)
@@ -112,7 +112,7 @@ Response (Add node to specific branch):
   "nodes": {
     "create": [
       {
-        "id": "new-log-service",
+        "id": "new-log-service", // ID Format: node-\${type}-\${uuid}
         "type": "service",
         "parentNode": "decision-x", // Connect to selected decision
         "position": { "x": 200, "y": 400 },
@@ -127,7 +127,7 @@ Response (Add node to specific branch):
     "update": [
       // If there was an existing node on "no" branch, rewire it to be child of "new-log-service"
       {
-        "nodeId": "old-no-branch-node",
+        "id": "old-no-branch-node", // ID Format: node-\${type}-\${uuid}
         "parentNode": "new-log-service",
         "data": {
            "branchLabel": undefined // No longer direct child of decision, remove label
@@ -144,7 +144,7 @@ RESPONSE FORMAT (JSON):
 {
   "nodes": {
     "create": [ ...Array of new Nodes (task, service, decision) ],
-    "update": [ { "nodeId": "...", "parentNode": "...", "data": {...} } ],
+    "update": [ { "id": "...", "parentNode": "...", "data": {...} } ],
     "delete": [ "node-id-1", "node-id-2" ]
   },
   "metadata": { ... }
@@ -153,6 +153,29 @@ RESPONSE FORMAT (JSON):
 DO NOT generate Start/End nodes.
 DO NOT generate Edges.
 `;
+
+// export const MODIFICATION_SCOPE_RULES = `
+// ═══════════════════════════════════════════════════════════════
+// 🛠️ MODIFICATION & RESTRUCTURING RULES
+// ═══════════════════════════════════════════════════════════════
+
+// 1. **Effective Scope Definition**
+//    - The "Selected Node" and ALL its "Descendants" (children, grandchildren, etc.) are within your control.
+//    - You are NOT required to preserve existing descendant nodes if the user's request implies a structural change.
+
+// 2. **Active Use of DELETE**
+//    - If a user asks to "Replace steps" or "Change logic", DO NOT just append new nodes.
+//    - Add the IDs of unnecessary existing descendant nodes to the \`delete\` array.
+//    - Then, \`create\` new nodes or \`update\` others to form the requested logic.
+
+// 3. **Restructuring Example**
+//    - Current: A -> B -> C (Selected: A)
+//    - Request: "Make A branch into D and E instead of going to B."
+//    - Action:
+//      - \`delete\`: ["B", "C"] (If they are no longer needed)
+//      - \`update\`: Node "A" (Change to type: "decision")
+//      - \`create\`: Node "D" (parent: "A", branch: "yes"), Node "E" (parent: "A", branch: "no")
+// `;
 
 export const MODIFICATION_PROMPT_CONTENT = `
 ${CORE_NODE_TYPES}
@@ -201,10 +224,10 @@ export function buildEditResultSchema() {
             items: {
               type: "object",
               properties: {
-                nodeId: { type: "string" },
+                id: { type: "string" },
                 data: { type: "object" },
               },
-              required: ["nodeId", "data"],
+              required: ["id", "data"],
               additionalProperties: false,
             },
           },

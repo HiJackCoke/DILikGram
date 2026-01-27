@@ -30,7 +30,7 @@ import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 
 import ExecutionHeader from "./Header";
 
-import { generateNodeId } from "@/utils/nodes";
+import { createDefaultNode } from "@/utils/nodes";
 
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { generateEdgeId } from "@/utils/edges";
@@ -293,11 +293,10 @@ export default function WorkflowPage() {
       const template = UNIFIED_NODE_TEMPLATES[type]?.template;
       if (!template) return;
 
-      const newNode: WorkflowNode = {
-        id: generateNodeId(nodes.length, type),
-        ...template,
+      const newNode = createDefaultNode({
+        type,
         position,
-      };
+      });
 
       setNodes((prevNodes) => [...prevNodes, newNode]);
     },
