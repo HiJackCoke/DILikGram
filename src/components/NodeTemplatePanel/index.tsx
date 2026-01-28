@@ -178,8 +178,8 @@ export default function NodeTemplatePanel({
           rounded-lg shadow-xl overflow-visible transition-all duration-300
           ${
             isOpen
-              ? "max-h-[calc(100vh-100px)] opacity-100 translate-y-0"
-              : "max-h-0 opacity-0 -translate-y-2"
+              ? "max-h-[calc(100vh-100px)] opacity-100 translate-y-0 pointer-events-auto"
+              : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
           }
         `}
         >
