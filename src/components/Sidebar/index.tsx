@@ -1,43 +1,162 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import NodeTemplate from "./NodeTemplate";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 import type { WorkflowNodeType } from "@/types/nodes";
+import {
+  closestCorners,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import type { XYPosition } from "react-cosmos-diagram";
 
-export default function Sidebar() {
+interface SidebarProps {
+  onDragStart?: (event: DragStartEvent, distance: XYPosition) => void;
+  onDragMove?: (event: DragMoveEvent) => void;
+  onDragEnd?: (event: DragEndEvent) => void;
+}
+
+const hasMouseSupport = (): boolean => {
+  const hasPointerFine = window.matchMedia("(pointer: fine)").matches;
+
+  const hasTouchSupport =
+    "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+  return hasPointerFine && !hasTouchSupport;
+};
+
+const getTranslateXYValues = (element: HTMLElement | null) => {
+  if (!element) return { x: 0, y: 0, z: 0 };
+  const style = window.getComputedStyle(element);
+  const matrix = new WebKitCSSMatrix(style.transform);
+
+  return {
+    x: matrix.m41, // translateX
+    y: matrix.m42, // translateY
+    z: matrix.m43,
+  };
+};
+
+export default function Sidebar({
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+}: SidebarProps) {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const sortingRef = useRef<ReturnType<CollisionDetection>>([]);
+
+  const sensors = useSensors(
+    useSensor(hasMouseSupport() ? PointerSensor : TouchSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const [isOpen, setIsOpen] = useState(false);
 
-  // 이벤트 위임: 부모에서 한 번만 처리
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
+  const [sidebarItems, setSidebarItems] = useState(
+    Object.entries(UNIFIED_NODE_TEMPLATES).map(([type, value]) => ({
+      id: type, // unique identifier for @dnd-kit
+      type: type as WorkflowNodeType,
+      icon: value.icon,
+      label: value.label,
+      description: value.description,
+    }))
+  );
 
-    // draggable 요소를 찾기 (NodeTemplate의 최상위 div)
-    const draggableElement = target.closest(
-      '[draggable="true"]'
-    ) as HTMLElement;
-    if (!draggableElement) return;
+  const customCollisionDetection: CollisionDetection = (args) => {
+    const { pointerCoordinates } = args;
 
-    // data-node-type 속성에서 노드 타입 가져오기
-    const type = draggableElement.dataset.nodeType;
-    if (!type) return;
+    if (!pointerCoordinates) {
+      return closestCorners(args);
+    }
 
-    e.dataTransfer.setData("application/nodeType", type);
-    e.dataTransfer.effectAllowed = "move";
+    const sidebarRect = sidebarRef.current?.getBoundingClientRect();
 
-    // 드래그 시작 시 마우스의 상대 위치를 비율(%)로 계산
-    const rect = draggableElement.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+    if (!sidebarRect) {
+      return closestCorners(args);
+    }
 
-    // 비율(0~1)로 저장
-    const ratioX = offsetX / rect.width;
-    const ratioY = offsetY / rect.height;
+    const isOutside =
+      pointerCoordinates.x < sidebarRect.left ||
+      pointerCoordinates.x > sidebarRect.right ||
+      pointerCoordinates.y < sidebarRect.top ||
+      pointerCoordinates.y > sidebarRect.bottom;
 
-    const distance = {
-      x: ratioX,
-      y: ratioY,
-    };
-    e.dataTransfer.setData("application/node", JSON.stringify(distance));
+    if (isOutside) {
+      return sortingRef.current;
+    } else {
+      sortingRef.current = closestCorners(args);
+    }
+
+    return closestCorners(args);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    // activatorEvent에서 클릭 위치 가져오기
+    const activatorEvent = event.activatorEvent;
+    const target = activatorEvent.target as HTMLElement;
+    const rect = target.getBoundingClientRect();
+
+    if (hasMouseSupport()) {
+      const pointerEvent = activatorEvent as PointerEvent;
+
+      const rateX = (pointerEvent.x - rect.x) / rect.width;
+      const rateY = (pointerEvent.y - rect.y) / rect.height;
+
+      onDragStart?.(event, { x: rateX, y: rateY });
+    } else {
+      const touchEvent = activatorEvent as TouchEvent;
+      const touch = touchEvent.touches?.[0];
+
+      const { x, y } = getTranslateXYValues(target.parentElement);
+
+      const layerX = touch.clientX - rect.left + x;
+      const layerY = touch.clientY - rect.top + y;
+
+      const rateX = layerX / rect.width;
+      const rateY = layerY / rect.height;
+
+      onDragStart?.(event, { x: rateX, y: rateY });
+    }
+
+    // onDragStart?.(event);
+  };
+
+  const updateSorting = ({ active, over }: DragEndEvent) => {
+    if (!over) return;
+
+    const { id: activeId } = active;
+    const { id: overId } = over;
+
+    if (activeId === overId) return;
+    setSidebarItems((items) => {
+      const oldIndex = items.findIndex(({ id }) => id === activeId);
+      const newIndex = items.findIndex(({ id }) => id === overId);
+
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    if (!event.over) return;
+
+    updateSorting(event);
+    onDragEnd?.(event);
   };
 
   return (
@@ -56,35 +175,51 @@ export default function Sidebar() {
 
       {/* Sidebar Panel */}
 
-      <div
-        className={`
+      <DndContext
+        sensors={sensors}
+        collisionDetection={customCollisionDetection}
+        autoScroll={false}
+        onDragStart={handleDragStart}
+        onDragMove={onDragMove}
+        onDragEnd={handleDragEnd}
+      >
+        <div
+          ref={sidebarRef}
+          className={`
           absolute left-4 top-16 z-20 w-72 bg-white border border-gray-200
-          rounded-lg shadow-xl overflow-y-auto transition-all duration-300
+          rounded-lg shadow-xl overflow-visible transition-all duration-300
           ${
             isOpen
               ? "max-h-[calc(100vh-100px)] opacity-100 translate-y-0"
               : "max-h-0 opacity-0 -translate-y-2"
           }
         `}
-      >
-        <div className="p-4 border-b bg-gray-50">
-          <h2 className="font-semibold text-gray-900">Node Templates</h2>
-          <p className="text-xs text-gray-500 mt-1">Drag nodes to canvas</p>
-        </div>
+        >
+          <div className="p-4 border-b rounded-t-lg bg-gray-50">
+            <h2 className="font-semibold text-gray-900">Node Templates</h2>
+            <p className="text-xs text-gray-500 mt-1">Drag nodes to canvas</p>
+          </div>
 
-        {/* 이벤트 위임: onDragStart를 부모에 한 번만 */}
-        <div className="p-4 space-y-3" onDragStart={handleDragStart}>
-          {Object.entries(UNIFIED_NODE_TEMPLATES).map(([type, value]) => (
-            <NodeTemplate
-              key={type}
-              type={type as WorkflowNodeType}
-              icon={value.icon}
-              label={value.label}
-              description={value.description}
-            />
-          ))}
+          {/* SortableContext for @dnd-kit drag-and-drop */}
+          <div className="p-4 space-y-3">
+            <SortableContext
+              items={sidebarItems.map((item) => item.id)}
+              strategy={rectSortingStrategy}
+            >
+              {sidebarItems.map(({ id, type, icon, label, description }) => (
+                <NodeTemplate
+                  key={id}
+                  id={id}
+                  type={type}
+                  icon={icon}
+                  label={label}
+                  description={description}
+                />
+              ))}
+            </SortableContext>
+          </div>
         </div>
-      </div>
+      </DndContext>
     </>
   );
 }

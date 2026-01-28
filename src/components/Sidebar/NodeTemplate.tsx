@@ -1,30 +1,58 @@
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { WorkflowNodeType } from "@/types/nodes";
 
-type NodeTemplateProps = {
+interface DraggableNodeTemplateProps {
+  id: string;
   type: WorkflowNodeType;
   icon: React.ReactNode;
   label: string;
   description: string;
-};
+}
 
 export default function NodeTemplate({
+  id,
   type,
   icon,
   label,
   description,
-}: NodeTemplateProps) {
+}: DraggableNodeTemplateProps) {
+  const {
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+    setNodeRef,
+  } = useSortable({
+    id,
+    data: {
+      type,
+      // Store data that will be accessible in handleDragEnd
+      nodeTemplate: { type, icon, label, description },
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
     <div
-      draggable
-      data-node-type={type}
-      className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg cursor-move hover:border-blue-400 hover:bg-blue-50 transition-colors"
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="cursor-move rounded-lg border-2 border-gray-300 bg-white p-4  hover:border-blue-400 hover:shadow-md"
     >
-      <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg">
+      <div className="flex items-center gap-3">
         {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm text-gray-900">{label}</p>
-        <p className="text-xs text-gray-500 truncate">{description}</p>
+        <div>
+          <p className="font-medium text-gray-800">{label}</p>
+          <p className="text-xs text-gray-500">{description}</p>
+        </div>
       </div>
     </div>
   );

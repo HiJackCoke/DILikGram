@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEventHandler,
+  type TouchEventHandler,
+} from "react";
 import ReactDiagram, {
   useNodesState,
   useEdgesState,
@@ -8,14 +15,18 @@ import ReactDiagram, {
   type Connection,
   type Node,
   MarkerType,
+  type XYPosition,
 } from "react-cosmos-diagram";
 import "react-cosmos-diagram/dist/style.css";
+
+import { type DragStartEvent } from "@dnd-kit/core";
 
 import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import Sidebar from "@/components/Sidebar";
+
 import type { WorkflowEdge } from "@/types/edges";
 import type { ExecutionConfig } from "@/types/workflow";
 
@@ -76,6 +87,11 @@ function getNodeDimensions(type: string): { width: number; height: number } {
 }
 
 export default function WorkflowPage() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [distance, setDistance] = useState<XYPosition | null>(null);
+  const [activeNodeType, setActiveNodeType] = useState<WorkflowNodeType | null>(
+    null
+  );
   const edgeUpdateSuccessful = useRef(true);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<
@@ -246,62 +262,40 @@ export default function WorkflowPage() {
   );
 
   // DND 핸들러
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+  // @dnd-kit drag handlers
+  const handleDragStart = useCallback((event: DragStartEvent, distance: XYPosition) => {
+      setDistance(distance);
+    const { active } = event;
+
+    setActiveNodeType(active.id.toString() as WorkflowNodeType);
   }, []);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
+  const generateNode = ({ x, y }: XYPosition) => {
+    if (!distance) return;
+    if (!activeNodeType) return;
 
-      const type = e.dataTransfer.getData(
-        "application/nodeType"
-      ) as WorkflowNodeType;
-      if (!type) return;
+    const viewport = ref.current?.querySelector(
+      ".react-diagram__viewport"
+    ) as HTMLDivElement;
 
-      // JSON으로 저장된 비율 데이터 파싱
-      const distance = JSON.parse(
-        e.dataTransfer.getData("application/nodeDistance") || "{}"
-      );
-      const ratioX = distance.x || 0.5; // 기본값 중앙
-      const ratioY = distance.y || 0.5; // 기본값 중앙
+    const isIn = x < viewport.offsetWidth && y < viewport.offsetHeight;
 
-      // 실제 노드 크기 가져오기
-      const nodeDimensions = getNodeDimensions(type);
+    if (!isIn) return null;
 
-      // Viewport 요소 쿼리 (.react-diagram__viewport)
-      const container = e.currentTarget as HTMLDivElement;
-      const viewport = container.querySelector(
-        ".react-diagram__viewport"
-      ) as HTMLDivElement;
+    const dimension = getNodeDimensions(activeNodeType);
+    const translate = getTranslateValues(viewport?.style.transform);
+    const position = {
+      x: (x - dimension.width * distance.x - translate.x) / translate.scale,
+      y: (y - dimension.height * distance.y - translate.y) / translate.scale,
+    };
 
-      // Transform 값 추출 (translate + scale)
-      const translate = getTranslateValues(viewport?.style.transform);
+    const newNode = createDefaultNode({
+      type: activeNodeType,
+      position,
+    });
 
-      // 비율 × 실제 노드 크기 = 픽셀 offset
-      const offsetX = ratioX * nodeDimensions.width * translate.scale;
-      const offsetY = ratioY * nodeDimensions.height * translate.scale;
-
-      // Zoom(scale)과 비율 기반 offset을 모두 고려한 정확한 position 계산
-      const position = {
-        x: (e.clientX - offsetX - translate.x) / translate.scale,
-        y: (e.clientY - offsetY - translate.y) / translate.scale,
-      };
-
-      // Create new node from template
-      const template = UNIFIED_NODE_TEMPLATES[type]?.template;
-      if (!template) return;
-
-      const newNode = createDefaultNode({
-        type,
-        position,
-      });
-
-      setNodes((prevNodes) => [...prevNodes, newNode]);
-    },
-    [nodes.length, setNodes]
-  );
+    setNodes((prevNodes) => [...prevNodes, newNode]);
+  };
 
   function handleWorkflowGenerator(
     newNodes: WorkflowNode[],
@@ -402,9 +396,34 @@ export default function WorkflowPage() {
     };
   });
 
+  const handleMouseUp: MouseEventHandler<HTMLDivElement> = (e) => {
+    generateNode({ x: e.clientX, y: e.clientY });
+    setActiveNodeType(null);
+  };
+
+  const handleTouchEnd: TouchEventHandler<HTMLDivElement> = (e) => {
+    generateNode({
+      x: e.changedTouches[0].clientX,
+      y: e.changedTouches[0].clientY,
+    });
+    setActiveNodeType(null);
+  };
+
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Sidebar />
+    <div
+      ref={ref}
+      className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+      onMouseUp={handleMouseUp}
+      onTouchEnd={handleTouchEnd}
+    >
+      <Sidebar
+        onDragStart={handleDragStart}
+        // onDragMove={(_, position) => {
+        //   console.log(position);
+        //   setDistance(position);
+        // }}
+        // onDragEnd={handleDragEnd}
+      />
 
       <ExecutionHeader nodes={nodes} setNodes={setNodes} setEdges={setEdges} />
 
@@ -422,8 +441,6 @@ export default function WorkflowPage() {
         onNodeClick={handleNodeClick}
         onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={resetSelectedElements}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
         onConnect={onConnect}
         onEdgeUpdate={onEdgeUpdate}
         onEdgeUpdateStart={onEdgeUpdateStart}
