@@ -22,7 +22,7 @@ import {
   type DragMoveEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import type { XYPosition } from "react-cosmos-diagram";
+import { useStore, type XYPosition } from "react-cosmos-diagram";
 
 interface NodeTemplatePanelProps {
   onDragStart?: (event: DragStartEvent, distance: XYPosition) => void;
@@ -39,18 +39,6 @@ const hasMouseSupport = (): boolean => {
   return hasPointerFine && !hasTouchSupport;
 };
 
-// const getTranslateXYValues = (element: HTMLElement | null) => {
-//   if (!element) return { x: 0, y: 0, z: 0 };
-//   const style = window.getComputedStyle(element);
-//   const matrix = new WebKitCSSMatrix(style.transform);
-
-//   return {
-//     x: matrix.m41, // translateX
-//     y: matrix.m42, // translateY
-//     z: matrix.m43,
-//   };
-// };
-
 export default function NodeTemplatePanel({
   onDragStart,
   onDragMove,
@@ -58,6 +46,8 @@ export default function NodeTemplatePanel({
 }: NodeTemplatePanelProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const sortingRef = useRef<ReturnType<CollisionDetection>>([]);
+
+  const transform = useStore((state) => state.transform);
 
   const sensors = useSensors(
     useSensor(hasMouseSupport() ? PointerSensor : TouchSensor),
@@ -111,30 +101,28 @@ export default function NodeTemplatePanel({
     const activatorEvent = event.activatorEvent;
     const target = activatorEvent.target as HTMLElement;
     const rect = target.getBoundingClientRect();
+    const transformedWidth = rect.width / transform[2];
+    const transformedHeight = rect.height / transform[2];
 
     if (hasMouseSupport()) {
       const pointerEvent = activatorEvent as PointerEvent;
 
-      const rateX = (pointerEvent.x - rect.x) / rect.width;
-      const rateY = (pointerEvent.y - rect.y) / rect.height;
+      const rateX = (pointerEvent.x - rect.x) / transformedWidth;
+      const rateY = (pointerEvent.y - rect.y) / transformedHeight;
 
       onDragStart?.(event, { x: rateX, y: rateY });
     } else {
       const touchEvent = activatorEvent as TouchEvent;
       const touch = touchEvent.touches?.[0];
 
-      // const { x, y } = getTranslateXYValues(target.parentElement);
-
       const layerX = touch.clientX - rect.left;
       const layerY = touch.clientY - rect.top;
 
-      const rateX = layerX / rect.width;
-      const rateY = layerY / rect.height;
+      const rateX = layerX / transformedWidth;
+      const rateY = layerY / transformedHeight;
 
       onDragStart?.(event, { x: rateX, y: rateY });
     }
-
-    // onDragStart?.(event);
   };
 
   const updateSorting = ({ active, over }: DragEndEvent) => {

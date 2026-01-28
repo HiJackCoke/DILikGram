@@ -47,7 +47,7 @@ export default function NodeTemplate({
       {...listeners}
       className="cursor-move rounded-lg border-2 border-gray-300 bg-white p-4  hover:border-blue-400 hover:shadow-md"
     >
-      <div className="flex items-center gap-3">
+      <div className="pointer-events-none flex items-center gap-3">
         {icon}
         <div>
           <p className="font-medium text-gray-800">{label}</p>

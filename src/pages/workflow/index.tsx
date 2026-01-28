@@ -31,7 +31,7 @@ import type { WorkflowEdge } from "@/types/edges";
 import type { ExecutionConfig } from "@/types/workflow";
 
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
-import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
+
 import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
