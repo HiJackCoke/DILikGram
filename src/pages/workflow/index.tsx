@@ -49,30 +49,6 @@ import { PALETTE } from "../../../tailwind.config";
 // import { initialNodes } from "@/mocks/nodes";
 // import { initialEdges } from "@/mocks/edges";
 
-// Viewport transform 값 추출 헬퍼 함수
-function getTranslateValues(transformString: string) {
-  const translateRegex = /translate\(\s*([^\s,]+)px\s*,\s*([^\s,]+)px\s*\)/;
-  const scaleRegex = /scale\(\s*([^\s,]+)\s*(?:,\s*([^\s,]+))?\s*\)/;
-
-  const matches = transformString.match(translateRegex);
-  const scaleMatches = transformString.match(scaleRegex);
-
-  let x = 0,
-    y = 0,
-    scale = 1;
-
-  if (matches) {
-    x = parseFloat(matches[1]);
-    y = parseFloat(matches[2]);
-  }
-
-  if (scaleMatches) {
-    scale = parseFloat(scaleMatches[1]);
-  }
-
-  return { x, y, scale };
-}
-
 // 노드 타입별 기본 크기 (실제 렌더링 크기와 동일)
 function getNodeDimensions(type: string): { width: number; height: number } {
   const dimensions: Record<string, { width: number; height: number }> = {
@@ -87,12 +63,16 @@ function getNodeDimensions(type: string): { width: number; height: number } {
 }
 
 export default function WorkflowPage() {
+  const edgeUpdateSuccessful = useRef(true);
   const ref = useRef<HTMLDivElement>(null);
-  const [distance, setDistance] = useState<XYPosition | null>(null);
+
+  const nodeTemplatePanelRectRef = useRef<DOMRect | null>(null);
+  const distanceRef = useRef<XYPosition | null>(null);
   const [activeNodeType, setActiveNodeType] = useState<WorkflowNodeType | null>(
     null
   );
-  const edgeUpdateSuccessful = useRef(true);
+
+  const transform = useStore((state) => state.transform);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<
     WorkflowNode["data"],
@@ -265,7 +245,14 @@ export default function WorkflowPage() {
   // @dnd-kit drag handlers
   const handleDragStart = useCallback(
     (event: DragStartEvent, distance: XYPosition) => {
-      setDistance(distance);
+      const item = event.activatorEvent.target as HTMLElement;
+      const container = item.parentElement;
+
+      if (!container) return;
+
+      nodeTemplatePanelRectRef.current = container.getBoundingClientRect();
+
+      distanceRef.current = distance;
       const { active } = event;
 
       setActiveNodeType(active.id.toString() as WorkflowNodeType);
@@ -274,22 +261,31 @@ export default function WorkflowPage() {
   );
 
   const generateNode = ({ x, y }: XYPosition) => {
-    if (!distance) return;
+    if (!distanceRef.current) return;
     if (!activeNodeType) return;
 
-    const viewport = ref.current?.querySelector(
-      ".react-diagram__viewport"
-    ) as HTMLDivElement;
+    // NodeTemplatePanel 내부인지 체크
+    const panelRect = nodeTemplatePanelRectRef.current;
+    if (panelRect) {
+      const isInsidePanel =
+        x >= panelRect.left &&
+        x <= panelRect.right &&
+        y >= panelRect.top &&
+        y <= panelRect.bottom;
 
-    const isIn = x < viewport.offsetWidth && y < viewport.offsetHeight;
-
-    if (!isIn) return null;
+      // NodeTemplatePanel 내부면 노드 생성하지 않음
+      if (isInsidePanel) return;
+    }
 
     const dimension = getNodeDimensions(activeNodeType);
-    const translate = getTranslateValues(viewport?.style.transform);
+
     const position = {
-      x: (x - dimension.width * distance.x - translate.x) / translate.scale,
-      y: (y - dimension.height * distance.y - translate.y) / translate.scale,
+      x:
+        (x - dimension.width * distanceRef.current.x - transform[0]) /
+        transform[2],
+      y:
+        (y - dimension.height * distanceRef.current.y - transform[1]) /
+        transform[2],
     };
 
     const newNode = createDefaultNode({
@@ -419,14 +415,7 @@ export default function WorkflowPage() {
       onMouseUp={handleMouseUp}
       onTouchEnd={handleTouchEnd}
     >
-      <NodeTemplatePanel
-        onDragStart={handleDragStart}
-        // onDragMove={(_, position) => {
-        //   console.log(position);
-        //   setDistance(position);
-        // }}
-        // onDragEnd={handleDragEnd}
-      />
+      <NodeTemplatePanel onDragStart={handleDragStart} />
 
       <ExecutionHeader nodes={nodes} setNodes={setNodes} setEdges={setEdges} />
 
