@@ -24,7 +24,7 @@ import {
 } from "@dnd-kit/core";
 import type { XYPosition } from "react-cosmos-diagram";
 
-interface SidebarProps {
+interface NodeTemplatePanelProps {
   onDragStart?: (event: DragStartEvent, distance: XYPosition) => void;
   onDragMove?: (event: DragMoveEvent) => void;
   onDragEnd?: (event: DragEndEvent) => void;
@@ -39,23 +39,23 @@ const hasMouseSupport = (): boolean => {
   return hasPointerFine && !hasTouchSupport;
 };
 
-const getTranslateXYValues = (element: HTMLElement | null) => {
-  if (!element) return { x: 0, y: 0, z: 0 };
-  const style = window.getComputedStyle(element);
-  const matrix = new WebKitCSSMatrix(style.transform);
+// const getTranslateXYValues = (element: HTMLElement | null) => {
+//   if (!element) return { x: 0, y: 0, z: 0 };
+//   const style = window.getComputedStyle(element);
+//   const matrix = new WebKitCSSMatrix(style.transform);
 
-  return {
-    x: matrix.m41, // translateX
-    y: matrix.m42, // translateY
-    z: matrix.m43,
-  };
-};
+//   return {
+//     x: matrix.m41, // translateX
+//     y: matrix.m42, // translateY
+//     z: matrix.m43,
+//   };
+// };
 
-export default function Sidebar({
+export default function NodeTemplatePanel({
   onDragStart,
   onDragMove,
   onDragEnd,
-}: SidebarProps) {
+}: NodeTemplatePanelProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const sortingRef = useRef<ReturnType<CollisionDetection>>([]);
 
@@ -68,7 +68,7 @@ export default function Sidebar({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const [sidebarItems, setSidebarItems] = useState(
+  const [sidebarItems, setNodeTemplatePanelItems] = useState(
     Object.entries(UNIFIED_NODE_TEMPLATES).map(([type, value]) => ({
       id: type, // unique identifier for @dnd-kit
       type: type as WorkflowNodeType,
@@ -123,10 +123,10 @@ export default function Sidebar({
       const touchEvent = activatorEvent as TouchEvent;
       const touch = touchEvent.touches?.[0];
 
-      const { x, y } = getTranslateXYValues(target.parentElement);
+      // const { x, y } = getTranslateXYValues(target.parentElement);
 
-      const layerX = touch.clientX - rect.left + x;
-      const layerY = touch.clientY - rect.top + y;
+      const layerX = touch.clientX - rect.left;
+      const layerY = touch.clientY - rect.top;
 
       const rateX = layerX / rect.width;
       const rateY = layerY / rect.height;
@@ -144,7 +144,7 @@ export default function Sidebar({
     const { id: overId } = over;
 
     if (activeId === overId) return;
-    setSidebarItems((items) => {
+    setNodeTemplatePanelItems((items) => {
       const oldIndex = items.findIndex(({ id }) => id === activeId);
       const newIndex = items.findIndex(({ id }) => id === overId);
 
@@ -173,7 +173,7 @@ export default function Sidebar({
         )}
       </button>
 
-      {/* Sidebar Panel */}
+      {/* NodeTemplatePanel Panel */}
 
       <DndContext
         sensors={sensors}

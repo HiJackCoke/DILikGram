@@ -25,7 +25,7 @@ import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
-import Sidebar from "@/components/Sidebar";
+import NodeTemplatePanel from "@/components/NodeTemplatePanel";
 
 import type { WorkflowEdge } from "@/types/edges";
 import type { ExecutionConfig } from "@/types/workflow";
@@ -263,12 +263,15 @@ export default function WorkflowPage() {
 
   // DND 핸들러
   // @dnd-kit drag handlers
-  const handleDragStart = useCallback((event: DragStartEvent, distance: XYPosition) => {
+  const handleDragStart = useCallback(
+    (event: DragStartEvent, distance: XYPosition) => {
       setDistance(distance);
-    const { active } = event;
+      const { active } = event;
 
-    setActiveNodeType(active.id.toString() as WorkflowNodeType);
-  }, []);
+      setActiveNodeType(active.id.toString() as WorkflowNodeType);
+    },
+    []
+  );
 
   const generateNode = ({ x, y }: XYPosition) => {
     if (!distance) return;
@@ -416,7 +419,7 @@ export default function WorkflowPage() {
       onMouseUp={handleMouseUp}
       onTouchEnd={handleTouchEnd}
     >
-      <Sidebar
+      <NodeTemplatePanel
         onDragStart={handleDragStart}
         // onDragMove={(_, position) => {
         //   console.log(position);
