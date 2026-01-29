@@ -1,31 +1,39 @@
 .react-diagram__port {
   border-radius: none;
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 14px;
   border-color: transparent;
   background-color: transparent;
 }
 
 .react-diagram__port-top {
-  top: -6px;
+  top: -14px;
+  border-radius: 40% 40% 0 0 !important;
 }
 
 .react-diagram__port-bottom {
-  bottom: -6px;
+  bottom: -14px;
+  border-radius: 0 0 40% 40% !important;
 }
 
 .react-diagram__port-left {
-  left: -6px;
+  left: -14px;
+  width: 14px;
+  height: 18px;
+  border-radius: 40% 0 0 40% !important;
 }
 
 .react-diagram__port-right {
-  right: -6px;
+  right: -14px;
+  width: 14px;
+  height: 18px;
+  border-radius: 0 40% 40% 0 !important;
 }
 
 .react-diagram__port {
   border-radius: 0;
   background-color: theme("colors.palette.neutral.bg");
-  border-color: theme("colors.white");
+  /* border-color: theme("colors.white"); */
 }
 
 .react-diagram__port:hover {
@@ -33,17 +41,17 @@
 }
 .start-node .react-diagram__port {
   background-color: theme("colors.palette.success.bg");
-  border-color: theme("colors.white");
+  /* border-color: theme("colors.white"); */
   /* border-color: theme("colors.palette.success.border"); */
 }
 .task-node .react-diagram__port {
   background-color: theme("colors.palette.primary.bg");
-  border-color: theme("colors.white");
+  /* border-color: theme("colors.white"); */
   /* border-color: theme("colors.palette.primary.border"); */
 }
 .service-node .react-diagram__port {
   background-color: theme("colors.palette.secondary.bg");
-  border-color: theme("colors.white");
+  /* border-color: theme("colors.white"); */
   /* border-color: theme("colors.palette.secondary.border"); */
 }
 
@@ -53,17 +61,17 @@
 }
 
 .decision-node .react-diagram__port-top {
-  top: -32.02px;
+  top: -34.02px;
 }
 
 .decision-node .react-diagram__port-bottom {
-  bottom: -32.02px;
+  bottom: -34.02px;
 }
 
 .decision-node .react-diagram__port-left {
-  left: -32.02px;
+  left: -34.02px;
 }
 
 .decision-node .react-diagram__port-right {
-  right: -32.02px;
+  right: -34.02px;
 }

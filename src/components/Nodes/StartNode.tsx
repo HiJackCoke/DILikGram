@@ -24,7 +24,7 @@ export function StartNode({ data, selected, id }: StartNodeProps) {
     <div
       className={`
         start-node group
-        relative w-24 h-24 rounded-full
+        relative w-24 h-24 rounded-3xl
         bg-gradient-to-br from-palette-success-bg to-palette-success-border
         flex items-center justify-center
         shadow-lg transition-all duration-200 cursor-pointer

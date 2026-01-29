@@ -85,7 +85,7 @@ export function EndNode({ data, selected }: EndNodeProps) {
       <div
         className={`
         end-node
-        relative w-24 h-24 rounded-full
+        relative w-24 h-24 rounded-3xl
         bg-gradient-to-br ${gradient}
         flex items-center justify-center
         shadow-lg transition-all duration-200
