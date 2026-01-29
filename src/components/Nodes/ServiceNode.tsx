@@ -96,7 +96,7 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
   };
 
   return (
-    <div className="service-node">
+    <div className="service-node relative">
       {ports.map((port) => (
         <Port
           key={port.id}

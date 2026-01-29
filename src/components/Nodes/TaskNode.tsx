@@ -69,12 +69,13 @@ export function TaskNode(nodeProps: TaskNodeProps) {
   const executionStyles = {
     executing: "ring-4 ring-palette-primary-color animate-pulse scale-105",
     executed: "ring-2 ring-palette-primary-color",
-    error: "ring-4 ring-palette-danger-color border-palette-danger-bg shadow-red-200",
+    error:
+      "ring-4 ring-palette-danger-color border-palette-danger-bg shadow-red-200",
     idle: "",
   };
 
   return (
-    <div className="task-node">
+    <div className="task-node relative">
       {/* Ports */}
       {ports.map((port) => (
         <Port
