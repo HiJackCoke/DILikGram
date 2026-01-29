@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type MouseEventHandler,
+  type TouchEvent,
   type TouchEventHandler,
 } from "react";
 import ReactDiagram, {
@@ -46,6 +47,7 @@ import { createDefaultNode } from "@/utils/nodes";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { generateEdgeId } from "@/utils/edges";
 import { PALETTE } from "../../../tailwind.config";
+import { useLongPress } from "@/hooks/useLongPress";
 // import { initialNodes } from "@/mocks/nodes";
 // import { initialEdges } from "@/mocks/edges";
 
@@ -74,6 +76,9 @@ export default function WorkflowPage() {
 
   const transform = useStore((state) => state.transform);
 
+  const { onTouchStart, onTouchMove, onTouchEnd } = useLongPress({
+    onLongPress: handleLongPress,
+  });
   const [nodes, setNodes, onNodesChange] = useNodesState<
     WorkflowNode["data"],
     WorkflowNodeType
@@ -361,6 +366,13 @@ export default function WorkflowPage() {
     resetSelectedElements();
   }
 
+  function handleLongPress(event: React.TouchEvent, node: Node) {
+    const touch = event.touches?.[0];
+    if (touch && node.id) {
+      openAIEdit(node.id, { x: touch.clientX, y: touch.clientY });
+    }
+  }
+
   // 선택된 노드의 플로우 경로 계산
   const { highlightedNodeIds, highlightedEdgeIds } = findFlowPath(nodes, edges);
 
@@ -432,6 +444,19 @@ export default function WorkflowPage() {
         onNodeDoubleClick={handleOpenPropertiesPanel}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={handleNodeContextMenu}
+        onNodeDragStart={(event, node) => {
+          const toucheEvent = event as unknown as TouchEvent;
+          if (toucheEvent.touches?.[0]) {
+            onTouchStart(toucheEvent, node);
+          }
+        }}
+        onNodeDrag={(event) => {
+          const toucheEvent = event as unknown as TouchEvent;
+          if (toucheEvent.touches?.[0]) {
+            onTouchMove(toucheEvent);
+          }
+        }}
+        onNodeDragEnd={onTouchEnd}
         onPaneClick={resetSelectedElements}
         onConnect={onConnect}
         onEdgeUpdate={onEdgeUpdate}
