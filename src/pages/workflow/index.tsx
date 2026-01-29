@@ -39,13 +39,14 @@ import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
+import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
 
 import ExecutionHeader from "./Header";
 
-import { createDefaultNode } from "@/utils/nodes";
+import { createDefaultNode, generateNodeId } from "@/utils/nodes";
 
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
-import { generateEdgeId } from "@/utils/edges";
+import { generateEdgeId, createDefaultEdge } from "@/utils/edges";
 import { PALETTE } from "../../../tailwind.config";
 import { useLongPress } from "@/hooks/useLongPress";
 // import { initialNodes } from "@/mocks/nodes";
@@ -85,6 +86,9 @@ export default function WorkflowPage() {
   >([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Clipboard state for copy/paste
+  const [clipboard, setClipboard] = useState<WorkflowNode[]>([]);
+
   const { executeFromStartNode, isExecuting } = useWorkflowExecution();
   const { open: openPropertiesPanel, updateEdges } = usePropertiesPanel({
     onSave: handlePropertiesSave,
@@ -121,6 +125,14 @@ export default function WorkflowPage() {
   useEffect(() => {
     setCurrentWorkflow(nodes, edges);
   }, [nodes, edges, setCurrentWorkflow]);
+
+  // Register keyboard shortcuts for copy/paste
+  useGlobalKeyHandler({
+    "Ctrl+C": handleCopyNodes,
+    "Cmd+C": handleCopyNodes, // macOS
+    "Ctrl+V": handlePasteNodes,
+    "Cmd+V": handlePasteNodes, // macOS
+  });
 
   const onConnect = (params: Connection) => {
     const hasParent = edges.some((edge) => edge.target === params.target);
@@ -364,6 +376,71 @@ export default function WorkflowPage() {
     );
 
     resetSelectedElements();
+  }
+
+  // Handle copy nodes
+  function handleCopyNodes() {
+    const selectedNodes = nodes.filter((n) => n.selected);
+
+    if (selectedNodes.length === 0) {
+      console.log("No nodes selected to copy");
+      return;
+    }
+
+    setClipboard(selectedNodes);
+    console.log(`Copied ${selectedNodes.length} node(s)`);
+  }
+
+  // Handle paste nodes
+  function handlePasteNodes() {
+    if (clipboard.length === 0) {
+      console.log("Clipboard is empty");
+      return;
+    }
+
+    // Create ID mapping: old ID -> new ID
+    const idMap = new Map<string, string>();
+
+    const newNodes: WorkflowNode[] = clipboard.map((node) => {
+      const newId = generateNodeId(node.type || "");
+      idMap.set(node.id, newId);
+
+      return createDefaultNode({
+        ...node,
+        id: newId,
+        selected: false,
+        position: {
+          x: node.position.x + 50,
+          y: node.position.y + 50,
+        },
+        data: {
+          ...node.data,
+          title: `${node.data.title} (복사본)`,
+        },
+      });
+    });
+
+    // Copy internal edges (edges between copied nodes)
+    const copiedNodeIds = new Set(clipboard.map((n) => n.id));
+    const edgesToCopy = edges.filter(
+      (edge) => copiedNodeIds.has(edge.source) && copiedNodeIds.has(edge.target)
+    );
+
+    const newEdges: WorkflowEdge[] = edgesToCopy.map((edge) =>
+      createDefaultEdge({
+        ...edge,
+        source: idMap.get(edge.source)!,
+        target: idMap.get(edge.target)!,
+      })
+    );
+
+    // Add to diagram
+    setNodes((prev) => [...prev, ...newNodes]);
+    setEdges((prev) => [...prev, ...newEdges]);
+
+    console.log(
+      `Pasted ${newNodes.length} node(s) and ${newEdges.length} edge(s)`
+    );
   }
 
   function handleLongPress(event: React.TouchEvent, node: Node) {
