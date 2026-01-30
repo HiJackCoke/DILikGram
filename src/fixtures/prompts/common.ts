@@ -131,4 +131,28 @@ VALIDATION CHECKLIST (Self-Correction):
 □ **BranchLabel Check:**
    - Do children of decision nodes have \`branchLabel\` ("yes"/"no")?
    - Do children of non-decision nodes OMIT \`branchLabel\`?
+□ **Metadata Mapping**: (Task) Are all sub-requirements in \`data.metadata\`?
+□ **Description Minimalism**: (Task) Is description a single summary sentence?
+□ **API Granularity**: (Service) Is each API/logic in its own node?
+□ **Schema Format**: (Service) Are \`request_schema\` & \`response_schema\` in {key: "value"} format?
+`;
+
+export const TECHNICAL_SPECIFICATION_RULES = `
+═══════════════════════════════════════════════════════════════
+🛠️ FULL-STACK TECHNICAL SPECIFICATION RULES (DEV-READY)
+═══════════════════════════════════════════════════════════════
+
+1. **Task Node Metadata Mapping**:
+   - DO NOT use lists in \`description\`. Move all sub-features to \`data.metadata\`.
+   - Each key in \`metadata\` should represent a specific requirement or variable.
+
+2. **Service Node Granularity**:
+   - One node = One API/Logic block. Separate "Fetch" and "Update" into different nodes.
+
+3. **Atomic Logic Steps**:
+   - In \`description\`, use numbered steps for execution logic.
+   - Example: "1. Validate, 2. Save, 3. Notify."
+
+4. **Error Handling**:
+   - Every "no" branch from a Decision node must lead to a specific error handling flow.
 `;

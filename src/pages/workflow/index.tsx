@@ -509,6 +509,7 @@ export default function WorkflowPage() {
       <ExecutionHeader nodes={nodes} setNodes={setNodes} setEdges={setEdges} />
 
       <ReactDiagram
+        dragSelectionKeyCode={null}
         nodes={enhancedNodes}
         edges={enhancedEdges}
         nodeTypes={nodeTypes}
