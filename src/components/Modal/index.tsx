@@ -18,12 +18,12 @@ export default function Modal({
   children,
   onClose,
 }: ModalProps) {
-  const [clear, setClear] = useState(false);
-
   const element = useBrowserEnv(
     ({ document }) => document.querySelector(selector),
     null
   );
+
+  const [clear, setClear] = useState(element ? false : true);
 
   useEffect(() => {
     if (!element) return;
@@ -60,6 +60,7 @@ export default function Modal({
       onClose?.();
     }
   };
+
   return (
     element &&
     ReactDOM.createPortal(
