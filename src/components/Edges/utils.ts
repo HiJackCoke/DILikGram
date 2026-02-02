@@ -1,5 +1,5 @@
 import type { WorkflowEdgeType } from "@/types/edges";
-import { PALETTE } from "../../../tailwind.config";
+import { PALETTE } from "@/constants/palette";
 
 export const EDGE_COLORS: Record<WorkflowEdgeType, keyof typeof PALETTE> = {
   default: "neutral",

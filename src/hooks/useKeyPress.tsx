@@ -15,7 +15,7 @@ export default function useKeyPress(
   callback: (event: KeyboardEvent) => void,
   options: UseKeyPressOptions = {}
 ) {
-  const { target = window, preventDefault = false, enabled = true } = options;
+  const { target = typeof window !== 'undefined' ? window : undefined, preventDefault = false, enabled = true } = options;
 
   const callbackRef = useRef(callback);
   const normalizedKey = normalizeKey(key);
@@ -25,7 +25,7 @@ export default function useKeyPress(
   }, [callback]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !target) return;
 
     const handler = (event: Event) => {
       if (!(event instanceof KeyboardEvent)) return;

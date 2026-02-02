@@ -1,3 +1,5 @@
+'use client';
+
 import toast from "@/components/Toast";
 import { useEffect } from "react";
 import type { ReactNode } from "react";

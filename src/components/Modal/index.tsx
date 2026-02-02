@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 
 import ModalView from "./View";
@@ -6,6 +8,7 @@ import ModalView from "./View";
 import type { ModalProps } from "@/types/modal";
 
 import "@/styles/modal.css";
+import { useBrowserEnv } from "@/hooks/useBrowerEnv";
 
 export default function Modal({
   open,
@@ -16,9 +19,10 @@ export default function Modal({
   onClose,
 }: ModalProps) {
   const [clear, setClear] = useState(false);
-  const element = useMemo(
-    () => document.querySelector(selector),
-    [selector, open]
+
+  const element = useBrowserEnv(
+    ({ document }) => document.querySelector(selector),
+    null
   );
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function Modal({
     if (open) {
       element.classList.remove("inactive");
       element.classList.add(`active`);
-    } else {
+    } else if (element.classList.contains("active")) {
       element.classList.add("inactive");
       element.classList.remove("active");
     }
@@ -49,14 +53,13 @@ export default function Modal({
       element.removeEventListener("animationstart", handleOnAnimationStart);
       element.removeEventListener("animationend", handleOnAnimationEnd);
     };
-  }, [element, open]);
+  }, [open]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose?.();
     }
   };
-
   return (
     element &&
     ReactDOM.createPortal(

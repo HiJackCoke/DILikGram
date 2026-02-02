@@ -1,6 +1,9 @@
+"use client";
+
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { WorkflowNodeType } from "@/types/nodes";
+import { useBrowserEnv } from "@/hooks/useBrowerEnv";
 
 interface DraggableNodeTemplateProps {
   id: string;
@@ -17,6 +20,8 @@ export default function NodeTemplate({
   label,
   description,
 }: DraggableNodeTemplateProps) {
+  const isClientRendered = useBrowserEnv(({ window }) => !!window, false);
+
   const {
     attributes,
     listeners,
@@ -39,6 +44,8 @@ export default function NodeTemplate({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  if (!isClientRendered) return null;
+
   return (
     <div
       ref={setNodeRef}
@@ -47,7 +54,7 @@ export default function NodeTemplate({
       {...listeners}
       className="cursor-move rounded-lg border-2 border-gray-300 bg-white p-4  hover:border-blue-400 hover:shadow-md"
     >
-      <div className="pointer-events-none flex items-center gap-3">
+      <div className="pointer-events-noneflex items-center gap-3">
         {icon}
         <div>
           <p className="font-medium text-gray-800">{label}</p>

@@ -19,7 +19,7 @@ export function useLongPress({
   delay = 500,
   moveThreshold = 10,
 }: UseLongPressOptions) {
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleTouchStart = useCallback(

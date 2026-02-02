@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useState, useCallback, useRef, use } from "react";
 import type { ReactNode } from "react";
 import type { ExecutionConfig } from "@/types/workflow";

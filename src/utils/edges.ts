@@ -1,5 +1,5 @@
 import { MarkerType } from "react-cosmos-diagram";
-import { PALETTE } from "../../tailwind.config";
+import { PALETTE } from "@/constants/palette";
 import type { WorkflowEdge } from "@/types/edges";
 import type { WorkflowNode } from "@/types";
 

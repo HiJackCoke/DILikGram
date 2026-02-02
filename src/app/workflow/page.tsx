@@ -1,3 +1,5 @@
+"use client";
+
 import {
   useCallback,
   useEffect,
@@ -18,7 +20,6 @@ import ReactDiagram, {
   MarkerType,
   type XYPosition,
 } from "react-cosmos-diagram";
-import "react-cosmos-diagram/dist/style.css";
 
 import { type DragStartEvent } from "@dnd-kit/core";
 
@@ -41,13 +42,13 @@ import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
 
-import ExecutionHeader from "./Header";
+import ExecutionHeader from "@/components/WorkflowHeader";
 
 import { createDefaultNode, generateNodeId } from "@/utils/nodes";
 
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { generateEdgeId, createDefaultEdge } from "@/utils/edges";
-import { PALETTE } from "../../../tailwind.config";
+import { PALETTE } from "@/constants/palette";
 import { useLongPress } from "@/hooks/useLongPress";
 // import { initialNodes } from "@/mocks/nodes";
 // import { initialEdges } from "@/mocks/edges";
@@ -192,6 +193,7 @@ export default function WorkflowPage() {
     // Handle START node - execute workflow
     if (node.type === "start") {
       if (isExecuting) return;
+
       executeFromStartNode(node.id);
       return;
     }

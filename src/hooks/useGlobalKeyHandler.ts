@@ -54,9 +54,7 @@ function isInputField(target: EventTarget | null): boolean {
 
   const tagName = target.tagName.toLowerCase();
   return (
-    tagName === "input" ||
-    tagName === "textarea" ||
-    target.isContentEditable
+    tagName === "input" || tagName === "textarea" || target.isContentEditable
   );
 }
 
@@ -104,7 +102,7 @@ export function useGlobalKeyHandler(
   const {
     enabled = true,
     preventDefault = true,
-    target = window,
+    target = typeof window !== "undefined" ? window : undefined,
     ignoreInputFields = true,
   } = opts;
 
@@ -130,7 +128,7 @@ export function useGlobalKeyHandler(
   );
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !target) return;
 
     target.addEventListener("keydown", handleKeyDown as EventListener);
     return () => {

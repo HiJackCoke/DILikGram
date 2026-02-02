@@ -1,5 +1,3 @@
-/** @type {import('tailwindcss').Config} */
-
 export const PALETTE = {
   // Primary - 파란색 (Task Node, 기본 Port)
   primary: {
@@ -49,16 +47,7 @@ export const PALETTE = {
     hover: "#7c3aed",
     active: "#6d28d9",
   },
-};
+} as const;
 
-export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
-  theme: {
-    extend: {
-      colors: {
-        palette: PALETTE,
-      },
-    },
-  },
-  plugins: [],
-};
+export type PaletteKey = keyof typeof PALETTE;
+export type PaletteProperty = keyof (typeof PALETTE)[keyof typeof PALETTE];

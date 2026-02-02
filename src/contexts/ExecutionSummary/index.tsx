@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useState, useCallback, use } from "react";
 import type { ReactNode } from "react";
 import type { ExecutionSummary } from "@/types/workflow";

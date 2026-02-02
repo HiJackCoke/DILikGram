@@ -1,4 +1,4 @@
-import { PALETTE } from "../../../tailwind.config";
+import { PALETTE } from "@/constants/palette";
 import type { ButtonViewProps } from "./types";
 
 // Size configuration for different button sizes

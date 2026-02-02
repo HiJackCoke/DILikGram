@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * AIWorkflowEditor context provider
  *

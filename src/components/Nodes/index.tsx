@@ -1,10 +1,9 @@
-import "@/styles/ports.css";
-
 import { StartNode } from "./StartNode";
 import { EndNode } from "./EndNode";
 import { TaskNode } from "./TaskNode";
 import { DecisionNode } from "./DecisionNode";
 import { ServiceNode } from "./ServiceNode";
+
 
 // Node Types for ReactDiagram
 export const nodeTypes = {

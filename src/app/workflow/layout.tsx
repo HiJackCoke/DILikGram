@@ -1,16 +1,20 @@
-import { Outlet } from "react-router-dom";
+'use client';
 
-import { AIWorkflowEditorProvider } from "@/contexts/AIWorkflowEditor";
-import { ExecutorEditorProvider } from "@/contexts/ExecutorEditor";
-import { ExecutionSummaryProvider } from "@/contexts/ExecutionSummary";
-import { PropertiesPanelProvider } from "@/contexts/PropertiesPanel";
-import { WorkflowExecutionProvider } from "@/contexts/WorkflowExecution";
-import { WorkflowGeneratorProvider } from "@/contexts/WorkflowGenerator";
-import DialogProvider from "@/contexts/Dialog";
-import ToastProvider from "@/contexts/Toast";
-import { ReactDiagramProvider } from "react-cosmos-diagram";
+import { ReactDiagramProvider } from 'react-cosmos-diagram';
+import { AIWorkflowEditorProvider } from '@/contexts/AIWorkflowEditor';
+import { ExecutorEditorProvider } from '@/contexts/ExecutorEditor';
+import { ExecutionSummaryProvider } from '@/contexts/ExecutionSummary';
+import { PropertiesPanelProvider } from '@/contexts/PropertiesPanel';
+import { WorkflowExecutionProvider } from '@/contexts/WorkflowExecution';
+import { WorkflowGeneratorProvider } from '@/contexts/WorkflowGenerator';
+import DialogProvider from '@/contexts/Dialog';
+import ToastProvider from '@/contexts/Toast';
 
-const Layout = () => {
+export default function WorkflowLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <ToastProvider>
       <DialogProvider>
@@ -22,8 +26,7 @@ const Layout = () => {
                   <WorkflowGeneratorProvider>
                     <WorkflowExecutionProvider>
                       <div className="modal-root" id="modal-root" />
-
-                      <Outlet />
+                      {children}
                     </WorkflowExecutionProvider>
                   </WorkflowGeneratorProvider>
                 </AIWorkflowEditorProvider>
@@ -34,6 +37,4 @@ const Layout = () => {
       </DialogProvider>
     </ToastProvider>
   );
-};
-
-export default Layout;
+}

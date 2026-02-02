@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import {
@@ -23,21 +25,13 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useStore, type XYPosition } from "react-cosmos-diagram";
+import { useBrowserEnv } from "@/hooks/useBrowerEnv";
 
 interface NodeTemplatePanelProps {
   onDragStart?: (event: DragStartEvent, distance: XYPosition) => void;
   onDragMove?: (event: DragMoveEvent) => void;
   onDragEnd?: (event: DragEndEvent) => void;
 }
-
-const hasMouseSupport = (): boolean => {
-  const hasPointerFine = window.matchMedia("(pointer: fine)").matches;
-
-  const hasTouchSupport =
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-  return hasPointerFine && !hasTouchSupport;
-};
 
 export default function NodeTemplatePanel({
   onDragStart,
@@ -49,8 +43,19 @@ export default function NodeTemplatePanel({
 
   const transform = useStore((state) => state.transform);
 
+  const hasMouseSupport = useBrowserEnv(({ window }) => {
+    const hasPointerFine = window.matchMedia("(pointer: fine)").matches;
+
+    const hasTouchSupport =
+      "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    return hasPointerFine && !hasTouchSupport;
+  }, false);
+
+  const DeviceSensor = hasMouseSupport ? PointerSensor : TouchSensor;
+
   const sensors = useSensors(
-    useSensor(hasMouseSupport() ? PointerSensor : TouchSensor),
+    useSensor(DeviceSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -104,7 +109,7 @@ export default function NodeTemplatePanel({
     const transformedWidth = rect.width / transform[2];
     const transformedHeight = rect.height / transform[2];
 
-    if (hasMouseSupport()) {
+    if (hasMouseSupport) {
       const pointerEvent = activatorEvent as PointerEvent;
 
       const rateX = (pointerEvent.x - rect.x) / transformedWidth;

@@ -1,6 +1,6 @@
 import type { KeysOfUnion } from "@/types/utils";
 import type { ReactNode } from "react";
-import type { PALETTE } from "tailwind.config";
+import type { PALETTE } from "@/constants/palette";
 
 // Size options matching Select component
 export type ButtonSize = "sm" | "md" | "lg";

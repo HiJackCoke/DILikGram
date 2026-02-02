@@ -11,6 +11,7 @@ import ReactDOM from "react-dom";
 import AIEditPanelView from "./View";
 
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
+import { useBrowserEnv } from "@/hooks/useBrowerEnv";
 
 interface AIEditPanelProps {
   onSubmit?: (apiKey: string, nodeId: string, prompt: string) => void;
@@ -20,6 +21,11 @@ interface AIEditPanelProps {
 export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
   const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
+
+  const element = useBrowserEnv(
+    ({ document }) => document.querySelector("#floating-panel-root"),
+    null
+  );
 
   const {
     state: { isOpen, nodeId, nodePosition },
@@ -50,8 +56,6 @@ export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
 
     reset();
   };
-
-  const element = document.querySelector("#floating-panel-root");
 
   if (!element || !isOpen || !nodePosition) {
     return null;

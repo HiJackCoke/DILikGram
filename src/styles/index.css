@@ -1,3 +1,9 @@
+@import url(react-cosmos-diagram/dist/style.css);
+@import url(modal.css);
+@import url(edges.css);
+@import url(ports.css);
+@import url(toast.css);
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

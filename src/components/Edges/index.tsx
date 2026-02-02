@@ -1,4 +1,3 @@
-import "@/styles/edges.css";
 
 import WorkflowEdge from "./WorkflowEdge";
 
