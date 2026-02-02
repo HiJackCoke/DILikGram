@@ -86,7 +86,7 @@ const PANEL_CODE_GENERATORS: Partial<
   decision: (data: any) => {
     const { condition = {} } = data;
 
-    const entries = Object.entries(condition) as [ConditionOperator, string][];
+    const entries = Object.entries(condition) as [string, string][];
 
     if (entries.length === 0) {
       return `// No conditions specified\nreturn {\n  ...inputData,\n  success: false\n};`;
@@ -94,22 +94,25 @@ const PANEL_CODE_GENERATORS: Partial<
 
     const conditionExpressions: string[] = [];
 
-    entries.forEach(([operator, key]) => {
-      if (!key) return;
+    entries.forEach(([key, fieldName]) => {
+      if (!fieldName) return;
+
+      // Extract operator (before hyphen)
+      const operator = key.split("-")[0] as ConditionOperator;
 
       let expression: string;
       switch (operator) {
         case "has":
-          expression = `(typeof inputData === "object" && inputData !== null ? ("${key}" in inputData) : false)`;
+          expression = `(typeof inputData === "object" && inputData !== null ? ("${fieldName}" in inputData) : false)`;
           break;
         case "hasNot":
-          expression = `(typeof inputData === "object" && inputData !== null ? !("${key}" in inputData) : true)`;
+          expression = `(typeof inputData === "object" && inputData !== null ? !("${fieldName}" in inputData) : true)`;
           break;
         case "truthy":
-          expression = `Boolean(inputData["${key}"])`;
+          expression = `Boolean(inputData["${fieldName}"])`;
           break;
         case "falsy":
-          expression = `!Boolean(inputData["${key}"])`;
+          expression = `!Boolean(inputData["${fieldName}"])`;
           break;
         default:
           return;
@@ -126,8 +129,12 @@ const PANEL_CODE_GENERATORS: Partial<
         ? conditionExpressions[0]
         : conditionExpressions.join(" && ");
 
+    // Summary: strip hyphen-separated IDs
     const conditionSummary = entries
-      .map(([op, key]) => `${op} ${key}`)
+      .map(([key, fieldName]) => {
+        const operator = key.split("-")[0];
+        return `${operator} ${fieldName}`;
+      })
       .join(", ");
 
     return `// Auto-generated conditions: ${conditionSummary}

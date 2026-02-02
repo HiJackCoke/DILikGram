@@ -2,6 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import type { KeyValueEditorViewProps } from "./types";
+import { parseKey } from "./utils";
 
 export default function KeyValueEditorView({
   label,
@@ -23,20 +24,20 @@ export default function KeyValueEditorView({
 
       {/* Key-Value Pairs */}
       <div className="space-y-2">
-        {pairs.map((pair, index) => {
+        {pairs.map((pair) => {
           const config = keySchema["*"] || keySchema[pair.key] || {};
           const isKeyReadonly = config.readOnly ?? false;
           const valueType = config.valueType ?? "text";
           const keyType = config.keyType ?? "text";
 
           return (
-            <div key={index} className="flex gap-2">
+            <div key={pair.key} className="flex gap-2">
               {/* Key Input/Select */}
               <div className="flex-1">
                 {keyType === "select" ? (
                   <Select
                     label=""
-                    value={pair.key}
+                    value={parseKey(pair.key).baseKey}
                     onChange={(newKey) => {
                       if (newKey) onEdit(pair.key, newKey, pair.value);
                     }}
@@ -67,7 +68,7 @@ export default function KeyValueEditorView({
                     placeholder={placeholder.value || "Value"}
                     disabled={disabled}
                     onChange={(newValue) => {
-                      onEdit(pair.key, pair.key, newValue);
+                      onEdit(pair.key, parseKey(pair.key).baseKey, newValue);
                     }}
                   />
                 ) : valueType === "select" ? (
@@ -75,7 +76,8 @@ export default function KeyValueEditorView({
                     label=""
                     value={String(pair.value)}
                     onChange={(newValue) => {
-                      if (newValue) onEdit(pair.key, pair.key, newValue);
+                      if (newValue)
+                        onEdit(pair.key, parseKey(pair.key).baseKey, newValue);
                     }}
                     options={config.options || []}
                     disabled={disabled}
@@ -87,7 +89,7 @@ export default function KeyValueEditorView({
                     placeholder={placeholder.value || "Value"}
                     disabled={disabled}
                     onChange={(newValue) => {
-                      onEdit(pair.key, pair.key, newValue);
+                      onEdit(pair.key, parseKey(pair.key).baseKey, newValue);
                     }}
                   />
                 )}

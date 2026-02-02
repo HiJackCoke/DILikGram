@@ -107,7 +107,7 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
             {data.condition && Object.keys(data.condition).length > 0 && (
               <div className="text-yellow-800 text-xs mt-1 max-w-[90px] truncate opacity-80">
                 {Object.entries(data.condition)
-                  .map(([op, key]) => `${op} ${key}`)
+                  .map(([op, key]) => `${op.split("-")[0]} ${key}`)
                   .join(", ")}
               </div>
             )}
