@@ -6,16 +6,13 @@
 
 import { Sparkles, AlertCircle, Loader2 } from "lucide-react";
 import Button from "@/components/Button";
-import ApiKeySetup from "./ApiKeySetup";
 import PromptInput from "./PromptInput";
 
 interface WorkflowGeneratorViewProps {
-  apiKey: string;
   prompt: string;
   // hasSavedKey: boolean;
   isGenerating: boolean;
   error: string | null;
-  onApiKeyChange: (value: string) => void;
   onPromptChange: (value: string) => void;
   // onSaveApiKey: (key: string) => void;
   // onRemoveApiKey: () => void;
@@ -43,35 +40,21 @@ function Header() {
 }
 
 function WorkflowGeneratorView({
-  apiKey,
   prompt,
   // hasSavedKey,
   isGenerating,
   error,
-  onApiKeyChange,
   onPromptChange,
   // onSaveApiKey,
   // onRemoveApiKey,
   onGenerate,
   onClose,
 }: WorkflowGeneratorViewProps) {
-  const canGenerate = apiKey.trim() && prompt.trim() && !isGenerating;
+  const canGenerate = prompt.trim() && !isGenerating;
 
   return (
     <div className="p-6 space-y-6 overflow-scroll">
       {/* Header */}
-
-      {/* API Key Setup */}
-      <ApiKeySetup
-        value={apiKey}
-        onChange={onApiKeyChange}
-        // onSave={onSaveApiKey}
-        // onRemove={onRemoveApiKey}
-        // hasSavedKey={hasSavedKey}
-      />
-
-      {/* Divider */}
-      <div className="border-t border-gray-200" />
 
       {/* Prompt Input */}
       <PromptInput

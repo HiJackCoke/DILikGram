@@ -52,9 +52,9 @@ export interface AIWorkflowEditorContextValue {
   setCurrentWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
 
   /**
-   * Handle edit operation (will be implemented in Stage 2)
+   * Handle edit operation via Server Actions
    */
-  update: (apiKey: string, nodeId: string, prompt: string) => Promise<void>;
+  update: (nodeId: string, prompt: string) => Promise<void>;
 }
 
 export interface AIWorkflowEditorHandlers {

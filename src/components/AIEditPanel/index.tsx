@@ -14,12 +14,11 @@ import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useBrowserEnv } from "@/hooks/useBrowerEnv";
 
 interface AIEditPanelProps {
-  onSubmit?: (apiKey: string, nodeId: string, prompt: string) => void;
+  onSubmit?: (nodeId: string, prompt: string) => void;
   onClose?: () => void;
 }
 
 export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
-  const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
 
   const element = useBrowserEnv(
@@ -36,15 +35,14 @@ export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
   } = useAIWorkflowEditor();
 
   const reset = () => {
-    setApiKey("");
     setPrompt("");
   };
 
   const handleSubmit = () => {
-    if (apiKey.trim() && prompt.trim() && nodeId) {
-      update(apiKey.trim(), nodeId, prompt.trim());
+    if (prompt.trim() && nodeId) {
+      update(nodeId, prompt.trim());
 
-      onSubmit?.(apiKey.trim(), nodeId, prompt.trim());
+      onSubmit?.(nodeId, prompt.trim());
 
       reset();
     }
@@ -64,11 +62,9 @@ export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
   return ReactDOM.createPortal(
     <AIEditPanelView
       position={nodePosition}
-      apiKey={apiKey}
       prompt={prompt}
       isEditing={isEditing}
       error={error}
-      onApiKeyChange={setApiKey}
       onPromptChange={setPrompt}
       onSubmit={handleSubmit}
       onClose={handleClose}

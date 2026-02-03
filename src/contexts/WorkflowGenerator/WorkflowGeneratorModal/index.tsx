@@ -19,7 +19,7 @@ interface WorkflowGeneratorModalProps {
   open: boolean;
   isGenerating: boolean;
   error: string | null;
-  onGenerate: (apiKey: string, prompt: string) => void;
+  onGenerate: (prompt: string) => void;
   onClose: () => void;
 }
 
@@ -30,7 +30,6 @@ export default function WorkflowGeneratorModal({
   onGenerate,
   onClose,
 }: WorkflowGeneratorModalProps) {
-  const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
   // const [hasSavedKey, setHasSavedKey] = useState(() => hasApiKey());
 
@@ -48,8 +47,8 @@ export default function WorkflowGeneratorModal({
   // };
 
   const handleGenerate = () => {
-    if (apiKey.trim() && prompt.trim()) {
-      onGenerate(apiKey.trim(), prompt.trim());
+    if (prompt.trim()) {
+      onGenerate(prompt.trim());
     }
   };
 
@@ -61,12 +60,10 @@ export default function WorkflowGeneratorModal({
       onClose={onClose}
     >
       <WorkflowGeneratorView
-        apiKey={apiKey}
         prompt={prompt}
         // hasSavedKey={hasSavedKey}
         isGenerating={isGenerating}
         error={error}
-        onApiKeyChange={setApiKey}
         onPromptChange={setPrompt}
         // onSaveApiKey={handleSaveApiKey}
         // onRemoveApiKey={handleRemoveApiKey}

@@ -17,6 +17,10 @@ dist-ssr
 /out/
 next-env.d.ts
 
+# Environment variables
+.env*.local
+.env.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

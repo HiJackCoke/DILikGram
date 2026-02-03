@@ -10,11 +10,9 @@ import type { XYPosition } from "react-cosmos-diagram";
 
 interface AIEditPanelViewProps {
   position: XYPosition;
-  apiKey: string;
   prompt: string;
   isEditing: boolean;
   error: string | null;
-  onApiKeyChange: (value: string) => void;
   onPromptChange: (value: string) => void;
   onSubmit: () => void;
   onClose: () => void;
@@ -22,16 +20,14 @@ interface AIEditPanelViewProps {
 
 export default function AIEditPanelView({
   position,
-  apiKey,
   prompt,
   isEditing,
   error,
-  onApiKeyChange,
   onPromptChange,
   onSubmit,
   onClose,
 }: AIEditPanelViewProps) {
-  const canSubmit = apiKey.trim() && prompt.trim() && !isEditing;
+  const canSubmit = prompt.trim() && !isEditing;
 
   // Calculate panel position with boundary detection
   const PANEL_WIDTH = 384; // 96 * 4 (w-96 in Tailwind)
@@ -105,21 +101,6 @@ export default function AIEditPanelView({
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          {/* API Key Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-700">
-              OpenAI API Key
-            </label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => onApiKeyChange(e.target.value)}
-              placeholder="sk-..."
-              disabled={isEditing}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-palette-primary-border focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-            />
-          </div>
-
           {/* Prompt Textarea */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-gray-700">

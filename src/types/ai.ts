@@ -1,7 +1,6 @@
 import type { WorkflowNode } from "@/types";
 
 export interface GenerateWorkflowProps {
-  apiKey: string;
   prompt: string;
 }
 
@@ -15,7 +14,7 @@ export interface GenerateWorkflowResponse {
 }
 
 export type GenerateWorkflow = (
-  props: GenerateWorkflowProps
+  props: GenerateWorkflowProps,
 ) => Promise<GenerateWorkflowResponse>;
 
 export interface UpdateWorkflowProps extends GenerateWorkflowProps {
@@ -38,12 +37,5 @@ export interface UpdateWorkflowResponse {
 }
 
 export type UpdateWorkflow = (
-  props: UpdateWorkflowProps
+  props: UpdateWorkflowProps,
 ) => Promise<UpdateWorkflowResponse>;
-
-export interface FetchOpenAI {
-  apiKey: string;
-  messages: Array<{ role: string; content: string }>;
-  model: "gpt-4o-mini" | "gpt-4o";
-  jsonSchema?: object;
-}

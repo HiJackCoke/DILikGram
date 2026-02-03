@@ -15,7 +15,7 @@ import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
 } from "./type";
-import { generateWorkflow } from "@/ai/utils/aiClient";
+import { generateWorkflowAction } from "@/app/actions/ai";
 import {
   createWorkflow,
   // parseWorkflowFromAI,
@@ -67,16 +67,13 @@ export function WorkflowGeneratorProvider({
   }, []);
 
   const handleGenerate = useCallback(
-    async (apiKey: string, prompt: string) => {
+    async (prompt: string) => {
       setIsGenerating(true);
       setError(null);
 
       try {
-        // 1. Call OpenAI API
-        const generated = await generateWorkflow({
-          apiKey,
-          prompt,
-        });
+        // 1. Call OpenAI API (server-side)
+        const generated = await generateWorkflowAction(prompt);
 
         // 2. Process workflow (validate, layout, and map to WorkflowNode/Edge)
         const { nodes, edges } = createWorkflow(generated.nodes);

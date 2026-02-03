@@ -26,7 +26,7 @@ import type {
   OnWorkflowEditCallback,
 } from "./type";
 
-import { updateWorkflow } from "@/ai/utils/aiClient";
+import { updateWorkflowAction } from "@/app/actions/ai";
 import { mergeWorkflow } from "@/ai/utils/workflowProcessor";
 import AIEditPanel from "@/components/AIEditPanel";
 
@@ -93,7 +93,7 @@ export function AIWorkflowEditorProvider({
   );
 
   const update = useCallback(
-    async (apiKey: string, nodeId: string, prompt: string) => {
+    async (nodeId: string, prompt: string) => {
       setIsEditing(true);
       setError(null);
 
@@ -101,12 +101,11 @@ export function AIWorkflowEditorProvider({
         const currentNodes = currentNodesRef.current;
         // const currentEdges = currentEdgesRef.current;
 
-        const editResult = await updateWorkflow({
-          apiKey,
+        const editResult = await updateWorkflowAction(
           nodeId,
           prompt,
-          nodes: currentNodes,
-        });
+          currentNodes
+        );
 
         // Step 4: Merge edit result into current workflow (ParentNode-First)
         // Context is used to derive edges from parentNode if not provided in editResult
