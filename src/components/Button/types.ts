@@ -16,8 +16,11 @@ export type IconPosition = "left" | "right";
 // Button type attribute
 export type ButtonType = "button" | "submit" | "reset";
 
-// Base props shared by all button variants
-interface BaseButtonProps {
+// Button props - simplified with optional children and icon
+export interface ButtonProps {
+  children?: ReactNode;
+  icon?: ReactNode;
+  iconPosition?: IconPosition;
   palette?: KeysOfUnion<typeof PALETTE>;
   size?: ButtonSize;
   variant?: ButtonVariant;
@@ -30,39 +33,7 @@ interface BaseButtonProps {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-// Text-only button (no icon)
-export interface TextButtonProps extends BaseButtonProps {
-  children: ReactNode;
-  icon?: never;
-  iconPosition?: never;
-  iconOnly?: never;
-}
-
-// Text + Icon button
-export interface TextIconButtonProps extends BaseButtonProps {
-  children: ReactNode;
-  icon: ReactNode;
-  iconPosition?: IconPosition;
-  iconOnly?: never;
-}
-
-// Icon-only button (REQUIRES aria-label for accessibility)
-export interface IconOnlyButtonProps extends BaseButtonProps {
-  children?: never;
-  icon: ReactNode;
-  iconOnly: true;
-}
-
-// Discriminated union for type safety
-export type ButtonProps =
-  | TextButtonProps
-  | TextIconButtonProps
-  | IconOnlyButtonProps;
-
 // View props (internal)
-export interface ButtonViewProps extends BaseButtonProps {
-  children?: ReactNode;
-  icon?: ReactNode;
-  iconPosition?: IconPosition;
+export interface ButtonViewProps extends ButtonProps {
   iconOnly?: boolean;
 }
