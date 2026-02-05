@@ -541,8 +541,6 @@ export default function WorkflowPage() {
     >
       <NodeTemplatePanel onDragStart={handleDragStart} />
 
-      <ExecutionHeader nodes={nodes} setNodes={setNodes} setEdges={setEdges} />
-
       <ReactDiagram
         dragSelectionKeyCode={null}
         nodes={enhancedNodes}
@@ -575,7 +573,13 @@ export default function WorkflowPage() {
         onEdgeUpdate={onEdgeUpdate}
         onEdgeUpdateStart={onEdgeUpdateStart}
         onEdgeUpdateEnd={onEdgeUpdateEnd}
-      />
+      >
+        <ExecutionHeader
+          nodes={nodes}
+          setNodes={setNodes}
+          setEdges={setEdges}
+        />
+      </ReactDiagram>
     </div>
   );
 }
