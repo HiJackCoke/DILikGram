@@ -8,6 +8,6 @@ export interface ModalViewProps {
 }
 
 export interface ModalProps extends ModalViewProps {
-  open: boolean;
+  show: boolean;
   selector?: string;
 }

@@ -20,7 +20,7 @@ export default function Select<T = string>(props: SelectProps<T>) {
     onChange,
   } = props;
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [show, setShow] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedIndexState, setFocusedIndexState] = useState(0);
 
@@ -65,7 +65,7 @@ export default function Select<T = string>(props: SelectProps<T>) {
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     // Close dropdown if focus moves completely outside the Select component
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsOpen(false);
+      setShow(false);
       setSearchQuery("");
       setFocusedIndexState(0);
     }
@@ -92,7 +92,7 @@ export default function Select<T = string>(props: SelectProps<T>) {
         break;
       case "Escape":
         e.preventDefault();
-        setIsOpen(false);
+        setShow(false);
         setSearchQuery("");
         break;
     }
@@ -100,18 +100,18 @@ export default function Select<T = string>(props: SelectProps<T>) {
 
   // Auto-focus search input or dropdown when it opens
   useLayoutEffect(() => {
-    if (isOpen) {
+    if (show) {
       if (searchable && searchInputRef.current) {
         searchInputRef.current.focus();
       } else if (dropdownRef.current) {
         dropdownRef.current.focus();
       }
     }
-  }, [isOpen, searchable]);
+  }, [show, searchable]);
 
   const handleTriggerClick = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
+    setShow(!show);
+    if (!show) {
       setSearchQuery("");
     }
   };
@@ -140,7 +140,7 @@ export default function Select<T = string>(props: SelectProps<T>) {
       // Keep dropdown open in multiple-select
     } else {
       onChange(option.value);
-      setIsOpen(false);
+      setShow(false);
       setSearchQuery("");
     }
   };
@@ -166,7 +166,7 @@ export default function Select<T = string>(props: SelectProps<T>) {
       mode={mode}
       size={size}
       displayValue={displayValue}
-      isOpen={isOpen}
+      show={show}
       focusedIndex={focusedIndex}
       filteredOptions={filteredOptions}
       selectedValues={selectedValues}

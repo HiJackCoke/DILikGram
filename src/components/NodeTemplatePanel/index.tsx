@@ -25,7 +25,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useStore, type XYPosition } from "react-cosmos-diagram";
-import { useBrowserEnv } from "@/hooks/useBrowerEnv";
+import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 
 interface NodeTemplatePanelProps {
   onDragStart?: (event: DragStartEvent, distance: XYPosition) => void;
@@ -58,10 +58,10 @@ export default function NodeTemplatePanel({
     useSensor(DeviceSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [show, setShow] = useState(false);
 
   const [sidebarItems, setNodeTemplatePanelItems] = useState(
     Object.entries(UNIFIED_NODE_TEMPLATES).map(([type, value]) => ({
@@ -70,7 +70,7 @@ export default function NodeTemplatePanel({
       icon: value.icon,
       label: value.label,
       description: value.description,
-    }))
+    })),
   );
 
   const customCollisionDetection: CollisionDetection = (args) => {
@@ -156,10 +156,10 @@ export default function NodeTemplatePanel({
     <>
       {/* Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setShow(!show)}
         className="absolute left-4 top-4 z-30 p-2 bg-white border border-gray-300 rounded-lg shadow-lg hover:bg-gray-50 transition-colors"
       >
-        {isOpen ? (
+        {show ? (
           <ChevronUp className="w-5 h-5" />
         ) : (
           <ChevronDown className="w-5 h-5" />
@@ -182,7 +182,7 @@ export default function NodeTemplatePanel({
           absolute left-4 top-16 z-20 w-72 bg-white border border-gray-200
           rounded-lg shadow-xl overflow-visible transition-all duration-300
           ${
-            isOpen
+            show
               ? "max-h-[calc(100vh-100px)] opacity-100 translate-y-0 pointer-events-auto"
               : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
           }

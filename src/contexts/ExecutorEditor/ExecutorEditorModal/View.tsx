@@ -16,7 +16,7 @@ type ExecutorEditorViewProps = {
   onInputDataChange: (input: string) => void;
   onTest: () => Promise<void>;
   onSave: () => void;
-  onClose: () => void;
+  onClose?: () => void;
 };
 
 /**

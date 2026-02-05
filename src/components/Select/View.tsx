@@ -162,7 +162,7 @@ export default function SelectView<T = string>({
   disabled = false,
   status = "default",
   errorMessage,
-  isOpen,
+  show,
   focusedIndex,
 
   options,
@@ -229,7 +229,7 @@ export default function SelectView<T = string>({
             border ${borderColor}
             rounded-lg
             transition-all duration-200
-            ${isOpen ? "ring-2 ring-palette-primary-bg border-transparent scale-[1.01]" : ""}
+            ${show ? "ring-2 ring-palette-primary-bg border-transparent scale-[1.01]" : ""}
             ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           `}
         >
@@ -271,7 +271,7 @@ export default function SelectView<T = string>({
               className={`
                 ${sizeClasses.chevron.split(" ").slice(0, 2).join(" ")} text-slate-400
                 transition-transform duration-200
-                ${isOpen ? "rotate-180" : ""}
+                ${show ? "rotate-180" : ""}
               `}
             />
           </div>
@@ -324,7 +324,7 @@ export default function SelectView<T = string>({
       </div>
 
       {/* Dropdown */}
-      {isOpen && (
+      {show && (
         <div
           ref={dropdownRef}
           tabIndex={-1}

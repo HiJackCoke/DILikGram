@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * WorkflowGenerator context provider
@@ -35,17 +35,17 @@ export function WorkflowGeneratorProvider({
   const listeners = useRef<RegisterOnWorkflowGenerated[]>([]);
   const existingNodesRef = useRef<WorkflowNode[]>([]);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [show, setShow] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const open = useCallback(() => {
-    setIsOpen(true);
+    setShow(true);
     setError(null);
   }, []);
 
   const close = useCallback(() => {
-    setIsOpen(false);
+    setShow(false);
     setError(null);
   }, []);
 
@@ -55,11 +55,11 @@ export function WorkflowGeneratorProvider({
 
       return () => {
         listeners.current = listeners.current.filter(
-          (listener) => listener !== callback
+          (listener) => listener !== callback,
         );
       };
     },
-    []
+    [],
   );
 
   const setExistingNodes = useCallback((nodes: WorkflowNode[]) => {
@@ -92,7 +92,7 @@ export function WorkflowGeneratorProvider({
         setIsGenerating(false);
       }
     },
-    [close]
+    [close],
   );
 
   return (
@@ -109,7 +109,7 @@ export function WorkflowGeneratorProvider({
       {children}
 
       <WorkflowGeneratorModal
-        open={isOpen}
+        show={show}
         isGenerating={isGenerating}
         error={error}
         onGenerate={handleGenerate}
@@ -128,7 +128,7 @@ export function useWorkflowGenerator(): WorkflowGeneratorContextValue {
   const context = use(WorkflowGeneratorContext);
   if (!context) {
     throw new Error(
-      "useWorkflowGenerator must be used within WorkflowGeneratorProvider"
+      "useWorkflowGenerator must be used within WorkflowGeneratorProvider",
     );
   }
   return context;

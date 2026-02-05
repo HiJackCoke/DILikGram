@@ -8,6 +8,7 @@
 import { useState } from "react";
 import Modal from "@/components/Modal";
 import WorkflowGeneratorView from "./View";
+import { ModalProps } from "@/types";
 // import {
 //   loadApiKey,
 //   saveApiKey,
@@ -15,16 +16,15 @@ import WorkflowGeneratorView from "./View";
 //   hasApiKey,
 // } from "@/utils/localStorage";
 
-interface WorkflowGeneratorModalProps {
-  open: boolean;
+interface WorkflowGeneratorModalProps
+  extends Pick<ModalProps, "show" | "onClose"> {
   isGenerating: boolean;
   error: string | null;
   onGenerate: (prompt: string) => void;
-  onClose: () => void;
 }
 
 export default function WorkflowGeneratorModal({
-  open,
+  show,
   isGenerating,
   error,
   onGenerate,
@@ -33,7 +33,7 @@ export default function WorkflowGeneratorModal({
   const [prompt, setPrompt] = useState("");
   // const [hasSavedKey, setHasSavedKey] = useState(() => hasApiKey());
 
-  // Reset prompt when modal opens/closes
+  // Reset prompt when modal shows/closes
 
   // const handleSaveApiKey = (key: string) => {
   //   saveApiKey(key);
@@ -55,7 +55,7 @@ export default function WorkflowGeneratorModal({
   return (
     <Modal
       // selector="#workflow-generator-modal"
-      open={open}
+      show={show}
       title={<WorkflowGeneratorView.Header />}
       onClose={onClose}
     >

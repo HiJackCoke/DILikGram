@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { createContext, useState, useCallback, use } from "react";
 import type { ReactNode } from "react";
@@ -20,16 +20,16 @@ const ExecutionSummaryContext =
 export function ExecutionSummaryProvider({
   children,
 }: ExecutionSummaryProviderProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [show, setShow] = useState(false);
   const [summary, setSummary] = useState<ExecutionSummary | null>(null);
 
   const open = useCallback((newSummary: ExecutionSummary) => {
     setSummary(newSummary);
-    setIsOpen(true);
+    setShow(true);
   }, []);
 
   const close = useCallback(() => {
-    setIsOpen(false);
+    setShow(false);
     setSummary(null);
   }, []);
 
@@ -37,7 +37,7 @@ export function ExecutionSummaryProvider({
     <ExecutionSummaryContext value={{ open, close }}>
       {children}
 
-      <ExecutionSummaryModal open={isOpen} summary={summary} onClose={close} />
+      <ExecutionSummaryModal show={show} summary={summary} onClose={close} />
     </ExecutionSummaryContext>
   );
 }
@@ -46,7 +46,7 @@ export function useExecutionSummary() {
   const context = use(ExecutionSummaryContext);
   if (!context) {
     throw new Error(
-      "useExecutionSummary must be used within ExecutionSummaryProvider"
+      "useExecutionSummary must be used within ExecutionSummaryProvider",
     );
   }
   return context;

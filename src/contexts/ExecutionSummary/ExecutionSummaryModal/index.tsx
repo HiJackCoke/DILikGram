@@ -1,11 +1,11 @@
 import Modal from "@/components/Modal";
 import ExecutionSummaryView from "./View";
 import type { ExecutionSummary } from "@/types/workflow";
+import { ModalProps } from "@/types";
 
-interface ExecutionSummaryModalProps {
-  open: boolean;
+interface ExecutionSummaryModalProps
+  extends Pick<ModalProps, "show" | "onClose"> {
   summary: ExecutionSummary | null;
-  onClose: () => void;
 }
 
 function formatExecutionTime(ms: number): string {
@@ -14,7 +14,7 @@ function formatExecutionTime(ms: number): string {
 }
 
 export default function ExecutionSummaryModal({
-  open,
+  show,
   summary,
   onClose,
 }: ExecutionSummaryModalProps) {
@@ -23,7 +23,7 @@ export default function ExecutionSummaryModal({
       // selector="#workflow-summary-modal"
       title="Workflow Execution Summary"
       description={`Completed in ${formatExecutionTime(summary?.totalExecutionTime || 0)}`}
-      open={open}
+      show={show}
       onClose={onClose}
     >
       {summary && <ExecutionSummaryView summary={summary} />}

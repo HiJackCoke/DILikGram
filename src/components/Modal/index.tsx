@@ -8,10 +8,10 @@ import ModalView from "./View";
 import type { ModalProps } from "@/types/modal";
 
 import "@/styles/modal.css";
-import { useBrowserEnv } from "@/hooks/useBrowerEnv";
+import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 
 export default function Modal({
-  open,
+  show,
   title = "",
   description = "",
   selector = "#modal-root",
@@ -20,7 +20,7 @@ export default function Modal({
 }: ModalProps) {
   const element = useBrowserEnv(
     ({ document }) => document.querySelector(selector),
-    null
+    null,
   );
 
   const [clear, setClear] = useState(element ? false : true);
@@ -29,16 +29,16 @@ export default function Modal({
     if (!element) return;
 
     const handleOnAnimationStart = () => {
-      if (!open) return;
+      if (!show) return;
       setClear(false);
     };
 
     const handleOnAnimationEnd = () => {
-      if (open) return;
+      if (show) return;
       setClear(true);
     };
 
-    if (open) {
+    if (show) {
       element.classList.remove("inactive");
       element.classList.add(`active`);
     } else if (element.classList.contains("active")) {
@@ -53,7 +53,7 @@ export default function Modal({
       element.removeEventListener("animationstart", handleOnAnimationStart);
       element.removeEventListener("animationend", handleOnAnimationEnd);
     };
-  }, [open]);
+  }, [show]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -67,11 +67,11 @@ export default function Modal({
       clear ? null : (
         <div className="modal-container" onMouseDown={handleBackdropClick}>
           <ModalView title={title} description={description} onClose={onClose}>
-            {open && children}
+            {show && children}
           </ModalView>
         </div>
       ),
-      element
+      element,
     )
   );
 }

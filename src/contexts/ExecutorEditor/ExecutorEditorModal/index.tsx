@@ -13,15 +13,15 @@ import {
 
 import type { ExecutionConfig } from "@/types/workflow";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
+import { ModalProps } from "@/types";
 
-type ExecutorEditorModalProps = Partial<ExecutorEditorState> & {
-  open: boolean;
-  onSave: (config: ExecutionConfig) => void;
-  onClose: () => void;
-};
+type ExecutorEditorModalProps = Partial<ExecutorEditorState> &
+  Pick<ModalProps, "show" | "onClose"> & {
+    onSave: (config: ExecutionConfig) => void;
+  };
 
 export default function ExecutorEditorModal({
-  open,
+  show,
   nodeId,
   nodeType,
   config,
@@ -33,7 +33,7 @@ export default function ExecutorEditorModal({
   const [meta, setMeta] = useState(() => config?.nodeData);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [inputData, setInputData] = useState(() =>
-    stringifyForDisplay(config?.nodeData?.inputData)
+    stringifyForDisplay(config?.nodeData?.inputData),
   );
   const [outputData, setOutputData] = useState<string | null>(null);
 
@@ -105,14 +105,14 @@ export default function ExecutorEditorModal({
       },
     };
     onSave(config);
-    onClose();
+    onClose?.();
   };
 
   return (
     <Modal
       title={<ExecutorEditorView.Title />}
       description={`Node: ${nodeId} (${nodeType})`}
-      open={open}
+      show={show}
       onClose={onClose}
     >
       {nodeId && nodeType && (

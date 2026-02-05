@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { WorkflowNodeType } from "@/types/nodes";
-import { useBrowserEnv } from "@/hooks/useBrowerEnv";
+import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 
 interface DraggableNodeTemplateProps {
   id: string;

@@ -17,7 +17,7 @@ interface WorkflowGeneratorViewProps {
   // onSaveApiKey: (key: string) => void;
   // onRemoveApiKey: () => void;
   onGenerate: () => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 function Header() {

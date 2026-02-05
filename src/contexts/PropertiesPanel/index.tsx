@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   createContext,
@@ -41,7 +41,7 @@ export function PropertiesPanelProvider({
   const listeners = useRef<PropertiesOnSave[]>([]);
   const deleteListeners = useRef<PropertiesOnDelete[]>([]);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [show, setShow] = useState(false);
   const [state, setState] = useState<PropertiesPanelState | null>(null);
   const [edges, setEdges] = useState<Edge[]>([]);
 
@@ -50,7 +50,7 @@ export function PropertiesPanelProvider({
   };
 
   const open = useCallback((node: WorkflowNode) => {
-    setIsOpen(true);
+    setShow(true);
     setState({
       nodeId: node.id,
       node,
@@ -58,7 +58,7 @@ export function PropertiesPanelProvider({
   }, []);
 
   const close = useCallback(() => {
-    setIsOpen(false);
+    setShow(false);
     setState(null);
   }, []);
 
@@ -67,7 +67,7 @@ export function PropertiesPanelProvider({
 
     return () => {
       listeners.current = listeners.current.filter(
-        (listener) => listener !== handler
+        (listener) => listener !== handler,
       );
     };
   }, []);
@@ -77,7 +77,7 @@ export function PropertiesPanelProvider({
 
     return () => {
       deleteListeners.current = deleteListeners.current.filter(
-        (listener) => listener !== handler
+        (listener) => listener !== handler,
       );
     };
   }, []);
@@ -88,7 +88,7 @@ export function PropertiesPanelProvider({
       close();
       listeners.current.forEach((listener) => listener(state.nodeId, data));
     },
-    [state, close]
+    [state, close],
   );
 
   const handleDelete = useCallback(
@@ -96,7 +96,7 @@ export function PropertiesPanelProvider({
       close();
       deleteListeners.current.forEach((listener) => listener(nodeId));
     },
-    [close]
+    [close],
   );
 
   return (
@@ -108,7 +108,7 @@ export function PropertiesPanelProvider({
       <PropertiesPanelModal
         node={state?.node}
         edges={edges}
-        open={isOpen}
+        open={show}
         onSave={handleSave}
         onDelete={handleDelete}
         onClose={close}
@@ -123,7 +123,7 @@ export function usePropertiesPanel(handlers?: PropertiesPanelHandlers) {
   const context = use(PropertiesPanelContext);
   if (!context) {
     throw new Error(
-      "usePropertiesPanel must be used within PropertiesPanelProvider"
+      "usePropertiesPanel must be used within PropertiesPanelProvider",
     );
   }
   const { registerOnSave, registerOnDelete } = context;

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { createContext, useState, useCallback, useRef, use } from "react";
 import type { ReactNode } from "react";
@@ -18,7 +18,7 @@ interface ExecutorEditorProviderProps {
 }
 
 const ExecutorEditorContext = createContext<ExecutorEditorContextValue | null>(
-  null
+  null,
 );
 
 export function ExecutorEditorProvider({
@@ -26,7 +26,7 @@ export function ExecutorEditorProvider({
 }: ExecutorEditorProviderProps) {
   const listeners = useRef<ExecutorOnSave[]>([]);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [show, setShow] = useState(false);
   const [state, setState] = useState<ExecutorEditorState | null>(null);
 
   const open = useCallback((node: WorkflowNodeProps) => {
@@ -34,7 +34,7 @@ export function ExecutorEditorProvider({
 
     if (!node?.type) return;
 
-    setIsOpen(true);
+    setShow(true);
     setState({
       nodeId: node.id,
       nodeType: node?.type,
@@ -43,7 +43,7 @@ export function ExecutorEditorProvider({
   }, []);
 
   const close = useCallback(() => {
-    setIsOpen(false);
+    setShow(false);
     setState(null);
   }, []);
 
@@ -52,7 +52,7 @@ export function ExecutorEditorProvider({
 
     return () => {
       listeners.current = listeners.current.filter(
-        (listener) => listener !== handler
+        (listener) => listener !== handler,
       );
     };
   }, []);
@@ -63,7 +63,7 @@ export function ExecutorEditorProvider({
       close();
       listeners.current.forEach((listener) => listener(state.nodeId, config));
     },
-    [state, close]
+    [state, close],
   );
 
   return (
@@ -73,7 +73,7 @@ export function ExecutorEditorProvider({
       <ExecutorEditorModal
         {...state}
         key={state?.nodeId}
-        open={isOpen}
+        show={show}
         onSave={handleSave}
         onClose={close}
       />
@@ -87,7 +87,7 @@ export function useExecutorEditorContext() {
   const context = use(ExecutorEditorContext);
   if (!context) {
     throw new Error(
-      "useExecutorEditorContext must be used within ExecutorEditorProvider"
+      "useExecutorEditorContext must be used within ExecutorEditorProvider",
     );
   }
   return context;

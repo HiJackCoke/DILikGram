@@ -11,7 +11,7 @@ import ReactDOM from "react-dom";
 import AIEditPanelView from "./View";
 
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
-import { useBrowserEnv } from "@/hooks/useBrowerEnv";
+import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 
 interface AIEditPanelProps {
   onSubmit?: (nodeId: string, prompt: string) => void;
@@ -23,7 +23,7 @@ export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
 
   const element = useBrowserEnv(
     ({ document }) => document.querySelector("#floating-panel-root"),
-    null
+    null,
   );
 
   const {
@@ -69,6 +69,6 @@ export default function AIEditPanel({ onSubmit, onClose }: AIEditPanelProps) {
       onSubmit={handleSubmit}
       onClose={handleClose}
     />,
-    element
+    element,
   );
 }

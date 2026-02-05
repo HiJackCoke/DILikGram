@@ -46,7 +46,7 @@ export type SelectProps<T = string> =
 // Internal view props
 export interface SelectViewProps<T = string> extends BaseSelectProps<T> {
   displayValue: string;
-  isOpen: boolean;
+  show: boolean;
   focusedIndex: number;
 
   filteredOptions: SelectOption<T>[];
