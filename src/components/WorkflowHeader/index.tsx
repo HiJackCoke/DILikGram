@@ -1,7 +1,9 @@
-import { Square, Sparkles } from "lucide-react";
+import { Square, Sparkles, History } from "lucide-react";
 import Button from "@/components/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
+import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
+import UndoRedoButtons from "./UndoRedoButtons";
 
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
 import type { Dispatch, SetStateAction } from "react";
@@ -15,24 +17,27 @@ interface Props {
 
 export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
   const { open: openGenerator } = useWorkflowGenerator();
+  const { open: openHistory } = useWorkflowVersioning();
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
         node.id === nodeId
           ? { ...node, data: { ...node.data, execution: executionData } }
-          : node
-      )
+          : node,
+      ),
     );
   };
 
   const handleEdgeUpdate = (
     edgeId: string,
-    data: Partial<WorkflowEdge["data"]>
+    data: Partial<WorkflowEdge["data"]>,
   ) => {
     setEdges((prevEdges) =>
       prevEdges.map((edge) =>
-        edge.id === edgeId ? { ...edge, data: { ...edge.data, ...data } } : edge
-      )
+        edge.id === edgeId
+          ? { ...edge, data: { ...edge.data, ...data } }
+          : edge,
+      ),
     );
   };
   const { isExecuting, executionState, stopExecution } = useWorkflowExecution({
@@ -42,7 +47,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
 
   const selectedNodeId = nodes.find((node) => node.selected)?.id;
   const executedCount = nodes.filter(
-    (n) => n.data.execution?.state === "executed"
+    (n) => n.data.execution?.state === "executed",
   ).length;
 
   return (
@@ -67,6 +72,21 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
           Generate with AI
         </Button>
 
+        {/* History Button */}
+        <Button
+          palette="secondary"
+          variant="outline"
+          icon={<History />}
+          iconPosition="left"
+          onClick={openHistory}
+          disabled={isExecuting}
+        >
+          History
+        </Button>
+
+        {/* Undo/Redo Buttons */}
+        <UndoRedoButtons />
+
         {/* Stop Button */}
         {isExecuting && (
           <Button
@@ -84,7 +104,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
       {isExecuting &&
         (() => {
           const currentNode = nodes.find(
-            (n) => n.data.execution?.state === "executing"
+            (n) => n.data.execution?.state === "executing",
           );
           return currentNode ? (
             <div className="px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-sm">

@@ -41,6 +41,7 @@ import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGe
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
+import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 
 import ExecutionHeader from "@/components/WorkflowHeader";
 
@@ -73,7 +74,7 @@ export default function WorkflowPage() {
   const nodeTemplatePanelRectRef = useRef<DOMRect | null>(null);
   const distanceRef = useRef<XYPosition | null>(null);
   const [activeNodeType, setActiveNodeType] = useState<WorkflowNodeType | null>(
-    null
+    null,
   );
 
   const transform = useStore((state) => state.transform);
@@ -96,10 +97,21 @@ export default function WorkflowPage() {
     onDelete: handleDeleteNode,
   });
   const { open: openExecutionSummary } = useExecutionSummary();
+  const { save } = useWorkflowVersioning({
+    onRestore: (nodes, edges) => {
+      setNodes(nodes);
+      setEdges(edges);
+    },
+  });
   const { open: openAIEdit, setCurrentWorkflow } = useAIWorkflowEditor({
     onEdit: (nodes, edges) => {
       setNodes(nodes);
       setEdges(edges);
+
+      save(nodes, edges, {
+        changeType: "edited",
+        description: "Edited workflow via AI",
+      });
     },
   });
 
@@ -107,7 +119,7 @@ export default function WorkflowPage() {
   useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
 
   const resetSelectedElements = useStore(
-    (store) => store.resetSelectedElements
+    (store) => store.resetSelectedElements,
   );
 
   // WorkflowGenerator integration
@@ -126,6 +138,15 @@ export default function WorkflowPage() {
   useEffect(() => {
     setCurrentWorkflow(nodes, edges);
   }, [nodes, edges, setCurrentWorkflow]);
+
+  // Register restore listener for version history
+  // useEffect(() => {
+  //   return registerOnRestore((nodes, edges) => {
+  //     console.log(nodes, edges);
+  //     setNodes(nodes);
+  //     setEdges(edges);
+  //   });
+  // }, [registerOnRestore, setNodes, setEdges]);
 
   // Register keyboard shortcuts for copy/paste
   useGlobalKeyHandler({
@@ -177,7 +198,7 @@ export default function WorkflowPage() {
             color: PALETTE["neutral"].color,
           },
         },
-        eds
+        eds,
       );
     });
   };
@@ -186,7 +207,7 @@ export default function WorkflowPage() {
     (_: unknown, node: Node) => {
       openPropertiesPanel(node as WorkflowNode);
     },
-    [openPropertiesPanel]
+    [openPropertiesPanel],
   );
 
   const handleNodeClick = (_: unknown, node: Node) => {
@@ -221,7 +242,7 @@ export default function WorkflowPage() {
       // Open AI edit panel at cursor position
       openAIEdit(node.id, { x: event.clientX, y: event.clientY });
     },
-    [openAIEdit]
+    [openAIEdit],
   );
 
   const onEdgeUpdateStart = useCallback(() => {
@@ -234,7 +255,7 @@ export default function WorkflowPage() {
 
       setEdges((els) => updateEdge(originEdge, newConnection, els));
     },
-    [setEdges]
+    [setEdges],
   );
 
   const onEdgeUpdateEnd = useCallback(
@@ -251,13 +272,13 @@ export default function WorkflowPage() {
               };
             }
             return node;
-          })
+          }),
         );
       }
 
       edgeUpdateSuccessful.current = true;
     },
-    [setEdges, setNodes]
+    [setEdges, setNodes],
   );
 
   // DND 핸들러
@@ -276,7 +297,7 @@ export default function WorkflowPage() {
 
       setActiveNodeType(active.id.toString() as WorkflowNodeType);
     },
-    []
+    [],
   );
 
   const generateNode = ({ x, y }: XYPosition) => {
@@ -317,10 +338,19 @@ export default function WorkflowPage() {
 
   function handleWorkflowGenerator(
     newNodes: WorkflowNode[],
-    newEdges: WorkflowEdge[]
+    newEdges: WorkflowEdge[],
   ) {
-    setNodes((prev) => [...prev, ...newNodes]);
-    setEdges((prev) => [...prev, ...newEdges]);
+    const updatedNodes = [...nodes, ...newNodes];
+    const updatedEdges = [...edges, ...newEdges];
+
+    setNodes(updatedNodes);
+    setEdges(updatedEdges);
+
+    // Auto-save version after workflow generation
+    save(updatedNodes, updatedEdges, {
+      changeType: "generated",
+      description: "Generated workflow from AI",
+    });
   }
 
   // Handle execution config save
@@ -341,19 +371,21 @@ export default function WorkflowPage() {
           };
         }
         return node;
-      })
+      }),
     );
   }
 
   // Handle properties save
   function handlePropertiesSave(
     nodeId: string,
-    data: Partial<WorkflowNode["data"]>
+    data: Partial<WorkflowNode["data"]>,
   ) {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
-        node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
-      )
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...data } }
+          : node,
+      ),
     );
   }
 
@@ -369,12 +401,12 @@ export default function WorkflowPage() {
                 parentNode: undefined,
                 position: node.positionAbsolute || node.position,
               }
-            : node
-        )
+            : node,
+        ),
     );
 
     setEdges((prevEdges) =>
-      prevEdges.filter((e) => e.source !== nodeId && e.target !== nodeId)
+      prevEdges.filter((e) => e.source !== nodeId && e.target !== nodeId),
     );
 
     resetSelectedElements();
@@ -425,7 +457,8 @@ export default function WorkflowPage() {
     // Copy internal edges (edges between copied nodes)
     const copiedNodeIds = new Set(clipboard.map((n) => n.id));
     const edgesToCopy = edges.filter(
-      (edge) => copiedNodeIds.has(edge.source) && copiedNodeIds.has(edge.target)
+      (edge) =>
+        copiedNodeIds.has(edge.source) && copiedNodeIds.has(edge.target),
     );
 
     const newEdges: WorkflowEdge[] = edgesToCopy.map((edge) =>
@@ -433,7 +466,7 @@ export default function WorkflowPage() {
         ...edge,
         source: idMap.get(edge.source)!,
         target: idMap.get(edge.target)!,
-      })
+      }),
     );
 
     // Add to diagram
@@ -441,7 +474,7 @@ export default function WorkflowPage() {
     setEdges((prev) => [...prev, ...newEdges]);
 
     console.log(
-      `Pasted ${newNodes.length} node(s) and ${newEdges.length} edge(s)`
+      `Pasted ${newNodes.length} node(s) and ${newEdges.length} edge(s)`,
     );
   }
 
