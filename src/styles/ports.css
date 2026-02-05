@@ -4,19 +4,28 @@
   height: 14px;
   border-color: transparent;
   background-color: transparent;
+
+  box-sizing: content-box;
+  background-clip: content-box;
 }
 
 .react-diagram__port-top {
+  padding-inline: 20px;
+
   top: -14px;
   border-radius: 40% 40% 0 0 !important;
 }
 
 .react-diagram__port-bottom {
+  padding-inline: 20px;
   bottom: -14px;
+
   border-radius: 0 0 40% 40% !important;
 }
 
 .react-diagram__port-left {
+  padding-block: 20px;
+
   left: -14px;
   width: 14px;
   height: 18px;
@@ -24,6 +33,8 @@
 }
 
 .react-diagram__port-right {
+  padding-block: 20px;
+
   right: -14px;
   width: 14px;
   height: 18px;
@@ -57,7 +68,7 @@
 
 .decision-node .react-diagram__port {
   background-color: theme("colors.palette.warning.bg");
-  border-color: theme("colors.palette.warning.border");
+  /* border-color: theme("colors.palette.warning.border"); */
 }
 
 .decision-node .react-diagram__port-top {
