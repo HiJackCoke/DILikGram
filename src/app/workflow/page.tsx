@@ -38,7 +38,7 @@ import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
-import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
+import { useAIWorkflowEditor } from "@/contexts/ExecutorEditor/AIWorkflowEditor";
 import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 

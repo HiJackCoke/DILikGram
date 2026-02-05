@@ -4,7 +4,7 @@ import { Trash2 } from "lucide-react";
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
 import Select from "@/components/Select";
-import KeyValueEditor from "@/components/KeyValueEditor";
+import KeyValueEditor from "@/components/PropertiesPanel/KeyValueEditor";
 import Tabs from "@/components/Tabs";
 import PortEditor from "@/components/PortEditor";
 
@@ -173,7 +173,7 @@ export default function DynamicNodeEditor({
   const handleDialog = async () => {
     const confirm = await dialog.confirm(
       "Confirm Node Deletion",
-      <PropertiesPanelDialog />
+      <PropertiesPanelDialog />,
     );
 
     if (confirm) {
@@ -182,7 +182,7 @@ export default function DynamicNodeEditor({
   };
   const renderField = (
     key: DeepKeysOfUnion<WorkflowNode["data"]>,
-    value: unknown
+    value: unknown,
   ) => {
     // Get field config from fixtures only
     if (!node.type) return null;
@@ -242,7 +242,7 @@ export default function DynamicNodeEditor({
   return (
     <div className="space-y-4">
       {Object.entries(node.data).map(([key, value]) =>
-        renderField(key as DeepKeysOfUnion<WorkflowNode["data"]>, value)
+        renderField(key as DeepKeysOfUnion<WorkflowNode["data"]>, value),
       )}
 
       {/* Action Buttons */}

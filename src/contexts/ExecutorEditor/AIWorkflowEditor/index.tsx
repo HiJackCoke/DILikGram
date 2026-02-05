@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * AIWorkflowEditor context provider
@@ -28,7 +28,7 @@ import type {
 
 import { updateWorkflowAction } from "@/app/actions/ai";
 import { mergeWorkflow } from "@/ai/utils/workflowProcessor";
-import AIEditPanel from "@/contexts/AIWorkflowEditor/AIEditPanel";
+import AIEditPanel from "@/contexts/ExecutorEditor/AIWorkflowEditor/AIEditPanel";
 
 interface AIWorkflowEditorProviderProps {
   children: ReactNode;
@@ -62,7 +62,7 @@ export function AIWorkflowEditorProvider({
       });
       setError(null);
     },
-    []
+    [],
   );
 
   const close = useCallback(() => {
@@ -79,7 +79,7 @@ export function AIWorkflowEditorProvider({
 
     return () => {
       listeners.current = listeners.current.filter(
-        (listener) => listener !== callback
+        (listener) => listener !== callback,
       );
     };
   }, []);
@@ -89,7 +89,7 @@ export function AIWorkflowEditorProvider({
       currentNodesRef.current = nodes;
       currentEdgesRef.current = edges;
     },
-    []
+    [],
   );
 
   const update = useCallback(
@@ -104,7 +104,7 @@ export function AIWorkflowEditorProvider({
         const editResult = await updateWorkflowAction(
           nodeId,
           prompt,
-          currentNodes
+          currentNodes,
         );
 
         // Step 4: Merge edit result into current workflow (ParentNode-First)
@@ -125,7 +125,7 @@ export function AIWorkflowEditorProvider({
         setIsEditing(false);
       }
     },
-    [close]
+    [close],
   );
 
   return (
@@ -154,12 +154,12 @@ export function AIWorkflowEditorProvider({
  * @throws Error if used outside AIWorkflowEditorProvider
  */
 export function useAIWorkflowEditor(
-  handlers?: AIWorkflowEditorHandlers
+  handlers?: AIWorkflowEditorHandlers,
 ): AIWorkflowEditorContextValue {
   const context = use(AIWorkflowEditorContext);
   if (!context) {
     throw new Error(
-      "useAIWorkflowEditor must be used within AIWorkflowEditorProvider"
+      "useAIWorkflowEditor must be used within AIWorkflowEditorProvider",
     );
   }
 
