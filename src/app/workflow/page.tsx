@@ -36,7 +36,7 @@ import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
-import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
+
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
@@ -116,7 +116,7 @@ export default function WorkflowPage() {
   });
 
   useExecutorEditor({ onSave: handleExecutorSave });
-  useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
+  useWorkflowGenerator({ onGenerate: handleWorkflowGenerator });
 
   const resetSelectedElements = useStore(
     (store) => store.resetSelectedElements,

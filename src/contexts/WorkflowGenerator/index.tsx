@@ -7,7 +7,14 @@
  * and orchestrates the generation pipeline.
  */
 
-import { createContext, useState, useCallback, useRef, use } from "react";
+import {
+  createContext,
+  useState,
+  useCallback,
+  useRef,
+  use,
+  useEffect,
+} from "react";
 import type { ReactNode } from "react";
 import type { WorkflowNode } from "@/types/nodes";
 
@@ -124,12 +131,29 @@ export function WorkflowGeneratorProvider({
  *
  * @throws Error if used outside WorkflowGeneratorProvider
  */
-export function useWorkflowGenerator(): WorkflowGeneratorContextValue {
+export function useWorkflowGenerator(handlers?: {
+  onGenerate: RegisterOnWorkflowGenerated;
+}): Omit<WorkflowGeneratorContextValue, "registerOnGenerate"> {
   const context = use(WorkflowGeneratorContext);
   if (!context) {
     throw new Error(
       "useWorkflowGenerator must be used within WorkflowGeneratorProvider",
     );
   }
-  return context;
+
+  const { registerOnGenerate, ...rest } = context;
+
+  useEffect(() => {
+    const unregisterFns: (() => void)[] = [];
+
+    if (handlers?.onGenerate) {
+      unregisterFns.push(registerOnGenerate(handlers?.onGenerate));
+    }
+
+    return () => {
+      unregisterFns.forEach((fn) => fn());
+    };
+  }, []);
+
+  return rest;
 }
