@@ -385,7 +385,6 @@ export function useWorkflowVersioning(handlers?: {
   useEffect(() => {
     const unregisterFns: (() => void)[] = [];
 
-    console.log(handlers);
     if (handlers?.onRestore) {
       unregisterFns.push(registerOnRestore(handlers?.onRestore));
     }

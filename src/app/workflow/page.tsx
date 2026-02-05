@@ -34,7 +34,6 @@ import type { ExecutionConfig } from "@/types/workflow";
 
 import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 
-import { useExecutorOnSave } from "@/hooks/useExecutorOnSave";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowGeneratorOnGenerate } from "@/hooks/useWorkflowGeneratorOnGenerate";
@@ -51,6 +50,7 @@ import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { generateEdgeId, createDefaultEdge } from "@/utils/edges";
 import { PALETTE } from "@/constants/palette";
 import { useLongPress } from "@/hooks/useLongPress";
+import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 // import { initialNodes } from "@/mocks/nodes";
 // import { initialEdges } from "@/mocks/edges";
 
@@ -115,7 +115,7 @@ export default function WorkflowPage() {
     },
   });
 
-  useExecutorOnSave(handleExecutorSave);
+  useExecutorEditor({ onSave: handleExecutorSave });
   useWorkflowGeneratorOnGenerate(handleWorkflowGenerator);
 
   const resetSelectedElements = useStore(

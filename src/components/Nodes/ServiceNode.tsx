@@ -18,7 +18,7 @@ import type {
   HttpMethod,
   WorkflowNodeProps,
 } from "@/types/nodes";
-import { useExecutorEditorContext } from "@/contexts/ExecutorEditor";
+import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 
 const statusConfig: Record<
   NodeStatus,
@@ -65,7 +65,7 @@ const methodColors: Record<HttpMethod, string> = {
 
 export function ServiceNode(nodeProps: ServiceNodeProps) {
   const { data, selected } = nodeProps;
-  const { open } = useExecutorEditorContext();
+  const { open } = useExecutorEditor();
 
   const status = data.status || "idle";
   const StatusIcon = statusConfig[status]?.icon || Circle;

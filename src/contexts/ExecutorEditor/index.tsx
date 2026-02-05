@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useState, useCallback, useRef, use } from "react";
+import {
+  createContext,
+  useState,
+  useCallback,
+  useRef,
+  use,
+  useEffect,
+} from "react";
 import type { ReactNode } from "react";
 import type { ExecutionConfig } from "@/types/workflow";
 import ExecutorEditorModal from "@/contexts/ExecutorEditor/ExecutorEditorModal";
@@ -8,7 +15,7 @@ import type { WorkflowNodeProps } from "@/types/nodes";
 import type { ExecutorEditorState, ExecutorOnSave } from "./type";
 
 interface ExecutorEditorContextValue {
-  registerOnSave: (callback: ExecutorOnSave) => void;
+  registerOnSave: (callback: ExecutorOnSave) => () => void;
   open: (node: WorkflowNodeProps) => void;
   close: () => void;
 }
@@ -83,12 +90,27 @@ export function ExecutorEditorProvider({
 
 // Hook exported separately to satisfy react-refresh rules
 
-export function useExecutorEditorContext() {
+export function useExecutorEditor(handlers?: { onSave: ExecutorOnSave }) {
   const context = use(ExecutorEditorContext);
   if (!context) {
     throw new Error(
-      "useExecutorEditorContext must be used within ExecutorEditorProvider",
+      "useExecutorEditor must be used within ExecutorEditorProvider",
     );
   }
-  return context;
+
+  const { registerOnSave, ...rest } = context;
+
+  useEffect(() => {
+    const unregisterFns: (() => void)[] = [];
+
+    if (handlers?.onSave) {
+      unregisterFns.push(registerOnSave(handlers?.onSave));
+    }
+
+    return () => {
+      unregisterFns.forEach((fn) => fn());
+    };
+  }, []);
+
+  return rest;
 }

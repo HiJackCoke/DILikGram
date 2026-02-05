@@ -258,10 +258,10 @@ export function ExecutorEditorProvider({ children, nodes, onSave }) {
 </ExecutorEditorProvider>
 
 // 5. Usage in Node Components
-import { useExecutorEditorContext } from "@/contexts/ExecutorEditorContext";
+import { useExecutorEditor } from "@/contexts/ExecutorEditorContext";
 
 export function TaskNode({ id }: TaskNodeProps) {
-  const { open } = useExecutorEditorContext();
+  const { open } = useExecutorEditor();
 
   const handleOpenEditor = (e: React.MouseEvent) => {
     e.stopPropagation();

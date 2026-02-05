@@ -5,11 +5,11 @@ import type {
   NodePort,
   WorkflowNodeProps,
 } from "@/types/nodes";
-import { useExecutorEditorContext } from "@/contexts/ExecutorEditor";
+import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 
 export function DecisionNode(nodeProps: DecisionNodeProps) {
   const { data, selected } = nodeProps;
-  const { open } = useExecutorEditorContext();
+  const { open } = useExecutorEditor();
 
   const defaultPorts: NodePort[] = [
     { id: "input", position: Position.Top, type: "target" },

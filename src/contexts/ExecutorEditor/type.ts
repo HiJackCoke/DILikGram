@@ -7,4 +7,4 @@ export interface ExecutorEditorState {
   config?: ExecutionConfig;
 }
 
-export type ExecutorOnSave = (nodeId: string, config: ExecutionConfig) => void;
+export type ExecutorOnSave = (nodeId: string, config: ExecutionConfig)  => void;
