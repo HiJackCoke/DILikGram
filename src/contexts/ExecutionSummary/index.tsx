@@ -3,7 +3,7 @@
 import { createContext, useState, useCallback, use } from "react";
 import type { ReactNode } from "react";
 import type { ExecutionSummary } from "@/types/workflow";
-import ExecutionSummaryModal from "@/contexts/ExecutionSummary/ExecutionSummaryModal";
+import ExecutionSummaryModal from "@/contexts/ExecutionSummary/Modal";
 
 interface ExecutionSummaryContextValue {
   open: (summary: ExecutionSummary) => void;

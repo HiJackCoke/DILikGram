@@ -10,7 +10,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { ExecutionConfig } from "@/types/workflow";
-import ExecutorEditorModal from "@/contexts/ExecutorEditor/ExecutorEditorModal";
+import ExecutorEditorModal from "@/contexts/ExecutorEditor/Modal";
 import type { WorkflowNodeProps } from "@/types/nodes";
 import type { ExecutorEditorState, ExecutorOnSave } from "./type";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactDiagramProvider } from "react-cosmos-diagram";
-import { AIWorkflowEditorProvider } from "@/contexts/ExecutorEditor/AIWorkflowEditor";
+import { AIWorkflowEditorProvider } from "@/contexts/AIWorkflowEditor";
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditor";
 import { ExecutionSummaryProvider } from "@/contexts/ExecutionSummary";
 import { PropertiesPanelProvider } from "@/contexts/PropertiesPanel";

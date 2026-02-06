@@ -4,7 +4,7 @@ import TechStack from "./_components/TechStack";
 import UseCases from "./_components/UseCases";
 import Demo from "./_components/Demo";
 import About from "./_components/About";
-import Footer from "./_components/Footer";
+import Footer from "./_layout/Footer";
 
 export default function HomePage() {
   return (

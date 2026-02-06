@@ -4,9 +4,9 @@ import { Trash2 } from "lucide-react";
 import Input from "@/components/Input";
 import TextArea from "@/components/TextArea";
 import Select from "@/components/Select";
-import KeyValueEditor from "@/components/PropertiesPanel/KeyValueEditor";
+import KeyValueEditor from "@/contexts/PropertiesPanel/Sidebar/KeyValueEditor";
 import Tabs from "@/components/Tabs";
-import PortEditor from "@/components/PortEditor";
+import PortEditor from "@/contexts/PropertiesPanel/Sidebar/PortEditor";
 
 import {
   getFieldConfig,

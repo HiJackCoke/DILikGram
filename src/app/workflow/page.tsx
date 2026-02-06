@@ -27,7 +27,7 @@ import { nodeTypes } from "@/components/Nodes";
 import { edgeTypes } from "@/components/Edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
-import NodeTemplatePanel from "@/components/NodeTemplatePanel";
+import NodeTemplatePanel from "@/app/workflow/_components/NodeTemplatePanel";
 
 import type { WorkflowEdge } from "@/types/edges";
 import type { ExecutionConfig } from "@/types/workflow";
@@ -38,11 +38,11 @@ import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 
 import { useExecutionSummary } from "@/contexts/ExecutionSummary";
-import { useAIWorkflowEditor } from "@/contexts/ExecutorEditor/AIWorkflowEditor";
+import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 
-import ExecutionHeader from "@/components/WorkflowHeader";
+import ExecutionHeader from "@/app/workflow/_layout/Header";
 
 import { createDefaultNode, generateNodeId } from "@/utils/nodes";
 

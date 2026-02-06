@@ -9,7 +9,7 @@ import {
   useEffect,
 } from "react";
 import type { ReactNode } from "react";
-import PropertiesPanelModal from "@/components/PropertiesPanel";
+import PropertiesPanelModal from "@/contexts/PropertiesPanel/Sidebar";
 import type { WorkflowNode } from "@/types/nodes";
 
 import type {

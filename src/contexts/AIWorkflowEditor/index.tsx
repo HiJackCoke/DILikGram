@@ -28,7 +28,7 @@ import type {
 
 import { updateWorkflowAction } from "@/app/actions/ai";
 import { mergeWorkflow } from "@/ai/utils/workflowProcessor";
-import AIEditPanel from "@/contexts/ExecutorEditor/AIWorkflowEditor/AIEditPanel";
+import AIEditPanel from "@/contexts/AIWorkflowEditor/Sidebar";
 
 interface AIWorkflowEditorProviderProps {
   children: ReactNode;

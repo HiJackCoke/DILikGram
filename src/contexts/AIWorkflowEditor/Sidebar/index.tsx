@@ -8,9 +8,9 @@
 import { useState } from "react";
 import ReactDOM from "react-dom";
 
-import AIEditPanelView from "@/contexts/ExecutorEditor/AIWorkflowEditor/AIEditPanel/View";
+import AIEditPanelView from "./View";
 
-import { useAIWorkflowEditor } from "@/contexts/ExecutorEditor/AIWorkflowEditor";
+import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 
 interface AIEditPanelProps {
