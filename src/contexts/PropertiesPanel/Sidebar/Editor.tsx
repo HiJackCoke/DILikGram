@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 
-import Input from "@/components/Input";
-import TextArea from "@/components/TextArea";
-import Select from "@/components/Select";
+import Input from "@/components/ui/Input";
+import TextArea from "@/components/ui/TextArea";
+import Select from "@/components/ui/Select";
 import KeyValueEditor from "@/contexts/PropertiesPanel/Sidebar/KeyValueEditor";
-import Tabs from "@/components/Tabs";
+import Tabs from "@/components/ui/Tabs";
 import PortEditor from "@/contexts/PropertiesPanel/Sidebar/PortEditor";
 
 import {

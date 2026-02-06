@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import Dialog from "@/components/Dialog";
+import Dialog from "@/components/ui/Dialog";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 

@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import type { WorkflowVersion, ChangeType } from "@/types/version";
 import { WorkflowVersioningContextValue } from "../type";
 

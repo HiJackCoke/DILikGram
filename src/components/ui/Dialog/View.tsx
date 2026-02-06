@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { DialogType } from "./type";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 
 interface DialogViewProps {
   title: string;

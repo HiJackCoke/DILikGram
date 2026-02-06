@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
 
 export default function DemoContent() {
@@ -35,9 +35,7 @@ export default function DemoContent() {
         {/* Placeholder area */}
         <div className="aspect-video bg-gray-900 flex items-center justify-center">
           <div className="text-center p-8">
-            <p className="text-white text-xl mb-4">
-              📹 Demo Video Placeholder
-            </p>
+            <p className="text-white text-xl mb-4">📹 Demo Video Placeholder</p>
             <p className="text-gray-400 text-sm mb-2">
               Replace /public/demo-video.mp4 with your screen recording
             </p>

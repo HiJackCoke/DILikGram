@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import { ArrowRight, Github } from "lucide-react";
 
 export default function Hero() {
@@ -32,8 +32,8 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          Visual workflow builder with AI-powered automation.
-          Create, execute, and version control your workflows with ease.
+          Visual workflow builder with AI-powered automation. Create, execute,
+          and version control your workflows with ease.
         </motion.p>
 
         {/* CTAs */}
@@ -55,7 +55,11 @@ export default function Hero() {
             </Button>
           </Link>
 
-          <a href="https://github.com/HiJackCoke" target="_blank" rel="noopener noreferrer">
+          <a
+            href="https://github.com/HiJackCoke"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Button
               palette="neutral"
               size="lg"

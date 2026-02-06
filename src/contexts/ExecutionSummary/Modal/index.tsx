@@ -1,4 +1,4 @@
-import Modal from "@/components/Modal";
+import Modal from "@/components/ui/Modal";
 import ExecutionSummaryView from "./View";
 import type { ExecutionSummary } from "@/types/workflow";
 import { ModalProps } from "@/types";

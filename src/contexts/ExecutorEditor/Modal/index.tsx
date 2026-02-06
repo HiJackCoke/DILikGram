@@ -2,7 +2,7 @@
  * ExecutorEditorModal - Composition of generic Modal with ExecutorEditorContent
  */
 import { useEffect, useMemo, useState } from "react";
-import Modal from "@/components/Modal";
+import Modal from "@/components/ui/Modal";
 import ExecutorEditorView from "./View";
 
 import {

@@ -1,6 +1,6 @@
 import { Port, Position } from "react-cosmos-diagram";
 import { Square } from "lucide-react";
-import { Tooltip } from "@/components/Tooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import type { ExecutionSummary, EndNodeProps, NodePort } from "@/types";
 

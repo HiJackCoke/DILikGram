@@ -1,8 +1,9 @@
 import ReactDOM from "react-dom/client";
-import DialogView from "@/components/Dialog/View";
 
 import type { ReactNode } from "react";
-import type { DialogState } from "@/components/Dialog/type";
+
+import DialogView from "./View";
+import { DialogState } from "./type";
 
 declare global {
   interface Window {
@@ -37,7 +38,7 @@ class Dialog {
         type={this.dialogState.type}
         onConfirm={() => this.closeDialog(true)}
         onCancel={() => this.closeDialog(false)}
-      />
+      />,
     );
   }
 
@@ -52,7 +53,7 @@ class Dialog {
 
   confirm(
     title: string,
-    description: string | ReactNode = ""
+    description: string | ReactNode = "",
   ): Promise<boolean> {
     return new Promise((resolve) => {
       this.resolve = resolve;

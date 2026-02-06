@@ -5,7 +5,7 @@
  */
 
 import { Wand2, AlertCircle, Loader2, X } from "lucide-react";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import type { XYPosition } from "react-cosmos-diagram";
 
 interface AIEditPanelViewProps {
@@ -66,10 +66,7 @@ export default function AIEditPanelView({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[999]"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[999]" onClick={onClose}>
       <div
         style={panelStyle}
         className="bg-white rounded-lg shadow-lg border border-gray-200 w-96 max-w-[90vw]"

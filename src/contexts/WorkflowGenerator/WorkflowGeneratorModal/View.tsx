@@ -5,7 +5,7 @@
  */
 
 import { Sparkles, AlertCircle, Loader2 } from "lucide-react";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import PromptInput from "./PromptInput";
 
 interface WorkflowGeneratorViewProps {

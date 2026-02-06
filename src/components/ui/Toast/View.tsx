@@ -1,10 +1,7 @@
 import { CheckCircle, AlertCircle, X } from "lucide-react";
-import type {
-  ToastViewProps,
-  ToastMessageProps,
-} from "@/components/Toast/type";
 
 import "@/styles/toast.css";
+import { ToastMessageProps, ToastViewProps } from "./type";
 
 const COLOR_PROPS = {
   success: {

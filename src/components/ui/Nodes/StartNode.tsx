@@ -2,7 +2,6 @@ import { Port, Position } from "react-cosmos-diagram";
 import { Play } from "lucide-react";
 import type { StartNodeProps, NodePort } from "@/types/nodes";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
-import "../../styles/ports.css";
 
 export function StartNode({ data, selected, id }: StartNodeProps) {
   const { isExecuting, executingStartNodeId } = useWorkflowExecution();

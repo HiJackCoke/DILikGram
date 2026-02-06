@@ -1,9 +1,8 @@
 "use client";
 import ReactDOM from "react-dom/client";
 import { v4 as uuid } from "uuid";
-
-import ToastView from "@/components/Toast/View";
-import type { ToastProps, ToastType } from "@/components/Toast/type";
+import ToastView from "./View";
+import { ToastProps, ToastType } from "./type";
 
 // Toast 유지 시간
 const TOAST_DURATION = 4000;
@@ -42,7 +41,7 @@ class Toast {
   constructor() {
     if (typeof window !== "undefined") {
       let target = document.getElementById(
-        "toast-provider"
+        "toast-provider",
       ) as HTMLElement | null;
       if (!target) {
         target = document.createElement("div");
@@ -68,7 +67,7 @@ class Toast {
         toasts={this.#toasts}
         closeMessage={this.#closeMessage.bind(this)}
         onClick={onClick}
-      />
+      />,
     );
     this.#autoCloseMessage(TOAST_DURATION, id);
   }
@@ -91,7 +90,7 @@ class Toast {
             duration={TOAST_DURATION}
             toasts={this.#toasts}
             closeMessage={this.#closeMessage.bind(this)}
-          />
+          />,
         );
       }
     }

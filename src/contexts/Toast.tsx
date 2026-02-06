@@ -1,7 +1,9 @@
-'use client';
+"use client";
 
-import toast from "@/components/Toast";
 import { useEffect } from "react";
+
+import toast from "@/components/ui/Toast";
+
 import type { ReactNode } from "react";
 
 export default function ToastProvider({ children }: { children: ReactNode }) {

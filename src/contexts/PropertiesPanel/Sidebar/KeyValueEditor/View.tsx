@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
-import Input from "@/components/Input";
-import Select from "@/components/Select";
+import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import type { KeyValueEditorViewProps } from "./types";
 import { parseKey } from "./utils";
 

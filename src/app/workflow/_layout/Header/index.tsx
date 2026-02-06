@@ -1,5 +1,5 @@
 import { Square, Sparkles, History } from "lucide-react";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
