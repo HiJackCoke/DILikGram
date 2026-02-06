@@ -3,6 +3,7 @@
 @import url(edges.css);
 @import url(ports.css);
 @import url(toast.css);
+@import url(landing.css);
 
 @tailwind base;
 @tailwind components;
@@ -19,5 +20,4 @@ body,
   height: 100svh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }

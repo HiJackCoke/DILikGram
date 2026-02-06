@@ -61,14 +61,27 @@ export default {
       colors: {
         palette: PALETTE,
       },
+      backgroundImage: {
+        'hero-gradient': 'radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15), transparent 50%)',
+      },
       keyframes: {
         'slide-in-right': {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0)' },
         },
+        'gradient': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
       },
       animation: {
         'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'gradient': 'gradient 8s linear infinite',
+        'float': 'float 3s ease-in-out infinite',
       },
     },
   },
