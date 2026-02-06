@@ -23,8 +23,8 @@ import ReactDiagram, {
 
 import { type DragStartEvent } from "@dnd-kit/core";
 
-import { nodeTypes } from "@/components/ui/Nodes";
-import { edgeTypes } from "@/components/ui/Edges";
+import { nodeTypes } from "@/components/features/workflow/Nodes";
+import { edgeTypes } from "@/components/features/workflow/Edges";
 
 import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
 import NodeTemplatePanel from "@/app/workflow/_components/NodeTemplatePanel";
