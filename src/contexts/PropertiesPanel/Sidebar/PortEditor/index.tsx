@@ -6,7 +6,7 @@ import {
   assignPosition,
   getPortLimits,
   validatePorts,
-} from "@/utils/portHelpers";
+} from "@/utils/workflow/propertiesPanel/ports";
 import type { NodePort } from "@/types/nodes";
 
 export default function PortEditor({

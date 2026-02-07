@@ -26,7 +26,7 @@ import { type DragStartEvent } from "@dnd-kit/core";
 import { nodeTypes } from "@/components/features/workflow/Nodes";
 import { edgeTypes } from "@/components/features/workflow/Edges";
 
-import { findFlowPath, hasSelectedNode } from "@/utils/flowHighlight";
+import { findFlowPath, hasSelectedNode } from "@/utils/graph/highlight";
 import NodeTemplatePanel from "@/app/workflow/_components/NodeTemplatePanel";
 
 import type { WorkflowEdge } from "@/types/edges";
@@ -44,10 +44,10 @@ import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 
 import ExecutionHeader from "@/app/workflow/_layout/Header";
 
-import { createDefaultNode, generateNodeId } from "@/utils/nodes";
+import { createDefaultNode, generateNodeId } from "@/utils/graph/nodes";
 
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
-import { generateEdgeId, createDefaultEdge } from "@/utils/edges";
+import { generateEdgeId, createDefaultEdge } from "@/utils/graph/edges";
 import { PALETTE } from "@/constants/palette";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";

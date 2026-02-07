@@ -4,8 +4,8 @@ import {
   createDefaultNode,
   findAllDescendantNodes,
   findLeafNodes,
-} from "@/utils/nodes";
-import { createWorkflowEdge } from "@/utils/edges";
+} from "@/utils/graph/nodes";
+import { createWorkflowEdge } from "@/utils/graph/edges";
 
 export const createWorkflow = (nodes: WorkflowNode[]) => {
   const edges: WorkflowEdge[] = [];
@@ -63,7 +63,7 @@ export const createWorkflow = (nodes: WorkflowNode[]) => {
     if (!parentNode) {
       throw new Error(
         `Node ${node.id} has no parent node. ` +
-          `All nodes except the start node must have a parentNode.`
+          `All nodes except the start node must have a parentNode.`,
       );
     }
 
@@ -72,7 +72,7 @@ export const createWorkflow = (nodes: WorkflowNode[]) => {
       if (!node.data.branchLabel) {
         throw new Error(
           `Node at id ${node.id} has decision node parent but missing branchLabel. ` +
-            `Must specify branchLabel: 'yes' | 'no'`
+            `Must specify branchLabel: 'yes' | 'no'`,
         );
       }
     }
@@ -98,7 +98,7 @@ export const createWorkflow = (nodes: WorkflowNode[]) => {
 
 export function mergeWorkflow(
   currentNodes: WorkflowNode[],
-  editResult: UpdateWorkflowResponse
+  editResult: UpdateWorkflowResponse,
 ): {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];

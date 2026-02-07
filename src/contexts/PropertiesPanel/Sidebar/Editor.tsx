@@ -12,7 +12,7 @@ import {
   getFieldConfig,
   getValueByNestedPath,
   updateStateByNestedPath,
-} from "@/utils/formFieldInference";
+} from "@/utils/workflow";
 import {
   generatePanelCode,
   supportsPanelCodeGeneration,

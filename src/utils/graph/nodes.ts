@@ -47,7 +47,7 @@ export function getDefaultPorts(type: string) {
 
 export function findAllDescendantNodes(
   nodes: WorkflowNode[],
-  rootIds: Set<string>
+  rootIds: Set<string>,
 ): Set<string> {
   const result = new Set(rootIds);
   const queue = Array.from(rootIds);

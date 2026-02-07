@@ -15,7 +15,7 @@ import {
   useEffect,
 } from "react";
 import { useBrowserState } from "@/hooks/useBrowserState";
-import { workflowVersionStorage } from "@/utils/workflowVersionStorage";
+import { workflowVersionStorage } from "@/utils/workflow/versionStorage";
 import VersionHistoryPanel from "@/contexts/WorkflowVersioning/VersionHistoryPanel";
 import type { WorkflowVersioningContextValue, OnRestoreCallback } from "./type";
 import type { WorkflowVersion, VersionDiff } from "@/types/version";

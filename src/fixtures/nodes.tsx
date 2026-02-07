@@ -8,7 +8,7 @@ import {
   StopCircle,
 } from "lucide-react";
 import type { FieldConfig } from "@/types/editor";
-import { getDefaultPorts } from "@/utils/nodes";
+import { getDefaultPorts } from "@/utils/graph/nodes";
 
 // 통합 노드 템플릿 타입
 export type UnifiedNodeTemplate = {

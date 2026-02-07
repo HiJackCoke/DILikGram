@@ -1,7 +1,7 @@
 import { getStepPath } from "react-cosmos-diagram";
-import { getEdgePaletteColor, getFriendlyLabel } from "./utils";
 
 import type { WorkflowEdgeProps } from "@/types/edges";
+import { getEdgePaletteColor, getFriendlyLabel } from "@/utils/graph/edges";
 
 export default function WorkflowEdge({
   id,
@@ -21,7 +21,6 @@ export default function WorkflowEdge({
   const isAnimated = data?.animated ?? false;
 
   const COLORS = getEdgePaletteColor(edgeType);
-
 
   const [edgePath, labelX, labelY] = getStepPath({
     sourceX,
