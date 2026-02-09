@@ -25,7 +25,7 @@ import type {
 import { generateWorkflowAction } from "@/app/actions/ai";
 import {
   createWorkflow,
-  // parseWorkflowFromAI,
+  sanitizeNewNodeIds,
 } from "@/ai/utils/workflowProcessor";
 import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
 
@@ -83,7 +83,8 @@ export function WorkflowGeneratorProvider({
         const generated = await generateWorkflowAction(prompt);
 
         // 2. Process workflow (validate, layout, and map to WorkflowNode/Edge)
-        const { nodes, edges } = createWorkflow(generated.nodes);
+        const sanitized = sanitizeNewNodeIds(generated.nodes);
+        const { nodes, edges } = createWorkflow(sanitized);
 
         // 3. Notify listeners
         listeners.current.forEach((listener) => listener(nodes, edges));

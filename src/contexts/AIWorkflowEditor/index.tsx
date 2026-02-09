@@ -27,7 +27,10 @@ import type {
 } from "./type";
 
 import { updateWorkflowAction } from "@/app/actions/ai";
-import { mergeWorkflow } from "@/ai/utils/workflowProcessor";
+import {
+  mergeWorkflow,
+  sanitizeNewNodeIds,
+} from "@/ai/utils/workflowProcessor";
 import AIEditPanel from "@/contexts/AIWorkflowEditor/Sidebar";
 
 interface AIWorkflowEditorProviderProps {
@@ -108,8 +111,15 @@ export function AIWorkflowEditorProvider({
         );
 
         // Step 4: Merge edit result into current workflow (ParentNode-First)
-        // Context is used to derive edges from parentNode if not provided in editResult
-        const { nodes, edges } = mergeWorkflow(currentNodes, editResult);
+        // Sanitize AI-generated IDs before merging to prevent duplicates/circular refs
+        const sanitizedResult = {
+          ...editResult,
+          nodes: {
+            ...editResult.nodes,
+            create: sanitizeNewNodeIds(editResult.nodes?.create ?? []),
+          },
+        };
+        const { nodes, edges } = mergeWorkflow(currentNodes, sanitizedResult);
 
         // Step 5: Notify listeners with updated workflow
         listeners.current.forEach((listener) => listener(nodes, edges));

@@ -4,8 +4,28 @@ import {
   createDefaultNode,
   findAllDescendantNodes,
   findLeafNodes,
+  generateNodeId,
 } from "@/utils/graph/nodes";
 import { createWorkflowEdge } from "@/utils/graph/edges";
+
+export function sanitizeNewNodeIds(newNodes: WorkflowNode[]): WorkflowNode[] {
+  const idMap = new Map<string, string>();
+  const newNodeIds = new Set(newNodes.map((n) => n.id));
+
+  const remapped = newNodes.map((node) => {
+    const newId = generateNodeId(node.type ?? "task");
+    idMap.set(node.id, newId);
+    return { ...node, id: newId };
+  });
+
+  return remapped.map((node) => ({
+    ...node,
+    parentNode:
+      node.parentNode && newNodeIds.has(node.parentNode)
+        ? (idMap.get(node.parentNode) ?? node.parentNode)
+        : node.parentNode,
+  }));
+}
 
 export const createWorkflow = (nodes: WorkflowNode[]) => {
   const edges: WorkflowEdge[] = [];
