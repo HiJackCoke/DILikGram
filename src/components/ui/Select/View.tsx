@@ -211,14 +211,16 @@ export default function SelectView<T = string>({
       tabIndex={-1}
     >
       {/* Unified Trigger for Single and Multi modes */}
-      <div>
+      <div className="space-y-1.5">
         {/* Label */}
-        <label
-          className={`block ${sizeClasses.label} font-medium text-slate-200 transition-colors duration-200`}
-        >
-          {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
-        </label>
+        {label && (
+          <label
+            className={`block ${sizeClasses.label} font-medium text-slate-200 transition-colors duration-200`}
+          >
+            {label}
+            {required && <span className="text-red-400 ml-1">*</span>}
+          </label>
+        )}
 
         {/* Trigger Container */}
         <div
