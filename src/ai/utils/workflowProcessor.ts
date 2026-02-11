@@ -18,13 +18,34 @@ export function sanitizeNewNodeIds(newNodes: WorkflowNode[]): WorkflowNode[] {
     return { ...node, id: newId };
   });
 
-  return remapped.map((node) => ({
-    ...node,
-    parentNode:
-      node.parentNode && newNodeIds.has(node.parentNode)
-        ? (idMap.get(node.parentNode) ?? node.parentNode)
-        : node.parentNode,
-  }));
+  return remapped.map((node) => {
+    const baseNode = {
+      ...node,
+      parentNode:
+        node.parentNode && newNodeIds.has(node.parentNode)
+          ? (idMap.get(node.parentNode) ?? node.parentNode)
+          : node.parentNode,
+    };
+
+    // Add lastModified timestamp to execution.config if it exists
+    if (baseNode.data?.execution?.config) {
+      return {
+        ...baseNode,
+        data: {
+          ...baseNode.data,
+          execution: {
+            ...baseNode.data.execution,
+            config: {
+              ...baseNode.data.execution.config!,
+              lastModified: Date.now(),
+            },
+          },
+        },
+      };
+    }
+
+    return baseNode;
+  });
 }
 
 export const createWorkflow = (nodes: WorkflowNode[]) => {
@@ -142,12 +163,25 @@ export function mergeWorkflow(
       console.log("updateOp", updateOp);
       const nodeIndex = nodes.findIndex((n) => n.id === updateOp.id);
       if (nodeIndex >= 0) {
+        const updatedData = {
+          ...nodes[nodeIndex].data,
+          ...updateOp.data,
+        };
+
+        // Add lastModified timestamp if execution.config is being updated
+        if (updateOp.data?.execution?.config) {
+          updatedData.execution = {
+            ...updatedData.execution,
+            config: {
+              ...updatedData.execution!.config!,
+              lastModified: Date.now(),
+            },
+          };
+        }
+
         nodes[nodeIndex] = {
           ...nodes[nodeIndex],
-          data: {
-            ...nodes[nodeIndex].data,
-            ...updateOp.data,
-          },
+          data: updatedData,
           parentNode: updateOp.parentNode || nodes[nodeIndex].parentNode,
         };
       }
