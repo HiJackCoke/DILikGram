@@ -1,22 +1,14 @@
 import { Port, Position } from "react-cosmos-diagram";
 import { GitBranch, Settings } from "lucide-react";
-import type {
-  DecisionNodeProps,
-  NodePort,
-  WorkflowNodeProps,
-} from "@/types/nodes";
+import type { DecisionNodeProps, WorkflowNodeProps } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
+import { getDefaultPorts } from "@/utils/graph/nodes";
 
 export function DecisionNode(nodeProps: DecisionNodeProps) {
   const { data, selected } = nodeProps;
   const { open } = useExecutorEditor();
 
-  const defaultPorts: NodePort[] = [
-    { id: "input", position: Position.Top, type: "target" },
-    { id: "yes", position: Position.Right, type: "source", label: "Yes" },
-    { id: "no", position: Position.Bottom, type: "source", label: "No" },
-  ];
-  const ports = data.ports || defaultPorts;
+  const ports = data.ports || getDefaultPorts("decision");
 
   // Check if execution is configured
   const hasExecutor = !!data.execution?.config?.functionCode;

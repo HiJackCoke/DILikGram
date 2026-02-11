@@ -1,15 +1,13 @@
-import { Port, Position } from "react-cosmos-diagram";
+import { Port } from "react-cosmos-diagram";
 import { Play } from "lucide-react";
-import type { StartNodeProps, NodePort } from "@/types/nodes";
+import type { StartNodeProps } from "@/types/nodes";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
+import { getDefaultPorts } from "@/utils/graph/nodes";
 
 export function StartNode({ data, selected, id }: StartNodeProps) {
   const { isExecuting, executingStartNodeId } = useWorkflowExecution();
 
-  const defaultPorts: NodePort[] = [
-    { id: "output", position: Position.Bottom, type: "source" },
-  ];
-  const ports = data.ports || defaultPorts;
+  const ports = data.ports || getDefaultPorts("start");
 
   const isThisNodeExecuting = isExecuting && executingStartNodeId === id;
 

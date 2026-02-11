@@ -1,4 +1,4 @@
-import { Port, Position } from "react-cosmos-diagram";
+import { Port } from "react-cosmos-diagram";
 import {
   Circle,
   Loader2,
@@ -13,12 +13,12 @@ import {
 import type {
   ServiceNodeProps,
   NodeStatus,
-  NodePort,
   ServiceType,
   HttpMethod,
   WorkflowNodeProps,
 } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
+import { getDefaultPorts } from "@/utils/graph/nodes";
 
 const statusConfig: Record<
   NodeStatus,
@@ -71,11 +71,7 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
   const StatusIcon = statusConfig[status]?.icon || Circle;
   const ServiceIcon = serviceIcons[data.serviceType || "api"];
 
-  const defaultPorts: NodePort[] = [
-    { id: "input", position: Position.Top, type: "target" },
-    { id: "output", position: Position.Bottom, type: "source" },
-  ];
-  const ports = data.ports || defaultPorts;
+  const ports = data.ports || getDefaultPorts("service");
 
   // Check if execution is configured
   const hasExecutor = !!data.execution?.config?.functionCode;

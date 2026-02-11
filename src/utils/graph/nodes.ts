@@ -2,7 +2,7 @@ import { v4 as uuid } from "uuid";
 
 import { Position } from "react-cosmos-diagram";
 
-import type { NodePort, WorkflowNode } from "@/types/nodes";
+import type { NodePort, WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 
 export function generateNodeId(type: string): string {
@@ -10,7 +10,7 @@ export function generateNodeId(type: string): string {
   return `node-${type}-${id}`;
 }
 
-export function getDefaultPorts(type: string): NodePort[] {
+export function getDefaultPorts(type: WorkflowNodeType): NodePort[] {
   switch (type) {
     case "start":
       return [

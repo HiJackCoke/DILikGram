@@ -1,8 +1,9 @@
-import { Port, Position } from "react-cosmos-diagram";
+import { Port } from "react-cosmos-diagram";
 import { Square } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 
-import type { ExecutionSummary, EndNodeProps, NodePort } from "@/types";
+import type { ExecutionSummary, EndNodeProps } from "@/types";
+import { getDefaultPorts } from "@/utils/graph/nodes";
 
 // success: {
 //   gradient: "from-palette-success-bg to-palette-success-border",
@@ -63,10 +64,7 @@ export function EndNode({ data, selected }: EndNodeProps) {
 
   const { gradient, ring, shadow, Icon } = endNodeStyle;
 
-  const defaultPorts: NodePort[] = [
-    { id: "input", position: Position.Top, type: "target" },
-  ];
-  const ports = data.ports || defaultPorts;
+  const ports = data.ports || getDefaultPorts("end");
 
   // 실행 상태에 따른 스타일
   const executionStyles = {
