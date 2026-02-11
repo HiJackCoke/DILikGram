@@ -208,8 +208,8 @@ export class WorkflowExecutor {
    * Returns null if no execution configured or node doesn't support executions
    */
   private getExecutorForNode(node: WorkflowNode): ExecutorFunction | null {
-    // Start and End nodes don't have executions
-    if (node.type === "start") {
+    // Start, End, and Group nodes don't have executions
+    if (node.type === "start" || node.type === "group") {
       return null;
     }
 
@@ -359,6 +359,82 @@ export class WorkflowExecutor {
   }
 
   /**
+   * Group 노드의 내부 순차 실행
+   * 데이터 플로우: inputData → groups[0] → groups[1] → ... → groups[n] → outputData
+   */
+  private async executeGroupInternals(
+    groupNode: WorkflowNode,
+    inputData: unknown
+  ): Promise<{ outputData: unknown; success: boolean }> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupData = groupNode.data as any; // GroupNodeData
+    const { groups } = groupData;
+
+    // 빈 그룹 처리
+    if (!groups || groups.length === 0) {
+      console.warn(`Group node ${groupNode.id} has no internal nodes`);
+      return { outputData: inputData, success: true };
+    }
+
+    let currentData = inputData;
+    let allSucceeded = true;
+
+    // 각 내부 노드를 순차적으로 실행
+    for (let i = 0; i < groups.length; i++) {
+      const internalNode = groups[i];
+
+      // 유효성 검증
+      if (!internalNode || !internalNode.id) {
+        throw new Error(
+          `Group node ${groupNode.id}: Invalid internal node at index ${i}`
+        );
+      }
+
+      // 중첩 Group 방지 (무한 재귀 방지)
+      if (internalNode.type === "group") {
+        throw new Error(
+          `Group node ${groupNode.id}: Nested group nodes are not allowed`
+        );
+      }
+
+      try {
+        // UI 알림: 내부 노드 실행 시작
+        await this.notifyNodeExecuting(internalNode.id, currentData);
+
+        // 내부 노드 실행
+        const { outputData, success } = await this.computeNodeOutput(
+          internalNode,
+          currentData
+        );
+
+        // 출력 저장 (내부 노드 상태 추적용)
+        const startTime = Date.now();
+        this.storeOutput(internalNode.id, outputData, success, startTime);
+
+        // UI 알림: 내부 노드 실행 완료
+        await this.notifyNodeExecuted(internalNode.id, outputData);
+
+        // 다음 내부 노드로 출력 전달
+        currentData = outputData;
+        allSucceeded = allSucceeded && success;
+
+        // 시각화를 위한 딜레이 (옵션)
+        await this.delay(300);
+      } catch (error) {
+        // Fail-fast: 내부 노드 실패 시 그룹 전체 실패
+        this.handleExecutionError(internalNode.id, error as Error);
+        throw error; // 에러 전파로 그룹 실행 중단
+      }
+    }
+
+    // 마지막 내부 노드의 출력을 그룹 출력으로 반환
+    return {
+      outputData: currentData,
+      success: allSucceeded,
+    };
+  }
+
+  /**
    * Compute node output based on node type and executor
    */
   private async computeNodeOutput(
@@ -374,6 +450,11 @@ export class WorkflowExecutor {
     if (node.type === "end") {
       const summary = this.aggregateExecutionSummary();
       return { outputData: summary, success: true };
+    }
+
+    // Group 노드 - 내부 순차 실행
+    if (node.type === "group") {
+      return await this.executeGroupInternals(node, inputData);
     }
 
     const execution = this.getExecutorForNode(node);

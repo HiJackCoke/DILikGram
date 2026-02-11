@@ -8,6 +8,7 @@ import {
   Square,
   GitBranch,
   Workflow,
+  Folder,
 } from "lucide-react";
 import type { ExecutionSummary, ExecutionLogEntry } from "@/types/workflow";
 import type { WorkflowNodeType } from "@/types/nodes";
@@ -59,6 +60,11 @@ const NODE_TYPE_CONFIG: Record<
     icon: Workflow,
     label: "Service",
     color: "text-purple-600 bg-purple-50",
+  },
+  group: {
+    icon: Folder,
+    label: "Group",
+    color: "text-yellow-600 bg-yellow-50",
   },
 };
 

@@ -6,6 +6,7 @@ import {
   GitBranch,
   Globe,
   StopCircle,
+  Folder,
 } from "lucide-react";
 import type { FieldConfig } from "@/types/editor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
@@ -98,6 +99,23 @@ export const UNIFIED_NODE_TEMPLATES: Record<
         timeout: 5000,
 
         ports: getDefaultPorts("service"),
+      },
+    },
+  },
+  group: {
+    type: "group",
+    icon: <Folder className="w-5 h-5 text-yellow-600" />,
+    label: "Group Node",
+    description: "Feature unit with sequential nodes",
+    template: {
+      type: "group",
+      data: {
+        title: "New Group",
+        description: "Group of sequential nodes",
+        groups: [],
+        collapsed: true,
+        metadata: {},
+        ports: getDefaultPorts("group"),
       },
     },
   },
@@ -373,6 +391,34 @@ const END_NODE_FIELDS: Record<string, FieldConfig> = {
   },
 };
 
+// Group Node Fields
+const GROUP_NODE_FIELDS: Record<string, FieldConfig> = {
+  title: {
+    type: "text",
+    label: "Title",
+    placeholder: "Enter group title",
+  },
+  description: {
+    type: "textarea",
+    label: "Description",
+    placeholder: "Enter group description",
+  },
+  groups: {
+    type: "text",
+    label: "Internal Nodes",
+    readOnly: true,
+  },
+  metadata: {
+    type: "keyvalue",
+    label: "Metadata",
+  },
+  ports: {
+    type: "port",
+    label: "Ports",
+    readOnly: true,
+  },
+};
+
 // Export consolidated field definitions
 export const NODE_FIELD_DEFINITIONS: Record<
   WorkflowNodeType,
@@ -383,4 +429,5 @@ export const NODE_FIELD_DEFINITIONS: Record<
   decision: DECISION_NODE_FIELDS,
   service: SERVICE_NODE_FIELDS,
   end: END_NODE_FIELDS,
+  group: GROUP_NODE_FIELDS,
 };

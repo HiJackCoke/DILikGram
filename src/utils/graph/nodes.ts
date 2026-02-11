@@ -2,7 +2,7 @@ import { v4 as uuid } from "uuid";
 
 import { Position } from "react-cosmos-diagram";
 
-import type { WorkflowNode } from "@/types/nodes";
+import type { NodePort, WorkflowNode } from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 
 export function generateNodeId(type: string): string {
@@ -10,7 +10,7 @@ export function generateNodeId(type: string): string {
   return `node-${type}-${id}`;
 }
 
-export function getDefaultPorts(type: string) {
+export function getDefaultPorts(type: string): NodePort[] {
   switch (type) {
     case "start":
       return [
@@ -39,6 +39,12 @@ export function getDefaultPorts(type: string) {
           type: "source" as const,
           label: "No",
         },
+      ];
+    case "group":
+      // Group 노드는 항상 input(left) + output(right)
+      return [
+        { id: "input", position: Position.Top, type: "target" as const },
+        { id: "output", position: Position.Bottom, type: "source" as const },
       ];
     default:
       return [];

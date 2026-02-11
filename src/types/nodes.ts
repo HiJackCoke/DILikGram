@@ -20,7 +20,8 @@ export type WorkflowNodeType =
   | "end"
   | "task"
   | "decision"
-  | "service";
+  | "service"
+  | "group";
 
 // ============================================
 // 노드 상태
@@ -131,12 +132,46 @@ export type ServiceNodeData = {
 
 export type ServiceNodeProps = WorkflowNodeProps<ServiceNodeData>;
 
+// ============================================
+// GroupNode
+// ============================================
+
+/**
+ * Group Node Data Structure
+ * 순차 실행되는 feature 단위를 나타내는 노드
+ */
+export type GroupNodeData = {
+  icon?: ReactNode;
+  title: string;
+  description?: string;
+
+  /**
+   * 순차 실행될 내부 노드 배열
+   * 실행 순서: groups[0] → groups[1] → ... → groups[n-1]
+   * 데이터 플로우: 각 노드는 이전 노드의 output을 input으로 받음
+   */
+  groups: WorkflowNode[];
+
+  /**
+   * 메타데이터
+   */
+  metadata?: Record<string, string>;
+
+  /**
+   * UI 상태 (확장/축소)
+   */
+  collapsed?: boolean;
+};
+
+export type GroupNodeProps = WorkflowNodeProps<GroupNodeData>;
+
 export type WorkflowNodeMap = {
   start: StartNodeData;
   end: EndNodeData;
   task: TaskNodeData;
   decision: DecisionNodeData;
   service: ServiceNodeData;
+  group: GroupNodeData;
 };
 
 // ============================================
@@ -149,6 +184,7 @@ export type WorkflowNode = Node<
     | TaskNodeData
     | DecisionNodeData
     | ServiceNodeData
+    | GroupNodeData
   >,
   WorkflowNodeType //react-cosmos-diagram 에서 type 엄격화가 안되어서 우선 string 추가
 >;
