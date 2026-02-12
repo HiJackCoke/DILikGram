@@ -26,6 +26,7 @@ import {
 } from "@dnd-kit/core";
 import { useStore, type XYPosition } from "react-cosmos-diagram";
 import { useBrowserEnv } from "@/hooks/useBrowserEnv";
+import useKeyPress from "@/hooks/useKeyPress";
 
 interface NodeTemplatePanelProps {
   onDragStart?: (event: DragStartEvent, distance: XYPosition) => void;
@@ -62,6 +63,9 @@ export default function NodeTemplatePanel({
   );
 
   const [show, setShow] = useState(false);
+  useKeyPress("escape", () => {
+    setShow(false);
+  });
 
   const [sidebarItems, setNodeTemplatePanelItems] = useState(
     Object.entries(UNIFIED_NODE_TEMPLATES).map(([type, value]) => ({
