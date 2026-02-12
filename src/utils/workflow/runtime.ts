@@ -20,7 +20,7 @@ export function detectAsync(code: string): boolean {
     /\basync\s+function/, // async function
     /\basync\s*\(/, // async ()
     /\.then\s*\(/, // .then( promises
-    /new\s+Promise\s*\(/, // new Promise(
+    /new\s+Promise\s*\(/, // Promise(
   ];
 
   return asyncPatterns.some((pattern) => pattern.test(trimmedCode));
@@ -40,7 +40,7 @@ export function detectAsync(code: string): boolean {
  */
 export function compileExecutor<TInput = unknown, TOutput = unknown>(
   config: ExecutionConfig<TInput, TOutput>,
-  nodeType?: WorkflowNodeType
+  nodeType?: WorkflowNodeType,
 ): ExecutorFunction<TInput, TOutput> {
   const { functionCode } = config;
 
@@ -56,7 +56,7 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
     throw new Error(
       "TaskNode executors must be synchronous. " +
         "Async code detected (await, .then, Promise, async). " +
-        "Please use a ServiceNode for asynchronous operations instead."
+        "Please use a ServiceNode for asynchronous operations instead.",
     );
   }
 
@@ -67,20 +67,20 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
     if (isAsync) {
       // Create async function: async (inputData, fetch) => { ...code... }
       const AsyncFunction = Object.getPrototypeOf(
-        async function () {}
+        async function () {},
       ).constructor;
 
       return new AsyncFunction(
         "inputData",
         "fetch",
-        functionCode
+        functionCode,
       ) as ExecutorFunction<TInput, TOutput>;
     } else {
       // Create sync function: (inputData, fetch) => { ...code... }
       return new Function(
         "inputData",
         "fetch",
-        functionCode
+        functionCode,
       ) as ExecutorFunction<TInput, TOutput>;
     }
   } catch (error) {
@@ -100,14 +100,14 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
 export async function executeFunction(
   executorFn: ExecutorFunction,
   inputData: unknown,
-  timeout: number = 30000
+  timeout: number = 30000,
 ): Promise<ExecutionResult> {
   const startTime = Date.now();
 
   try {
     const resultPromise = Promise.resolve(executorFn(inputData, fetch));
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Execution timeout")), timeout)
+      setTimeout(() => reject(new Error("Execution timeout")), timeout),
     );
 
     const data = await Promise.race([resultPromise, timeoutPromise]);

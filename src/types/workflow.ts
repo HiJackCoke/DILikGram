@@ -103,7 +103,7 @@ export type ExecutorFunction<TInput = unknown, TOutput = unknown> = (
 export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
   lastModified: number;
-  isAsync?: boolean; // NEW: Set during compilation
+  isAsync?: boolean; // Set during compilation
   nodeData?: { inputData?: TInput; outputData?: TOutput };
 };
 

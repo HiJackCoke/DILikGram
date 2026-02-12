@@ -403,11 +403,6 @@ const GROUP_NODE_FIELDS: Record<string, FieldConfig> = {
     label: "Description",
     placeholder: "Enter group description",
   },
-  groups: {
-    type: "text",
-    label: "Internal Nodes",
-    readOnly: true,
-  },
   metadata: {
     type: "keyvalue",
     label: "Metadata",

@@ -13,11 +13,20 @@ import {
 
 import type { ExecutionConfig } from "@/types/workflow";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
+import type { WorkflowNode } from "@/types/nodes";
 import { ModalProps } from "@/types";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> &
   Pick<ModalProps, "show" | "onClose"> & {
-    onSave: (config: ExecutionConfig) => void;
+    onSave: (
+      config: ExecutionConfig,
+      internalNodes?: WorkflowNode[], //  For group nodes
+    ) => void;
+    onInternalNodesChange?: (
+      nodeId: string,
+      internalNodes: WorkflowNode[],
+      config: ExecutionConfig,
+    ) => void;
   };
 
 export default function ExecutorEditorModal({
@@ -25,7 +34,9 @@ export default function ExecutorEditorModal({
   nodeId,
   nodeType,
   config,
+  internalNodes: initialInternalNodes,
   onSave,
+  onInternalNodesChange,
   onClose,
 }: ExecutorEditorModalProps) {
   // Initialize state directly from props
@@ -36,6 +47,11 @@ export default function ExecutorEditorModal({
     stringifyForDisplay(config?.nodeData?.inputData),
   );
   const [outputData, setOutputData] = useState<string | null>(null);
+
+  // Internal nodes state (only for group nodes)
+  const [internalNodes, setInternalNodes] = useState<WorkflowNode[]>(
+    initialInternalNodes || [],
+  );
 
   // Reset code when config changes
 
@@ -93,6 +109,44 @@ export default function ExecutorEditorModal({
     }
   };
 
+  // Reorder internal nodes
+  const handleReorder = (fromIndex: number, toIndex: number) => {
+    const updated = [...internalNodes];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    setInternalNodes(updated);
+
+    // Auto-save via new callback
+    if (nodeId && onInternalNodesChange) {
+      onInternalNodesChange(nodeId, updated, {
+        functionCode: code,
+        lastModified: Date.now(),
+        nodeData: {
+          inputData: inputData ? JSON.parse(inputData) : null,
+          outputData: outputData ? JSON.parse(outputData) : null,
+        },
+      });
+    }
+  };
+
+  // Remove node from group
+  const handleRemoveNode = (nodeIdToRemove: string) => {
+    const updated = internalNodes.filter((n) => n.id !== nodeIdToRemove);
+    setInternalNodes(updated);
+
+    // Auto-save via new callback
+    if (nodeId && onInternalNodesChange) {
+      onInternalNodesChange(nodeId, updated, {
+        functionCode: code,
+        lastModified: Date.now(),
+        nodeData: {
+          inputData: inputData ? JSON.parse(inputData) : null,
+          outputData: outputData ? JSON.parse(outputData) : null,
+        },
+      });
+    }
+  };
+
   const handleSave = () => {
     if (compileError) return;
 
@@ -104,7 +158,13 @@ export default function ExecutorEditorModal({
         outputData: outputData ? JSON.parse(outputData) : null,
       },
     };
-    onSave(config);
+
+    // For group nodes, pass internalNodes as second parameter
+    if (nodeType === "group") {
+      onSave(config, internalNodes);
+    } else {
+      onSave(config);
+    }
     onClose?.();
   };
 
@@ -129,6 +189,9 @@ export default function ExecutorEditorModal({
           onTest={handleTest}
           onSave={handleSave}
           onClose={onClose}
+          internalNodes={nodeType === "group" ? internalNodes : undefined}
+          onReorder={nodeType === "group" ? handleReorder : undefined}
+          onRemoveNode={nodeType === "group" ? handleRemoveNode : undefined}
         />
       )}
     </Modal>

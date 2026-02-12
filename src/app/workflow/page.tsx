@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  MouseEvent,
   useCallback,
   useEffect,
   useRef,
@@ -32,7 +33,11 @@ import NodeTemplatePanel from "@/app/workflow/_components/NodeTemplatePanel";
 import type { WorkflowEdge } from "@/types/edges";
 import type { ExecutionConfig } from "@/types/workflow";
 
-import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
+import type {
+  WorkflowNode,
+  WorkflowNodeType,
+  GroupNodeData,
+} from "@/types/nodes";
 
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
@@ -115,7 +120,10 @@ export default function WorkflowPage() {
     },
   });
 
-  useExecutorEditor({ onSave: handleExecutorSave });
+  useExecutorEditor({
+    onSave: handleExecutorSave,
+    onInternalNodesChange: handleInternalNodesChange,
+  });
   useWorkflowGenerator({ onGenerate: handleWorkflowGenerator });
 
   const resetSelectedElements = useStore(
@@ -354,19 +362,85 @@ export default function WorkflowPage() {
   }
 
   // Handle execution config save
-  function handleExecutorSave(nodeId: string, config: ExecutionConfig) {
+  function handleExecutorSave(
+    nodeId: string,
+    config: ExecutionConfig,
+    internalNodes?: WorkflowNode[], // For group nodes
+  ) {
+    setNodes((prevNodes) => {
+      const node = prevNodes.find((n) => n.id === nodeId);
+
+      // Update node with new config (and internalNodes if group)
+      const updatedNodes = prevNodes.map((n) => {
+        if (n.id === nodeId) {
+          const updates: WorkflowNode = {
+            ...n,
+            data: {
+              ...n.data,
+              execution: {
+                ...n.data.execution,
+                config,
+              },
+            },
+          };
+
+          // For group nodes: update groups array
+          if (n.type === "group" && internalNodes !== undefined) {
+            (updates.data as GroupNodeData).groups = internalNodes;
+          }
+
+          return updates;
+        }
+        return n;
+      });
+
+      // For group nodes: restore removed nodes to main canvas
+      if (node?.type === "group" && internalNodes !== undefined) {
+        const groupData = node.data as GroupNodeData;
+        const removedNodeIds = new Set(
+          (groupData.groups || []).map((n: WorkflowNode) => n.id),
+        );
+        const currentNodeIds = new Set(internalNodes.map((n) => n.id));
+        const nodesToRestore = Array.from(removedNodeIds).filter(
+          (id) => !currentNodeIds.has(id),
+        );
+
+        if (nodesToRestore.length > 0) {
+          const restoredNodes = nodesToRestore.map((nodeId) => {
+            const nodeToRestore = groupData.groups.find(
+              (n: WorkflowNode) => n.id === nodeId,
+            );
+            return {
+              ...nodeToRestore!,
+              position: {
+                x: (node.position.x || 0) + 300,
+                y: node.position.y || 0,
+              },
+              parentNode: undefined,
+            };
+          });
+
+          return [...updatedNodes, ...restoredNodes];
+        }
+      }
+
+      return updatedNodes;
+    });
+  }
+
+  // Handle internal nodes reordering/removal (auto-save)
+  function handleInternalNodesChange(
+    nodeId: string,
+    internalNodes: WorkflowNode[],
+  ) {
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
-        if (node.id === nodeId) {
-          const nodeData = node.data;
+        if (node.id === nodeId && node.type === "group") {
           return {
             ...node,
             data: {
               ...node.data,
-              execution: {
-                ...nodeData.execution,
-                config,
-              },
+              groups: internalNodes,
             },
           };
         }
@@ -532,6 +606,89 @@ export default function WorkflowPage() {
     setActiveNodeType(null);
   };
 
+  const handleOnNodeDragStart = (event: MouseEvent, node: Node) => {
+    const toucheEvent = event as unknown as TouchEvent;
+    if (toucheEvent.touches?.[0]) {
+      onTouchStart(toucheEvent, node);
+    }
+  };
+
+  const handleOnNodeDrag = (
+    event: MouseEvent,
+    _draggingNode: Node,
+    _draggingNodes: Node[],
+  ) => {
+    const toucheEvent = event as unknown as TouchEvent;
+    if (toucheEvent.touches?.[0]) {
+      onTouchMove(toucheEvent);
+    }
+  };
+
+  const handleOnNodeDragEnd = (
+    _event: MouseEvent,
+    _draggingNode: Node,
+    draggingNodes: Node[],
+  ) => {
+    onTouchEnd();
+    function validateNoParentChildConnections(
+      nodes: Node[],
+      draggingNodes: Node[],
+    ): boolean {
+      if (!draggingNodes.length) return true;
+
+      const draggingIds = new Set(draggingNodes.map((n) => n.id));
+
+      // 1️⃣ dragging 노드가 부모를 가지고 있는지 검사
+      for (const node of draggingNodes) {
+        if (node.parentNode) {
+          return false;
+        }
+      }
+
+      // 2️⃣ dragging 노드가 다른 노드의 부모인지 검사
+      for (const node of nodes) {
+        if (node.parentNode && draggingIds.has(node.parentNode)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    const typedNodes = draggingNodes as WorkflowNode[];
+    const isExceptionNode = typedNodes.some(
+      (node) =>
+        node.type === "group" || node.type === "start" || node.type === "end",
+    );
+    const intersectedGroupNode = nodes.find(
+      (node) => node.type === "group" && node.intersected,
+    );
+    const isAddingMode =
+      !isExceptionNode &&
+      intersectedGroupNode &&
+      validateNoParentChildConnections(nodes, typedNodes);
+
+    if (isAddingMode) {
+      setNodes((nodes) => {
+        return nodes
+          .map((node) => {
+            if (node.id === intersectedGroupNode.id) {
+              const groupData = node.data as GroupNodeData;
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  groups: [...(groupData.groups || []), ...typedNodes],
+                },
+              };
+            }
+            return node;
+          })
+          .filter((node) => !typedNodes.some((n) => n.id === node.id));
+      });
+    }
+  };
+
   return (
     <div
       ref={ref}
@@ -555,19 +712,9 @@ export default function WorkflowPage() {
         onNodeDoubleClick={handleOpenPropertiesPanel}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={handleNodeContextMenu}
-        onNodeDragStart={(event, node) => {
-          const toucheEvent = event as unknown as TouchEvent;
-          if (toucheEvent.touches?.[0]) {
-            onTouchStart(toucheEvent, node);
-          }
-        }}
-        onNodeDrag={(event) => {
-          const toucheEvent = event as unknown as TouchEvent;
-          if (toucheEvent.touches?.[0]) {
-            onTouchMove(toucheEvent);
-          }
-        }}
-        onNodeDragEnd={onTouchEnd}
+        onNodeDragStart={handleOnNodeDragStart}
+        onNodeDrag={handleOnNodeDrag}
+        onNodeDragEnd={handleOnNodeDragEnd}
         onPaneClick={resetSelectedElements}
         onConnect={onConnect}
         onEdgeUpdate={onEdgeUpdate}

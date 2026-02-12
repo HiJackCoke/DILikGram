@@ -1,13 +1,21 @@
 import { Port } from "react-cosmos-diagram";
-import { Folder, FolderOpen, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Folder,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight,
+  Settings,
+} from "lucide-react";
 import { useState } from "react";
 
-import type { GroupNodeProps } from "@/types/nodes";
+import type { GroupNodeProps, WorkflowNodeProps } from "@/types/nodes";
 import { getDefaultPorts } from "@/utils/graph/nodes";
+import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 
 export function GroupNode(nodeProps: GroupNodeProps) {
   const { data, selected } = nodeProps;
   const [collapsed, setCollapsed] = useState(data.collapsed ?? true);
+  const { open } = useExecutorEditor();
 
   const ports = data.ports || getDefaultPorts("group");
 
@@ -17,6 +25,13 @@ export function GroupNode(nodeProps: GroupNodeProps) {
     e.stopPropagation();
     setCollapsed(!collapsed);
   };
+
+  const handleOpenEditor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    open(nodeProps as WorkflowNodeProps);
+  };
+
+  const hasExecutor = !!data.execution?.config?.functionCode;
 
   // 실행 상태 스타일
   const executionStyles = {
@@ -46,7 +61,7 @@ export function GroupNode(nodeProps: GroupNodeProps) {
           ${
             selected
               ? "border-palette-warning-bg shadow-yellow-200 shadow-xl"
-              : "border-palette-warning-border hover:shadow-xl"
+              : "border-gray-200 hover:shadow-xl hover:border-palette-warning-bg hover:shadow-yellow-200"
           }
           ${data.state?.highlighted ? "ring-2 ring-yellow-300" : ""}
           ${data.state?.dimmed ? "opacity-30" : ""}
@@ -76,6 +91,20 @@ export function GroupNode(nodeProps: GroupNodeProps) {
             <span className="text-white font-semibold text-sm truncate flex-1">
               {data.title}
             </span>
+
+            {/* Settings 버튼 */}
+            <button
+              onClick={handleOpenEditor}
+              className={`p-1 rounded transition ${
+                hasExecutor
+                  ? "bg-green-500/80 hover:bg-green-600"
+                  : "bg-white/20 hover:bg-white/30"
+              }`}
+              title="Configure group node"
+            >
+              <Settings className="w-3 h-3 text-white" />
+            </button>
+
             <span className="text-white/80 text-xs">
               {groupCount} node{groupCount !== 1 ? "s" : ""}
             </span>

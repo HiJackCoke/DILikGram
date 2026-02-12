@@ -66,6 +66,11 @@
   /* border-color: theme("colors.palette.secondary.border"); */
 }
 
+.group-node .react-diagram__port {
+  background-color: theme("colors.palette.warning.bg");
+  /* border-color: theme("colors.palette.warning.border"); */
+}
+
 .decision-node .react-diagram__port {
   background-color: theme("colors.palette.warning.bg");
   /* border-color: theme("colors.palette.warning.border"); */
