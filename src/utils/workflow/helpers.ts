@@ -44,7 +44,7 @@ export function createTypedExecutor<TInput, TOutput>(
   meta?: {
     inputData?: TInput;
     outputData?: TOutput;
-  }
+  },
 ): ExecutionConfig<TInput, TOutput> {
   return {
     functionCode,
@@ -70,7 +70,7 @@ function inferDetailed(value: unknown, indent: number = 0): string {
     if (value.length === 0) return "[]";
 
     const elementTypes = new Set(
-      value.map((v) => inferDetailed(v, indent + 1))
+      value.map((v) => inferDetailed(v, indent + 1)),
     );
 
     if (elementTypes.size === 1) {
@@ -86,7 +86,7 @@ function inferDetailed(value: unknown, indent: number = 0): string {
 
     const props = entries.map(
       ([key, val]) =>
-        `${nextIndentStr}${key}: ${inferDetailed(val, indent + 1)}`
+        `${nextIndentStr}${key}: ${inferDetailed(val, indent + 1)}`,
     );
 
     return `{\n${props.join(",\n")}\n${indentStr}}`;
@@ -101,6 +101,10 @@ export function inferType(value: unknown): string {
   // 문자열이면 JSON parse 시도
   if (typeof value === "string") {
     try {
+      // string number type. ex) "123"
+      if (!isNaN(Number(value))) {
+        return "string";
+      }
       target = JSON.parse(value);
     } catch {
       const cleaned = value.replace(/(\w+):/g, '"$1":').replace(/'/g, '"');
