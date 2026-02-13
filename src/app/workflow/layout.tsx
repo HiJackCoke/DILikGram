@@ -28,6 +28,7 @@ export default function WorkflowLayout({
                     <WorkflowExecutionProvider>
                       <WorkflowVersioningProvider>
                         <div className="modal-root" id="modal-root" />
+                        <div className="drawer-root" id="drawer-root" />
                         {children}
                       </WorkflowVersioningProvider>
                     </WorkflowExecutionProvider>

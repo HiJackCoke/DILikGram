@@ -1,5 +1,6 @@
 @import url(react-cosmos-diagram/dist/style.css);
 @import url(modal.css);
+@import url(drawer.css);
 @import url(edges.css);
 @import url(ports.css);
 @import url(toast.css);
