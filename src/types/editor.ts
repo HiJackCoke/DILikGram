@@ -1,4 +1,4 @@
-import type { KeySchema } from "@/contexts/PropertiesPanel/Sidebar/KeyValueEditor/types";
+import type { KeySchema } from "@/contexts/PropertiesPanel/Drawer/KeyValueEditor/types";
 import type { WorkflowNode } from "./nodes";
 import type { DeepKeysOfUnion } from "./utils";
 

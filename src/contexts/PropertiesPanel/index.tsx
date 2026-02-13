@@ -9,7 +9,7 @@ import {
   useEffect,
 } from "react";
 import type { ReactNode } from "react";
-import PropertiesPanelModal from "@/contexts/PropertiesPanel/Sidebar";
+import PropertiesPanelDrawer from "@/contexts/PropertiesPanel/Drawer";
 import type { WorkflowNode } from "@/types/nodes";
 
 import type {
@@ -105,7 +105,7 @@ export function PropertiesPanelProvider({
     >
       {children}
 
-      <PropertiesPanelModal
+      <PropertiesPanelDrawer
         node={state?.node}
         edges={edges}
         open={show}
