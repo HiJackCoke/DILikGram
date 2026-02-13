@@ -31,7 +31,7 @@ import {
   mergeWorkflow,
   sanitizeNewNodeIds,
 } from "@/ai/utils/workflowProcessor";
-import AIEditPanel from "@/contexts/AIWorkflowEditor/Sidebar";
+import AIEditPanel from "@/contexts/AIWorkflowEditor/Popover";
 
 interface AIWorkflowEditorProviderProps {
   children: ReactNode;
