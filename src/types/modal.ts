@@ -5,6 +5,7 @@ export interface ModalViewProps {
   description?: ReactNode;
   children: ReactNode;
   onClose?: () => void;
+  onConfirm?: () => void;
 }
 
 export interface ModalProps extends ModalViewProps {

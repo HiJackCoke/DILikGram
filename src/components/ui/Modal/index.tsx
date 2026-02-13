@@ -17,6 +17,7 @@ export default function Modal({
   selector = "#modal-root",
   children,
   onClose,
+  onConfirm,
 }: ModalProps) {
   const element = useBrowserEnv(
     ({ document }) => document.querySelector(selector),
@@ -66,7 +67,12 @@ export default function Modal({
     ReactDOM.createPortal(
       clear ? null : (
         <div className="modal-container" onMouseDown={handleBackdropClick}>
-          <ModalView title={title} description={description} onClose={onClose}>
+          <ModalView
+            title={title}
+            description={description}
+            onClose={onClose}
+            onConfirm={onConfirm}
+          >
             {show && children}
           </ModalView>
         </div>

@@ -6,9 +6,10 @@ export default function ModalView({
   description = "",
   children,
   onClose,
+  onConfirm,
 }: ModalViewProps) {
   return (
-    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col">
+    <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b">
         <div>
@@ -25,6 +26,27 @@ export default function ModalView({
         </button>
       </div>
       {children}
+
+      {(onClose || onConfirm) && (
+        <div className="flex items-center justify-end gap-3  px-6 py-4 border-t">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition flex items-center gap-2"
+            >
+              Cancel
+            </button>
+          )}
+          {onConfirm && (
+            <button
+              onClick={onConfirm}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg font-medium transition"
+            >
+              Confirm
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
