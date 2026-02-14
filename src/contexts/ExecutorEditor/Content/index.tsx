@@ -54,7 +54,9 @@ export default function ExecutorEditorContent({
         functionCode: code,
         lastModified: 0,
       };
+
       compileExecutor(config, nodeType);
+
       return null;
     } catch (error) {
       return (error as Error).message;
@@ -86,13 +88,16 @@ export default function ExecutorEditorContent({
       };
 
       const fn = compileExecutor(testConfig, nodeType, internalNodes);
-      const input = JSON.parse(inputData);
+
+      const input = JSON.parse(inputData || "null");
+
       const result = await Promise.resolve(fn(input, fetch));
       const outputData = JSON.stringify(result, null, 2);
 
       setOutputData(outputData);
+
       setMeta({
-        inputData: JSON.parse(inputData),
+        inputData: inputData ? JSON.parse(inputData) : null,
         outputData: outputData ? JSON.parse(outputData) : null,
       });
     } catch (error) {
