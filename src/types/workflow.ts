@@ -39,7 +39,7 @@ export type OnStateChangeCallback = (state: WorkflowRuntimeState) => void;
  */
 export type OnNodeUpdateCallback = (
   nodeId: string,
-  executorData: ExecutionData
+  executorData: ExecutionData,
 ) => void;
 
 /**
@@ -47,7 +47,7 @@ export type OnNodeUpdateCallback = (
  */
 export type OnEdgeUpdateCallback = (
   edgeId: string,
-  data: Partial<WorkflowEdge["data"]>
+  data: Partial<WorkflowEdge["data"]>,
 ) => void;
 
 /**
@@ -91,7 +91,7 @@ export type ExecutionError = {
  */
 export type ExecutorFunction<TInput = unknown, TOutput = unknown> = (
   inputData: TInput,
-  fetch: typeof globalThis.fetch
+  fetch: typeof globalThis.fetch,
 ) => Promise<TOutput> | TOutput;
 
 /**
@@ -104,7 +104,10 @@ export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
   lastModified: number;
   isAsync?: boolean; // Set during compilation
-  nodeData?: { inputData?: TInput; outputData?: TOutput };
+  nodeData?: {
+    inputData?: TInput;
+    outputData?: TOutput;
+  };
 };
 
 /**

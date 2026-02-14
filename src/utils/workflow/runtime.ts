@@ -6,7 +6,7 @@ import type {
   ExecutorFunction,
   ExecutionResult,
 } from "@/types/workflow";
-import type { WorkflowNodeType } from "@/types/nodes";
+import type { WorkflowNode, WorkflowNodeType } from "@/types/nodes";
 
 /**
  * Detects if code contains async/await patterns
@@ -41,7 +41,67 @@ export function detectAsync(code: string): boolean {
 export function compileExecutor<TInput = unknown, TOutput = unknown>(
   config: ExecutionConfig<TInput, TOutput>,
   nodeType?: WorkflowNodeType,
+  internalNodes?: WorkflowNode[]
 ): ExecutorFunction<TInput, TOutput> {
+  // Group 노드 처리: internalNodes를 순차 실행
+  if (nodeType === "group" && internalNodes?.length) {
+
+    const { functionCode } = config;
+
+    return (async (inputData: unknown, fetch: typeof globalThis.fetch) => {
+      let currentData = inputData;
+
+      // Internal nodes 순차 실행
+      for (const node of internalNodes) {
+        const nodeConfig = node.data.execution?.config;
+        if (nodeConfig) {
+          try {
+            const nodeFn = compileExecutor(nodeConfig, node.type);
+            currentData = await Promise.resolve(nodeFn(currentData, fetch));
+          } catch (error) {
+            throw new Error(
+              `Error executing internal node ${node.id} (${node.type}): ${(error as Error).message}`,
+            );
+          }
+        }
+      }
+
+      // 커스텀 functionCode가 있으면 실행
+      if (functionCode && functionCode.trim()) {
+        const isAsync = detectAsync(functionCode);
+        try {
+          if (isAsync) {
+            const AsyncFunction = Object.getPrototypeOf(
+              async function () {},
+            ).constructor;
+            const customFn = new AsyncFunction(
+              "inputData",
+              "fetch",
+              "outputData",
+              functionCode,
+            );
+            return await customFn(currentData, fetch, currentData);
+          } else {
+            const customFn = new Function(
+              "inputData",
+              "fetch",
+              "outputData",
+              functionCode,
+            );
+            return customFn(currentData, fetch, currentData);
+          }
+        } catch (error) {
+          throw new Error(
+            `Error executing custom code: ${(error as Error).message}`,
+          );
+        }
+      }
+
+      return currentData;
+    }) as ExecutorFunction<TInput, TOutput>;
+  }
+
+  // 일반 노드 처리
   const { functionCode } = config;
 
   // Ensure functionCode is always a string (runtime check)

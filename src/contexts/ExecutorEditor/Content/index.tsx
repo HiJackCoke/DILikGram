@@ -75,11 +75,17 @@ export default function ExecutorEditorContent({
   // Handlers
   const handleTest = async () => {
     try {
-      const config: ExecutionConfig = {
+      const testConfig: ExecutionConfig = {
         functionCode: code,
         lastModified: Date.now(),
+        nodeData: {
+          inputData: inputData ? JSON.parse(inputData) : null,
+          outputData: null,
+          // ...(nodeType === "group" && internalNodes ? { internalNodes } : {}),
+        },
       };
-      const fn = compileExecutor(config);
+
+      const fn = compileExecutor(testConfig, nodeType, internalNodes);
       const input = JSON.parse(inputData);
       const result = await Promise.resolve(fn(input, fetch));
       const outputData = JSON.stringify(result, null, 2);
@@ -95,7 +101,6 @@ export default function ExecutorEditorContent({
   };
 
   const handleSave = () => {
-    console.log(12312, compileError);
     if (compileError) return;
 
     const config: ExecutionConfig = {
