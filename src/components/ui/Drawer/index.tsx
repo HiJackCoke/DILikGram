@@ -69,7 +69,7 @@ export default function Drawer({
 
   const drawerView = (
     <div
-      className="h-full relative"
+      className={`h-full w-full ${portal ? "relative" : "absolute"}`}
       onAnimationStart={handleOnAnimationStart}
       onAnimationEnd={handleOnAnimationEnd}
     >

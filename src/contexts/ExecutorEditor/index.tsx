@@ -100,10 +100,10 @@ export function ExecutorEditorProvider({
   const handleSave = useCallback(
     (config: ExecutionConfig) => {
       if (!state?.nodeId) return;
-      close();
+
       listeners.current.forEach((listener) => listener(state.nodeId, config));
     },
-    [state, close],
+    [state],
   );
 
   const handleInternalNodesChange = useCallback(

@@ -27,7 +27,7 @@ export default function ModalView({
       </div>
       {children}
 
-      {(onClose || onConfirm) && (
+      {onClose && onConfirm && (
         <div className="flex items-center justify-end gap-3  px-6 py-4 border-t">
           {onClose && (
             <button

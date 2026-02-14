@@ -6,12 +6,15 @@ import {
   ArrowUp,
   ArrowDown,
   X,
+  Edit,
+  ArrowLeft,
 } from "lucide-react";
 import type { ExecutionConfig } from "@/types/workflow";
 import type { WorkflowNodeType, WorkflowNode } from "@/types/nodes";
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 
 type ExecutorEditorViewProps = {
+  isInternalNode?: boolean;
   meta: ExecutionConfig["nodeData"];
   nodeType: WorkflowNodeType;
   code: string;
@@ -30,6 +33,7 @@ type ExecutorEditorViewProps = {
   // For group nodes
   onReorder?: (fromIndex: number, toIndex: number) => void;
   onRemoveNode?: (nodeId: string) => void;
+  openInternalNode?: (node: WorkflowNode) => void;
 };
 
 /**
@@ -37,6 +41,7 @@ type ExecutorEditorViewProps = {
  */
 
 export default function ExecutorEditorView({
+  isInternalNode = false,
   meta,
   nodeType,
   code,
@@ -52,14 +57,16 @@ export default function ExecutorEditorView({
   onSave,
   onClose,
   onReorder,
+  openInternalNode,
   onRemoveNode,
 }: ExecutorEditorViewProps) {
   return (
     <>
       {/* Content */}
-
-      <div className="flex-1 overflow-y-auto px-6 pt-4">
-        {/* NEW: Internal Nodes Management (Group nodes only) */}
+      <div
+        className={`flex-1 overflow-y-auto px-6 ${nodeType === "group" ? "pt-6" : ""}`}
+      >
+        {/* Internal Nodes Management (Group nodes only, not shown when editing internal node) */}
         {nodeType === "group" && internalNodes && (
           <section>
             <h3 className="text-lg font-medium mb-3">
@@ -85,6 +92,15 @@ export default function ExecutorEditorView({
                     <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
                       {node.type}
                     </span>
+
+                    {/* Edit button */}
+                    <button
+                      onClick={() => openInternalNode?.(node)}
+                      className="p-1 hover:bg-blue-100 rounded"
+                      title="Edit internal node"
+                    >
+                      <Edit className="w-3 h-3 text-blue-600" />
+                    </button>
 
                     {/* Reorder buttons */}
                     <button
@@ -149,22 +165,23 @@ export default function ExecutorEditorView({
             </div>
 
             {/* Type Hints */}
-            {meta && (
-              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1.5">
-                <div className="text-gray-700">
-                  <span className="font-semibold">Input Type:</span>{" "}
-                  <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
-                    {inferType(stringifyForDisplay(meta.inputData))}
-                  </code>
-                </div>
-                <div className="text-gray-700">
-                  <span className="font-semibold">Output Type:</span>{" "}
-                  <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
-                    {inferType(meta.outputData)}
-                  </code>
-                </div>
+
+            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1.5">
+              <div className="text-gray-700">
+                <span className="font-semibold">Input Type:</span>{" "}
+                <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
+                  {meta
+                    ? inferType(stringifyForDisplay(meta.inputData))
+                    : "null"}
+                </code>
               </div>
-            )}
+              <div className="text-gray-700">
+                <span className="font-semibold">Output Type:</span>{" "}
+                <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
+                  {meta ? inferType(meta.outputData) : "null"}
+                </code>
+              </div>
+            </div>
 
             <textarea
               value={code}
@@ -234,14 +251,25 @@ export default function ExecutorEditorView({
         </section>
       </div>
 
-      {/* Footer */}
+      {/* Footer - only for Modal context */}
+
       <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition"
-        >
-          Cancel
-        </button>
+        {isInternalNode ? (
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Group
+          </button>
+        ) : (
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition"
+          >
+            Cancel
+          </button>
+        )}
         <button
           onClick={onSave}
           disabled={!!error || !code.trim()}

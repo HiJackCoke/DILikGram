@@ -11,11 +11,10 @@ export interface ExecutorEditorState {
 export type ExecutorOnSave = (
   nodeId: string,
   config: ExecutionConfig,
-
+  internalNodes?: WorkflowNode[],
 ) => void;
 
 export type ExecutorOnInternalNodesChange = (
   nodeId: string,
   internalNodes: WorkflowNode[],
-
 ) => void;
