@@ -28,29 +28,30 @@ const VARIANT_CONFIG = {
   solid: {
     base: "border border-transparent",
     normal:
-      "bg-[var(--btn-bg)] hover:bg-[var(--btn-hover)] active:bg-[var(--btn-active)]",
+      "bg-[var(--btn-bg)] hover:bg-[var(--btn-color)] active:bg-[var(--btn-active)]",
     disabled: "bg-gray-400 cursor-not-allowed opacity-60",
     text: "text-white",
   },
   outline: {
     base: "border-2",
     normal:
-      "border-[var(--btn-border)] bg-transparent hover:bg-[var(--btn-border)]/10 active:bg-[var(--btn-border)]/20",
+      "border-[var(--btn-bg)] bg-transparent hover:border-[var(--btn-color)] hover:text-[var(--btn-color)] active:bg-[var(--btn-border)]/20",
     disabled: "border-gray-600 cursor-not-allowed opacity-50",
-    text: "text-[var(--btn-border)] disabled:text-gray-600",
+    text: "text-[var(--btn-bg)] disabled:text-palette-neutral-bg",
   },
   ghost: {
     base: "border border-transparent",
     normal:
-      "bg-transparent hover:bg-[var(--btn-bg)]/10 active:bg-[var(--btn-bg)]/20",
+      "bg-transparent hover:bg-[var(--btn-hover)] active:bg-[var(--btn-bg)]/20",
     disabled: "cursor-not-allowed opacity-50",
-    text: "text-[var(--btn-color)] disabled:text-gray-600",
+    text: "text-[var(--btn-bg)] disabled:text-palette-neutral-bg",
   },
   text: {
     base: "border-none",
-    normal: "bg-transparent hover:underline",
+    normal:
+      "bg-transparent hover:text-[var(--btn-hover)] active:text-[var(--btn-bg)]/20",
     disabled: "cursor-not-allowed opacity-50",
-    text: "text-[var(--btn-color)] disabled:text-gray-600",
+    text: "text-[var(--btn-color)] disabled:text-palette-neutral-bg",
   },
 } as const;
 
