@@ -54,7 +54,7 @@ export default function PropertiesPanelDrawer({
       show={open}
       onClose={onClose}
     >
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-x-visible">
         {node && (
           <DynamicNodeEditor
             key={node.id}

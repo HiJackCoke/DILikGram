@@ -49,7 +49,11 @@ import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 
 import ExecutionHeader from "@/app/workflow/_layout/Header";
 
-import { createDefaultNode, generateNodeId } from "@/utils/graph/nodes";
+import {
+  createDefaultNode,
+  generateNodeId,
+  setInternalNodesInGroupNode,
+} from "@/utils/graph/nodes";
 
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { generateEdgeId, createDefaultEdge } from "@/utils/graph/edges";
@@ -433,32 +437,7 @@ export default function WorkflowPage() {
     nodeId: string,
     internalNodes: WorkflowNode[],
   ) {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => {
-        const isInternalNode = (node.data as GroupNodeData).groups?.some(
-          (internalNode) => internalNode.id === nodeId,
-        );
-        if (node.id === nodeId && node.type === "group") {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              groups: internalNodes,
-            },
-          };
-        } else if (isInternalNode) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              groups: internalNodes,
-            },
-          };
-        }
-
-        return node;
-      }),
-    );
+    setNodes(setInternalNodesInGroupNode(nodeId, internalNodes));
   }
 
   // Handle properties save

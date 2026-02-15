@@ -81,49 +81,61 @@ export default function ExecutorEditorModal({
     nodeId: string,
     nodeData: WorkflowNode["data"],
   ) {
-    const updated = internalNodes.map((node) => {
-      if (node.id === nodeId) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...nodeData,
-          },
-        };
-      }
+    let updatedInternalNodes = [...internalNodes];
+    setInternalNodes((prev) => {
+      const updated = prev.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...nodeData,
+            },
+          };
+        }
 
-      return node;
+        return node;
+      });
+
+      updatedInternalNodes = updated;
+
+      return updated;
     });
 
-    setInternalNodes(updated);
-    onInternalNodesChange?.(nodeId, updated);
+    onInternalNodesChange?.(nodeId, updatedInternalNodes);
   }
 
   // Handle internal node save
   const handleInternalNodeSave = (config: ExecutionConfig) => {
     if (!currentInternalNode) return;
 
-    const updated = internalNodes.map((node) => {
-      if (node.id === currentInternalNode.id) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            execution: {
-              ...node.data.execution,
-              config,
-            },
-          },
-        };
-      }
-      return node;
-    });
+    let updatedInternalNodes = [...internalNodes];
 
-    setInternalNodes(updated);
+    setInternalNodes((prev) => {
+      const updated = prev.map((node) => {
+        if (node.id === currentInternalNode.id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              execution: {
+                ...node.data.execution,
+                config,
+              },
+            },
+          };
+        }
+        return node;
+      });
+
+      updatedInternalNodes = updated;
+
+      return updated;
+    });
 
     // Auto-save via callback
     if (nodeId && onInternalNodesChange) {
-      onInternalNodesChange(nodeId, updated);
+      onInternalNodesChange(nodeId, updatedInternalNodes);
     }
 
     // Close drawer after save

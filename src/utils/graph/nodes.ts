@@ -2,7 +2,12 @@ import { v4 as uuid } from "uuid";
 
 import { Position } from "react-cosmos-diagram";
 
-import type { NodePort, WorkflowNode, WorkflowNodeType } from "@/types/nodes";
+import type {
+  GroupNodeData,
+  NodePort,
+  WorkflowNode,
+  WorkflowNodeType,
+} from "@/types/nodes";
 import { UNIFIED_NODE_TEMPLATES } from "@/fixtures/nodes";
 
 export function generateNodeId(type: string): string {
@@ -103,4 +108,35 @@ export function createDefaultNode(node: Partial<WorkflowNode>) {
   };
 
   return newNode;
+}
+
+export const setInternalNodesInGroupNode = (  nodeId: string,
+  internalNodes: WorkflowNode[],) => (
+  nodes: WorkflowNode[],
+
+) => {
+  return nodes.map((node) => {
+    const isInternalNode = (node.data as GroupNodeData).groups?.some(
+      (internalNode) => internalNode.id === nodeId,
+    );
+    if (node.id === nodeId && node.type === "group") {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          groups: internalNodes,
+        },
+      };
+    } else if (isInternalNode) {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          groups: internalNodes,
+        },
+      };
+    }
+
+    return node;
+  });
 }
