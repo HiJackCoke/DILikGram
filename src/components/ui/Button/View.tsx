@@ -48,8 +48,7 @@ const VARIANT_CONFIG = {
   },
   text: {
     base: "border-none",
-    normal:
-      "bg-transparent hover:text-[var(--btn-hover)] active:text-[var(--btn-bg)]/20",
+    normal: "bg-transparent hover:text-[var(--btn-hover)]",
     disabled: "cursor-not-allowed opacity-50",
     text: "text-[var(--btn-color)] disabled:text-palette-neutral-bg",
   },
@@ -160,7 +159,6 @@ export default function ButtonView({
     font-medium
     rounded-lg
     transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--btn-border)]
     ${variantClasses.base}
     ${disabled ? variantClasses.disabled : variantClasses.normal}
     ${variantClasses.text}
