@@ -11,6 +11,7 @@ import type { ExecutionConfig } from "@/types/workflow";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
 import type { WorkflowNode } from "@/types/nodes";
 import { ModalProps } from "@/types";
+import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> &
   Pick<ModalProps, "show" | "onClose"> & {
@@ -36,7 +37,10 @@ export default function ExecutorEditorModal({
 
   onClose,
 }: ExecutorEditorModalProps) {
-  // Modal-specific state
+  const { open } = usePropertiesPanel({
+    onSave: handleInternalNodePropertiesSave,
+  });
+
   const [currentInternalNode, setCurrentInternalNode] =
     useState<WorkflowNode | null>(null);
 
@@ -72,6 +76,28 @@ export default function ExecutorEditorModal({
       onInternalNodesChange(nodeId, updated);
     }
   };
+
+  function handleInternalNodePropertiesSave(
+    nodeId: string,
+    nodeData: WorkflowNode["data"],
+  ) {
+    const updated = internalNodes.map((node) => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...nodeData,
+          },
+        };
+      }
+
+      return node;
+    });
+
+    setInternalNodes(updated);
+    onInternalNodesChange?.(nodeId, updated);
+  }
 
   // Handle internal node save
   const handleInternalNodeSave = (config: ExecutionConfig) => {
@@ -129,6 +155,9 @@ export default function ExecutorEditorModal({
           onRemoveNode={nodeType === "group" ? handleRemoveNode : undefined}
           openInternalNode={
             nodeType === "group" ? setCurrentInternalNode : undefined
+          }
+          openInternalNodePropertiesPanel={
+            nodeType === "group" ? open : undefined
           }
           onSave={handleSave}
           onClose={onClose}

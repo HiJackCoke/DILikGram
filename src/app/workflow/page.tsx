@@ -435,6 +435,9 @@ export default function WorkflowPage() {
   ) {
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
+        const isInternalNode = (node.data as GroupNodeData).groups?.some(
+          (internalNode) => internalNode.id === nodeId,
+        );
         if (node.id === nodeId && node.type === "group") {
           return {
             ...node,
@@ -443,7 +446,16 @@ export default function WorkflowPage() {
               groups: internalNodes,
             },
           };
+        } else if (isInternalNode) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              groups: internalNodes,
+            },
+          };
         }
+
         return node;
       }),
     );

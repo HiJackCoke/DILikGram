@@ -13,13 +13,11 @@ interface ExecutorEditorContentProps {
   nodeType: WorkflowNodeType;
   config?: ExecutionConfig;
 
-  // Optional props for group nodes
   internalNodes?: WorkflowNode[];
   onReorder?: (fromIndex: number, toIndex: number) => void;
   onRemoveNode?: (nodeId: string) => void;
   openInternalNode?: (node: WorkflowNode) => void;
-
-  // Handlers
+  openInternalNodePropertiesPanel?: (node: WorkflowNode) => void;
   onSave: (config: ExecutionConfig) => void;
   onClose?: () => void;
 }
@@ -32,6 +30,7 @@ export default function ExecutorEditorContent({
   onReorder,
   onRemoveNode,
   openInternalNode,
+  openInternalNodePropertiesPanel,
   onSave,
   onClose,
 }: ExecutorEditorContentProps) {
@@ -139,6 +138,7 @@ export default function ExecutorEditorContent({
       onReorder={onReorder}
       onRemoveNode={onRemoveNode}
       openInternalNode={openInternalNode}
+      openInternalNodePropertiesPanel={openInternalNodePropertiesPanel}
     />
   );
 }

@@ -20,9 +20,9 @@ export default function WorkflowLayout({
     <ToastProvider>
       <DialogProvider>
         <ReactDiagramProvider>
-          <ExecutorEditorProvider>
-            <ExecutionSummaryProvider>
-              <PropertiesPanelProvider>
+          <PropertiesPanelProvider>
+            <ExecutorEditorProvider>
+              <ExecutionSummaryProvider>
                 <AIWorkflowEditorProvider>
                   <WorkflowGeneratorProvider>
                     <WorkflowExecutionProvider>
@@ -34,9 +34,9 @@ export default function WorkflowLayout({
                     </WorkflowExecutionProvider>
                   </WorkflowGeneratorProvider>
                 </AIWorkflowEditorProvider>
-              </PropertiesPanelProvider>
-            </ExecutionSummaryProvider>
-          </ExecutorEditorProvider>
+              </ExecutionSummaryProvider>
+            </ExecutorEditorProvider>
+          </PropertiesPanelProvider>
         </ReactDiagramProvider>
       </DialogProvider>
     </ToastProvider>

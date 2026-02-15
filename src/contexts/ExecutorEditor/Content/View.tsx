@@ -12,6 +12,7 @@ import {
 import type { ExecutionConfig } from "@/types/workflow";
 import type { WorkflowNodeType, WorkflowNode } from "@/types/nodes";
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
+import Button from "@/components/ui/Button";
 
 type ExecutorEditorViewProps = {
   isInternalNode?: boolean;
@@ -34,6 +35,7 @@ type ExecutorEditorViewProps = {
   onReorder?: (fromIndex: number, toIndex: number) => void;
   onRemoveNode?: (nodeId: string) => void;
   openInternalNode?: (node: WorkflowNode) => void;
+  openInternalNodePropertiesPanel?: (node: WorkflowNode) => void;
 };
 
 /**
@@ -57,6 +59,7 @@ export default function ExecutorEditorView({
   onSave,
   onClose,
   onReorder,
+  openInternalNodePropertiesPanel,
   openInternalNode,
   onRemoveNode,
 }: ExecutorEditorViewProps) {
@@ -86,9 +89,17 @@ export default function ExecutorEditorView({
                     <span className="text-xs text-gray-400 font-mono w-6">
                       {index + 1}.
                     </span>
-                    <span className="text-sm font-medium flex-1 truncate">
-                      {node.data?.title || node.type}
-                    </span>
+
+                    <div className="text-sm font-medium flex-1 truncate">
+                      <Button
+                        size="sm"
+                        variant="text"
+                        palette="primary"
+                        onClick={() => openInternalNodePropertiesPanel?.(node)}
+                      >
+                        {node.data?.title || node.type}
+                      </Button>
+                    </div>
                     <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
                       {node.type}
                     </span>
