@@ -66,6 +66,7 @@ import {
   filterValidNodesForGroup,
   canAutoConnect,
   createAutoConnection,
+  getNodeDimensions,
 } from "@/utils/graph/nodeInsertion";
 
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
@@ -75,19 +76,6 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 // import { initialNodes } from "@/mocks/nodes";
 // import { initialEdges } from "@/mocks/edges";
-
-// 노드 타입별 기본 크기 (실제 렌더링 크기와 동일)
-function getNodeDimensions(type: string): { width: number; height: number } {
-  const dimensions: Record<string, { width: number; height: number }> = {
-    start: { width: 96, height: 96 }, // w-24 h-24
-    end: { width: 96, height: 96 }, // w-24 h-24
-    task: { width: 200, height: 120 }, // 평균 크기 (min-w-[200px] max-w-[280px])
-    decision: { width: 144, height: 144 }, // w-36 h-36
-    service: { width: 200, height: 120 }, // 평균 크기 (min-w-[200px] max-w-[280px])
-  };
-
-  return dimensions[type] || { width: 200, height: 100 }; // 기본값
-}
 
 export default function WorkflowPage() {
   const edgeUpdateSuccessful = useRef(true);

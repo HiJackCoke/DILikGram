@@ -8,6 +8,28 @@ import { generateEdgeId } from "./edges";
 import { PALETTE } from "@/constants/palette";
 
 /**
+ * Get node dimensions by type
+ * Used for positioning and collision detection
+ *
+ * @param nodeType - Type of the node
+ * @returns Width and height of the node
+ */
+export function getNodeDimensions(nodeType: string): {
+  width: number;
+  height: number;
+} {
+  const dimensions: Record<string, { width: number; height: number }> = {
+    start: { width: 96, height: 96 },
+    end: { width: 96, height: 96 },
+    task: { width: 200, height: 120 },
+    decision: { width: 144, height: 144 },
+    service: { width: 200, height: 120 },
+    group: { width: 280, height: 200 },
+  };
+  return dimensions[nodeType] || { width: 200, height: 100 };
+}
+
+/**
  * Validate if a node can be inserted into a group node
  * Reuses validation logic from handleOnNodeDragEnd
  *
@@ -143,6 +165,34 @@ export function calculateRelativePosition(
 }
 
 /**
+ * Calculate strategic position for child node
+ * Positions child directly below parent with center-aligned x-coordinate
+ *
+ * @param parentNode - Parent node (source of connection)
+ * @param childNodeType - Type of child node being positioned
+ * @returns Absolute position for child node
+ */
+export function calculateChildNodePosition(
+  parentNode: WorkflowNode,
+  childNodeType: string,
+): { x: number; y: number } {
+  const VERTICAL_GAP = 100; // Spacing between parent and child
+
+  const parentPos = parentNode.positionAbsolute || parentNode.position;
+  const parentDimensions = getNodeDimensions(parentNode.type || "task");
+  const childDimensions = getNodeDimensions(childNodeType);
+
+  // Center child horizontally under parent
+  const x =
+    parentPos.x + parentDimensions.width / 2 - childDimensions.width / 2;
+
+  // Position below parent with gap
+  const y = parentPos.y + parentDimensions.height + VERTICAL_GAP;
+
+  return { x, y };
+}
+
+/**
  * Get auto-connect port names based on node type
  * Decision nodes use "yes" as default source port
  * Other nodes use "output"
@@ -163,7 +213,7 @@ export function getAutoConnectPorts(sourceNode: WorkflowNode): {
 /**
  * Create auto-connection between two nodes
  * Returns updated target node with parentNode set and new edge
- * Reuses logic from onConnect
+ * Child node is positioned below parent with center alignment
  *
  * @param sourceNode - Source node (existing node)
  * @param targetNode - Target node (newly dropped node)
@@ -178,12 +228,18 @@ export function createAutoConnection(
 } {
   const { sourcePort, targetPort } = getAutoConnectPorts(sourceNode);
 
+  // Calculate ideal position below parent
+  const absoluteChildPosition = calculateChildNodePosition(
+    sourceNode,
+    targetNode.type || "task",
+  );
+
   // Update target node with parentNode and relative position
   const updatedTarget: WorkflowNode = {
     ...targetNode,
     parentNode: sourceNode.id,
     position: calculateRelativePosition(
-      targetNode.position,
+      absoluteChildPosition,
       sourceNode.positionAbsolute || sourceNode.position,
     ),
   };
