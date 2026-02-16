@@ -55,6 +55,19 @@ import {
   setInternalNodesInGroupNode,
 } from "@/utils/graph/nodes";
 
+import {
+  getNodesAtPosition,
+  prioritizeIntersectedNodes,
+} from "@/utils/graph/intersection";
+
+import {
+  canInsertIntoGroup,
+  insertNodeIntoGroup,
+  filterValidNodesForGroup,
+  canAutoConnect,
+  createAutoConnection,
+} from "@/utils/graph/nodeInsertion";
+
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { generateEdgeId, createDefaultEdge } from "@/utils/graph/edges";
 import { PALETTE } from "@/constants/palette";
@@ -340,11 +353,54 @@ export default function WorkflowPage() {
         transform[2],
     };
 
+    // 🆕 Phase 1: 드롭 위치에 겹치는 노드 찾기
+    const intersectedNodes = getNodesAtPosition(x, y, nodes, transform);
+    const prioritizedNodes = prioritizeIntersectedNodes(intersectedNodes);
+
+    // 🆕 그룹 노드 우선 체크
+    const targetGroup = prioritizedNodes.find((node) => node.type === "group");
+
     const newNode = createDefaultNode({
       type: activeNodeType,
       position,
     });
 
+    // 🆕 그룹에 삽입 시도
+    if (targetGroup) {
+      const validation = canInsertIntoGroup(newNode, targetGroup, nodes);
+
+      if (validation.valid) {
+        // 그룹 내부에 삽입 (캔버스에 추가하지 않음)
+        setNodes((prevNodes) =>
+          insertNodeIntoGroup(prevNodes, newNode, targetGroup.id),
+        );
+        return;
+      }
+    }
+
+    // 🆕 Phase 2: 그룹 삽입 실패 → 엣지 자동 연결 시도
+    // 일반 노드 찾기 (task, service, decision)
+    const targetNode = prioritizedNodes.find((node) =>
+      ["task", "service", "decision"].includes(node.type || ""),
+    );
+
+    if (targetNode) {
+      const validation = canAutoConnect(targetNode, newNode, edges);
+
+      if (validation.valid) {
+        const { updatedTarget, newEdge } = createAutoConnection(
+          targetNode,
+          newNode,
+        );
+
+        // 노드 추가 + 엣지 연결
+        setNodes((prevNodes) => [...prevNodes, updatedTarget]);
+        setEdges((prevEdges) => [...prevEdges, newEdge]);
+        return;
+      }
+    }
+
+    // Fallback: 모든 자동화 실패 시 캔버스에 추가
     setNodes((prevNodes) => [...prevNodes, newNode]);
   };
 
@@ -621,63 +677,39 @@ export default function WorkflowPage() {
     draggingNodes: Node[],
   ) => {
     onTouchEnd();
-    function validateNoParentChildConnections(
-      nodes: Node[],
-      draggingNodes: Node[],
-    ): boolean {
-      if (!draggingNodes.length) return true;
-
-      const draggingIds = new Set(draggingNodes.map((n) => n.id));
-
-      // 1️⃣ dragging 노드가 부모를 가지고 있는지 검사
-      for (const node of draggingNodes) {
-        if (node.parentNode) {
-          return false;
-        }
-      }
-
-      // 2️⃣ dragging 노드가 다른 노드의 부모인지 검사
-      for (const node of nodes) {
-        if (node.parentNode && draggingIds.has(node.parentNode)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
 
     const typedNodes = draggingNodes as WorkflowNode[];
-    const isExceptionNode = typedNodes.some(
-      (node) =>
-        node.type === "group" || node.type === "start" || node.type === "end",
-    );
     const intersectedGroupNode = nodes.find(
       (node) => node.type === "group" && node.intersected,
-    );
-    const isAddingMode =
-      !isExceptionNode &&
-      intersectedGroupNode &&
-      validateNoParentChildConnections(nodes, typedNodes);
+    ) as WorkflowNode | undefined;
 
-    if (isAddingMode) {
-      setNodes((nodes) => {
-        return nodes
-          .map((node) => {
-            if (node.id === intersectedGroupNode.id) {
-              const groupData = node.data as GroupNodeData;
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  groups: [...(groupData.groups || []), ...typedNodes],
-                },
-              };
-            }
-            return node;
-          })
-          .filter((node) => !typedNodes.some((n) => n.id === node.id));
+    if (!intersectedGroupNode) return;
+
+    // 유틸 함수로 유효한 노드만 필터링
+    const validNodes = filterValidNodesForGroup(
+      typedNodes,
+      intersectedGroupNode,
+      nodes,
+    );
+
+    if (validNodes.length === 0) return;
+
+    setNodes((prevNodes) => {
+      // 그룹에 추가
+      let updatedNodes = prevNodes;
+      validNodes.forEach((nodeToInsert) => {
+        updatedNodes = insertNodeIntoGroup(
+          updatedNodes,
+          nodeToInsert,
+          intersectedGroupNode.id,
+        );
       });
-    }
+
+      // 캔버스에서 제거
+      return updatedNodes.filter(
+        (node) => !validNodes.some((n) => n.id === node.id),
+      );
+    });
   };
 
   return (
