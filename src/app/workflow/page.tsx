@@ -325,7 +325,7 @@ export default function WorkflowPage() {
     [],
   );
 
-  const generateNode = ({ x, y }: XYPosition) => {
+  const generateNode = async ({ x, y }: XYPosition) => {
     if (!distanceRef.current) return;
     if (!activeNodeType) return;
 
@@ -370,11 +370,20 @@ export default function WorkflowPage() {
       const validation = canInsertIntoGroup(newNode, targetGroup, nodes);
 
       if (validation.valid) {
-        // 그룹 내부에 삽입 (캔버스에 추가하지 않음)
-        setNodes((prevNodes) =>
-          insertNodeIntoGroup(prevNodes, newNode, targetGroup.id),
+        // 🆕 사용자 확인 받기
+        const confirmed = await dialog.confirm(
+          "Insert into Group?",
+          `Do you want to insert this ${activeNodeType} node into the group?`,
         );
-        return;
+
+        if (confirmed) {
+          // 그룹 내부에 삽입 (캔버스에 추가하지 않음)
+          setNodes((prevNodes) =>
+            insertNodeIntoGroup(prevNodes, newNode, targetGroup.id),
+          );
+          return;
+        }
+        // Cancel → 다음 옵션으로 계속 진행
       }
     }
 
@@ -388,15 +397,24 @@ export default function WorkflowPage() {
       const validation = canAutoConnect(targetNode, newNode, edges);
 
       if (validation.valid) {
-        const { updatedTarget, newEdge } = createAutoConnection(
-          targetNode,
-          newNode,
+        // 🆕 사용자 확인 받기
+        const confirmed = await dialog.confirm(
+          "Auto-connect Nodes?",
+          `Do you want to connect this ${activeNodeType} node to the ${targetNode.type} node?`,
         );
 
-        // 노드 추가 + 엣지 연결
-        setNodes((prevNodes) => [...prevNodes, updatedTarget]);
-        setEdges((prevEdges) => [...prevEdges, newEdge]);
-        return;
+        if (confirmed) {
+          const { updatedTarget, newEdge } = createAutoConnection(
+            targetNode,
+            newNode,
+          );
+
+          // 노드 추가 + 엣지 연결
+          setNodes((prevNodes) => [...prevNodes, updatedTarget]);
+          setEdges((prevEdges) => [...prevEdges, newEdge]);
+          return;
+        }
+        // Cancel → fallback으로 진행
       }
     }
 
@@ -640,13 +658,13 @@ export default function WorkflowPage() {
     };
   });
 
-  const handleMouseUp: MouseEventHandler<HTMLDivElement> = (e) => {
-    generateNode({ x: e.clientX, y: e.clientY });
+  const handleMouseUp: MouseEventHandler<HTMLDivElement> = async (e) => {
+    await generateNode({ x: e.clientX, y: e.clientY });
     setActiveNodeType(null);
   };
 
-  const handleTouchEnd: TouchEventHandler<HTMLDivElement> = (e) => {
-    generateNode({
+  const handleTouchEnd: TouchEventHandler<HTMLDivElement> = async (e) => {
+    await generateNode({
       x: e.changedTouches[0].clientX,
       y: e.changedTouches[0].clientY,
     });
