@@ -31,6 +31,7 @@ export default function ExecutorEditorModal({
   nodeType,
   config,
   internalNodes: initialInternalNodes,
+  testCases: initialTestCases,
 
   onSave,
   onInternalNodesChange,
@@ -162,6 +163,7 @@ export default function ExecutorEditorModal({
         <ExecutorEditorContent
           nodeType={nodeType}
           config={config}
+          initialTestCases={initialTestCases}
           internalNodes={nodeType === "group" ? internalNodes : undefined}
           onReorder={nodeType === "group" ? handleReorder : undefined}
           onRemoveNode={nodeType === "group" ? handleRemoveNode : undefined}

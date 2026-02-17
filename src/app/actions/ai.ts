@@ -8,8 +8,10 @@
  */
 
 import OpenAI from "openai";
+import { v4 as uuid } from "uuid";
 import type { GenerateWorkflowResponse, UpdateWorkflowResponse } from "@/types/ai";
 import type { WorkflowNode } from "@/types/nodes";
+import type { ReusableNodeTemplate, TestCase } from "@/types/prd";
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -80,10 +82,14 @@ function handleOpenAIError(error: unknown): never {
  * Generate workflow from prompt using GPT-4o-mini
  *
  * @param prompt - User's workflow description
+ * @param prdText - Optional PRD requirements text
+ * @param nodeLibrary - Optional array of reusable node templates
  * @returns Generated workflow with nodes and metadata
  */
 export async function generateWorkflowAction(
-  prompt: string
+  prompt: string,
+  prdText?: string,
+  nodeLibrary?: ReusableNodeTemplate[],
 ): Promise<GenerateWorkflowResponse> {
   if (!prompt || !prompt.trim()) {
     throw new Error("Workflow description is required");
@@ -96,7 +102,7 @@ export async function generateWorkflowAction(
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: GENERATION_SYSTEM_PROMPT },
-        { role: "user", content: getGenerationContent(prompt) },
+        { role: "user", content: getGenerationContent(prompt, prdText, nodeLibrary) },
       ],
       temperature: 0.6,
       response_format: { type: "json_object" },
@@ -114,10 +120,113 @@ export async function generateWorkflowAction(
       throw new Error("Generated workflow missing nodes array");
     }
 
+    // Apply node type-specific normalization (always, regardless of PRD)
+    const VALID_CONDITION_OPERATORS = new Set(["has", "hasNot", "truthy", "falsy"]);
+    generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
+      // ServiceNode: ensure required fields have defaults
+      if (node.type === "service") {
+        return {
+          ...node,
+          data: {
+            mode: "panel",
+            ...node.data,
+            http: {
+              method: "POST",
+              endpoint: "",
+              headers: {},
+              body: {},
+              ...node.data.http,
+            },
+            retry: node.data.retry ?? { count: 3, delay: 1000 },
+            timeout: node.data.timeout ?? 5000,
+          },
+        };
+      }
+
+      // DecisionNode: sanitize condition keys to valid operators only
+      if (node.type === "decision" && node.data.condition) {
+        const sanitized: Record<string, string> = {};
+        for (const [key, value] of Object.entries(node.data.condition)) {
+          if (VALID_CONDITION_OPERATORS.has(key)) {
+            sanitized[key] = value as string;
+          }
+        }
+        return {
+          ...node,
+          data: {
+            mode: "panel",
+            ...node.data,
+            condition: sanitized,
+          },
+        };
+      }
+
+      return node;
+    });
+
+    // Apply fallbacks if PRD was provided but AI didn't include references/test cases
+    if (prdText) {
+      generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          // Add placeholder PRD reference if missing
+          prdReference: node.data.prdReference || {
+            section: "Unknown",
+            requirement: "Not specified by AI",
+            rationale: "Generated without explicit PRD reference",
+          },
+          // Add default test cases if missing or insufficient, and assign real UUIDs
+          testCases: (
+            node.data.testCases && node.data.testCases.length >= 3
+              ? node.data.testCases
+              : generateDefaultTestCases(node)
+          ).map((tc) => ({ ...tc, id: `test-${uuid()}` })),
+        },
+      }));
+    }
+
     return generatedWorkflow;
   } catch (error) {
     handleOpenAIError(error);
   }
+}
+
+/**
+ * Generate default test cases for a node when AI doesn't provide them
+ *
+ * @param node - The workflow node
+ * @returns Array of 3 default test cases
+ */
+function generateDefaultTestCases(node: WorkflowNode): TestCase[] {
+  const nodeTitle = node.data?.title || node.type;
+
+  return [
+    {
+      id: `test-${uuid()}`,
+      name: "Success case",
+      description: `Test successful execution of ${nodeTitle}`,
+      inputData: {},
+      expectedOutput: { success: true },
+      status: "pending",
+    },
+    {
+      id: `test-${uuid()}`,
+      name: "Failure case",
+      description: `Test error handling in ${nodeTitle}`,
+      inputData: null,
+      expectedOutput: { success: false, error: "Invalid input" },
+      status: "pending",
+    },
+    {
+      id: `test-${uuid()}`,
+      name: "Edge case",
+      description: `Test boundary conditions in ${nodeTitle}`,
+      inputData: {},
+      expectedOutput: {},
+      status: "pending",
+    },
+  ];
 }
 
 /**

@@ -20,7 +20,7 @@ interface WorkflowGeneratorModalProps
   extends Pick<ModalProps, "show" | "onClose"> {
   isGenerating: boolean;
   error: string | null;
-  onGenerate: (prompt: string) => void;
+  onGenerate: (prompt: string, prdText?: string) => void;
 }
 
 export default function WorkflowGeneratorModal({
@@ -31,24 +31,11 @@ export default function WorkflowGeneratorModal({
   onClose,
 }: WorkflowGeneratorModalProps) {
   const [prompt, setPrompt] = useState("");
-  // const [hasSavedKey, setHasSavedKey] = useState(() => hasApiKey());
-
-  // Reset prompt when modal shows/closes
-
-  // const handleSaveApiKey = (key: string) => {
-  //   saveApiKey(key);
-  //   setHasSavedKey(true);
-  // };
-
-  // const handleRemoveApiKey = () => {
-  //   removeApiKey();
-  //   setHasSavedKey(false);
-  //   setApiKey("");
-  // };
+  const [prdText, setPRDText] = useState("");
 
   const handleGenerate = () => {
     if (prompt.trim()) {
-      onGenerate(prompt.trim());
+      onGenerate(prompt.trim(), prdText.trim() || undefined);
     }
   };
 
@@ -61,10 +48,12 @@ export default function WorkflowGeneratorModal({
     >
       <WorkflowGeneratorView
         prompt={prompt}
+        prdText={prdText}
         // hasSavedKey={hasSavedKey}
         isGenerating={isGenerating}
         error={error}
         onPromptChange={setPrompt}
+        onPRDTextChange={setPRDText}
         // onSaveApiKey={handleSaveApiKey}
         // onRemoveApiKey={handleRemoveApiKey}
         onGenerate={handleGenerate}

@@ -4,14 +4,17 @@ import {
   compileExecutor,
   detectAsync,
   stringifyForDisplay,
+  inferType,
 } from "@/utils/workflow";
 import type { ExecutionConfig } from "@/types/workflow";
 import type { WorkflowNodeType, WorkflowNode } from "@/types/nodes";
+import type { TestCase } from "@/types/prd";
 
 interface ExecutorEditorContentProps {
   isInternalNode?: boolean;
   nodeType: WorkflowNodeType;
   config?: ExecutionConfig;
+  initialTestCases?: TestCase[];
 
   internalNodes?: WorkflowNode[];
   onReorder?: (fromIndex: number, toIndex: number) => void;
@@ -26,6 +29,7 @@ export default function ExecutorEditorContent({
   isInternalNode = false,
   nodeType,
   config,
+  initialTestCases,
   internalNodes,
   onReorder,
   onRemoveNode,
@@ -42,6 +46,9 @@ export default function ExecutorEditorContent({
     stringifyForDisplay(config?.nodeData?.inputData),
   );
   const [outputData, setOutputData] = useState<string | null>(null);
+  const [testCases, setTestCases] = useState<TestCase[]>(
+    () => initialTestCases ?? [],
+  );
 
   // Computed values
   const isAsync = useMemo(() => detectAsync(code), [code]);
@@ -104,16 +111,98 @@ export default function ExecutorEditorContent({
     }
   };
 
+  const handleRunTest = async (testCase: TestCase) => {
+    // Update test status to running
+    setTestCases((cases) =>
+      cases.map((tc) =>
+        tc.id === testCase.id ? { ...tc, status: "running" as const } : tc,
+      ),
+    );
+
+    try {
+      const testConfig: ExecutionConfig = {
+        functionCode: code,
+        lastModified: Date.now(),
+      };
+
+      const fn = compileExecutor(testConfig, nodeType, internalNodes);
+      const result = await Promise.resolve(fn(testCase.inputData, fetch));
+
+      // Auto-store result as output.
+      // If Code Editor has a reference output (meta.outputData), validate type match.
+      const hasReference =
+        meta?.outputData !== null && meta?.outputData !== undefined;
+
+      if (hasReference) {
+        const actualType = inferType(result);
+        const referenceType = inferType(meta!.outputData);
+        const typesMatch = actualType === referenceType;
+
+        setTestCases((cases) =>
+          cases.map((tc) =>
+            tc.id === testCase.id
+              ? {
+                  ...tc,
+                  status: typesMatch ? ("passed" as const) : ("failed" as const),
+                  expectedOutput: result,
+                  error: typesMatch
+                    ? undefined
+                    : `Type mismatch.\nExpected type: ${referenceType}\nActual type:   ${actualType}`,
+                  lastRun: Date.now(),
+                }
+              : tc,
+          ),
+        );
+      } else {
+        // No reference type available — just store result, mark as passed
+        setTestCases((cases) =>
+          cases.map((tc) =>
+            tc.id === testCase.id
+              ? {
+                  ...tc,
+                  status: "passed" as const,
+                  expectedOutput: result,
+                  error: undefined,
+                  lastRun: Date.now(),
+                }
+              : tc,
+          ),
+        );
+      }
+    } catch (error) {
+      // Update test status to failed with error
+      setTestCases((cases) =>
+        cases.map((tc) =>
+          tc.id === testCase.id
+            ? {
+                ...tc,
+                status: "failed" as const,
+                error: (error as Error).message,
+                lastRun: Date.now(),
+              }
+            : tc,
+        ),
+      );
+    }
+  };
+
+  const handleRunAllTests = async () => {
+    for (const testCase of testCases) {
+      await handleRunTest(testCase);
+    }
+  };
+
   const handleSave = () => {
     if (compileError) return;
 
-    const config: ExecutionConfig = {
+    const config: ExecutionConfig & { testCases?: TestCase[] } = {
       functionCode: code,
       lastModified: Date.now(),
       nodeData: {
         inputData: inputData ? JSON.parse(inputData) : null,
         outputData: outputData ? JSON.parse(outputData) : null,
       },
+      testCases: testCases.length > 0 ? testCases : undefined,
     };
 
     onSave(config);
@@ -129,11 +218,15 @@ export default function ExecutorEditorContent({
       error={compileError}
       inputData={inputData}
       outputData={outputData}
+      testCases={testCases}
       onCodeChange={setCode}
       onInputDataChange={setInputData}
       onTest={handleTest}
       onSave={handleSave}
       onClose={onClose}
+      onTestCasesChange={setTestCases}
+      onRunTest={handleRunTest}
+      onRunAllTests={handleRunAllTests}
       internalNodes={internalNodes}
       onReorder={onReorder}
       onRemoveNode={onRemoveNode}

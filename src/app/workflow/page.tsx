@@ -374,7 +374,6 @@ export default function WorkflowPage() {
         // Cancel → 다음 옵션으로 계속 진행
       }
     }
-
     // 🆕 Phase 2: 그룹 삽입 실패 → 엣지 자동 연결 시도
     // 일반 노드 찾기 (task, service, decision)
     const targetNode = prioritizedNodes.find((node) =>
@@ -409,6 +408,7 @@ export default function WorkflowPage() {
     // Fallback: 모든 자동화 실패 시 캔버스에 추가
     setNodes((prevNodes) => [...prevNodes, newNode]);
   };
+  console.log(nodes);
 
   function handleWorkflowGenerator(
     newNodes: WorkflowNode[],
@@ -430,11 +430,14 @@ export default function WorkflowPage() {
   // Handle execution config save
   function handleExecutorSave(
     nodeId: string,
-    config: ExecutionConfig,
+    config: ExecutionConfig & { testCases?: unknown },
     internalNodes?: WorkflowNode[], // For group nodes
   ) {
     setNodes((prevNodes) => {
       const node = prevNodes.find((n) => n.id === nodeId);
+
+      // Separate testCases from the pure execution config
+      const { testCases, ...pureConfig } = config;
 
       // Update node with new config (and internalNodes if group)
       const updatedNodes = prevNodes.map((n) => {
@@ -443,9 +446,13 @@ export default function WorkflowPage() {
             ...n,
             data: {
               ...n.data,
+              // testCases live on node.data, not inside execution config
+              testCases:
+                (testCases as WorkflowNode["data"]["testCases"]) ??
+                n.data.testCases,
               execution: {
                 ...n.data.execution,
-                config,
+                config: pureConfig,
               },
             },
           };

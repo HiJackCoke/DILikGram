@@ -25,6 +25,13 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
      - \`metadata\`: object (Default: {})
      - \`execution\`: object (**REQUIRED**)
        - \`config.functionCode\`: business logic implementation (function body only, no "function" wrapper)
+         - **CRITICAL**: Receives \`inputData\` (output from parent node) and \`fetch\` as parameters
+         - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
+         - ❌ Wrong: \`return tasks.length <= maxTasks\`
+         - ✅ Correct: \`return inputData.tasks.length <= maxTasks\`
+         - **CRITICAL**: MUST always end with a \`return\` statement that produces the outputData object
+         - ❌ Wrong (no return, mutates inputData): \`inputData.tasks.push(inputData.newTask);\`
+         - ✅ Correct (compute new state, return as output): \`const updated = [...inputData.tasks, inputData.newTask]; return { tasks: updated };\`
        - \`config.nodeData.inputData\`: input parameters sample
        - \`config.nodeData.outputData\`: output result sample
      - \`ports\`: array (Default: [
@@ -45,15 +52,26 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
    - **REQUIRED \`data\` fields**:
      - \`title\`: string
      - \`description\`: string
+     - \`mode\`: "panel"
      - \`serviceType\`: "api"
-     - \`http\`: object (Required if serviceType="api", Default: { method: "GET", endpoint: "" })
+     - \`timeout\`: 10000
+     - \`retry\`: object, Default: {retry: 0, delay: 3000}
+     - \`http\`: object (Required if serviceType="api", Default: { method: "GET", endpoint: "", body: {}, headers: {} })
      - **CRITICAL**: For all HTTP endpoints, ALWAYS use \`serviceType: "api"\`
      - \`http\`: object (**REQUIRED** for ALL serviceTypes)
        - \`method\`: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" (REQUIRED)
        - \`endpoint\`: string (e.g. "/api/users", "/api/meals/{id}") (REQUIRED)
+       
      - \`execution\`: object (**REQUIRED**)
        - \`config.nodeData.isAsync\`: true
        - \`config.functionCode\`: async API call logic (function body only, no "async function" wrapper)
+         - **CRITICAL**: Receives \`inputData\` (upstream data) and \`fetch\` as parameters
+         - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
+         - ❌ Wrong: \`userId\`, \`email\`, \`endpoint\`
+         - ✅ Correct: \`inputData.userId\`, \`inputData.email\`, \`inputData.endpoint\`
+         - **CRITICAL**: MUST always end with a \`return\` statement that produces the outputData object
+         - ❌ Wrong (result discarded, no return): \`await fetch(endpoint, options);\`
+         - ✅ Correct (return the API response): \`const res = await fetch(endpoint, options); return await res.json();\`
        - \`config.nodeData.inputData\`: request body/query params sample
        - \`config.nodeData.outputData\`: API response structure sample
      - \`ports\`: array (Default: [
@@ -75,7 +93,15 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
      - \`title\`: string
      - \`description\`: string
      - \`mode\`: "panel"
-     - \`condition\`: object (Default: {})
+     - \`condition\`: ConditionConfig object — Keys MUST be ONLY one of: "has" | "hasNot" | "truthy" | "falsy". Value is the field name from inputData to evaluate.
+       - \`"has": "fieldName"\` → passes if inputData.fieldName exists
+       - \`"hasNot": "fieldName"\` → passes if inputData.fieldName does not exist
+       - \`"truthy": "fieldName"\` → passes if inputData.fieldName is truthy
+       - \`"falsy": "fieldName"\` → passes if inputData.fieldName is falsy
+       - ❌ Wrong: { "field": "status", "op": "eq", "value": "approved" }
+       - ✅ Correct: { "truthy": "isApproved" }
+       - ✅ Multiple: { "has": "token", "truthy": "isValid" }
+       - Default: {}
      - \`ports\`: array (Default: [
          {
             "id": "input",
@@ -97,9 +123,34 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
       ])
      - \`execution\`: object (**REQUIRED**)
        - \`config.functionCode\`: business logic implementation (function body only, no "function" wrapper), MUST return a \`boolean\` value.
+         - **CRITICAL**: Receives \`inputData\` (output from parent node) and \`fetch\` as parameters
+         - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
+         - ❌ Wrong: \`return status === 'active'\`
+         - ✅ Correct: \`return inputData.status === 'active'\`
        - \`config.nodeData.inputData\`: input parameters sample
        - \`config.nodeData.outputData\`: output result sample
      - **CRITICAL**: Must have at least two children nodes (one 'yes', one 'no').
+
+4. **Group Node** ("group")
+   - Represents a feature unit (stateless, composable) containing sequential internal nodes.
+   - **REQUIRED \`data\` fields**:
+     - \`title\`: string
+     - \`description\`: string
+     - \`groups\`: array (Default: []) — internal nodes, populated separately by the system
+     - \`metadata\`: object (Default: {})
+     - \`collapsed\`: boolean (Default: true)
+     - \`ports\`: array (Default: [
+         {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+         },
+         {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+         }
+       ])
 `;
 
 export const PARENT_CHILD_RULES = `
@@ -116,6 +167,8 @@ export const PARENT_CHILD_RULES = `
    - IF a node's \`parentNode\` is a **Decision Node**:
      - You MUST include \`branchLabel\` in the \`data\` object.
      - Value MUST be either "yes" or "no".
+     - This applies to ALL node types: task, service, decision, AND group.
+     - Example (GroupNode as "yes" branch): \`"data": { "branchLabel": "yes", "title": "Success Flow", ... }\`
    - IF a node's \`parentNode\` is **NOT** a Decision Node:
      - DO NOT include \`branchLabel\`.
 
@@ -127,7 +180,7 @@ export const PARENT_CHILD_RULES = `
 4. **No Edges, No Start/End**
    - DO NOT generate "edges" array.
    - DO NOT generate nodes of type "start" or "end".
-   - Focus ONLY on the functional nodes (task, service, decision).
+   - Focus ONLY on the functional nodes (task, service, decision, group).
 `;
 
 export const COMMON_VALIDATION_RULES = `
@@ -138,9 +191,10 @@ VALIDATION CHECKLIST (Self-Correction):
 □ **No "start" or "end" nodes?** (System handles them)
 □ **All nodes have valid \`parentNode\`?** (Except the root of a new flow)
 □ **Data Fields Complete?**
-   - Task: title, description, assignee, estimatedTime, execution.config
-   - Service: title, description, serviceType, http, execution.config
-   - Decision: title, description, condition
+   - Task: title, description, assignee, estimatedTime, execution.config, ports
+   - Service: title, description, serviceType, http, execution.config, ports
+   - Decision: title, description, condition, ports
+   - Group: title, description, groups, ports
 □ **Decision Node Check:**
    - Does every decision node have a "yes" child?
    - Does every decision node have a "no" child?
@@ -152,6 +206,11 @@ VALIDATION CHECKLIST (Self-Correction):
    - Do Service nodes have \`execution.config.functionCode\`?
    - Are \`inputData\` and \`outputData\` samples provided?
    - Is \`functionCode\` written as function body only (no "function" or "async function" wrapper)?
+   - Does \`functionCode\` end with a \`return\` statement? (Task/Service: MUST return outputData object; Decision: MUST return boolean)
+□ **inputData Reference Check:**
+   - Does \`functionCode\` use \`inputData.<field>\` (not bare variable names)?
+   - ❌ Wrong: \`tasks.length\`, \`userId\`, \`email\`, \`endpoint\`
+   - ✅ Correct: \`inputData.tasks.length\`, \`inputData.userId\`, \`inputData.email\`
 □ **ServiceType Validation:**
    - Is \`serviceType: "api"\` for all nodes with \`http.method\` and \`http.endpoint\`?
    - Are you NOT using "database" or "email" for HTTP endpoints?
@@ -174,8 +233,8 @@ export const TECHNICAL_SPECIFICATION_RULES = `
    Every Service Node's \`description\` or a dedicated \`functionCode\` field must follow this template:
    \`\`\`javascript
    const headers = { "Content-Type": "application/json" };
-   const body = { /* Insert Keys from request_schema */ };
-   const endpoint = "[API_ENDPOINT]";
+   const body = { /* use inputData.<field> for values, e.g. inputData.userId */ };
+   const endpoint = inputData.endpoint || "[API_ENDPOINT]";
    const method = "[HTTP_METHOD]";
 
    try {

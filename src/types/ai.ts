@@ -10,12 +10,16 @@ export interface GenerateWorkflowResponse {
   metadata: {
     description: string;
     estimatedComplexity: "simple" | "moderate" | "complex";
+    /** AI-generated summary of PRD requirements */
+    prdSummary?: string;
+    /** IDs of nodes reused from library */
+    reusedNodes?: string[];
   };
 }
 
-export type GenerateWorkflow = (
-  props: GenerateWorkflowProps,
-) => Promise<GenerateWorkflowResponse>;
+// export type GenerateWorkflow = (
+//   props: GenerateWorkflowProps,
+// ) => Promise<GenerateWorkflowResponse>;
 
 export interface UpdateWorkflowProps extends GenerateWorkflowProps {
   nodeId: string;

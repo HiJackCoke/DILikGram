@@ -5,6 +5,81 @@ import {
   COMMON_VALIDATION_RULES,
   TECHNICAL_SPECIFICATION_RULES,
 } from "./common";
+import { buildPRDContext } from "@/utils/prd/contextBuilder";
+import type { ReusableNodeTemplate } from "@/types/prd";
+
+/**
+ * PRD-based generation rules
+ */
+const PRD_GENERATION_RULES = `
+═══════════════════════════════════════════════════════════════
+PRD-BASED WORKFLOW GENERATION RULES
+═══════════════════════════════════════════════════════════════
+
+1. WHEN TO USE GROUP NODE
+   - Use GroupNode ONLY when a single feature requires multiple nodes working together
+   - DO NOT use GroupNode for a simple single-purpose step that one task/service/decision node can handle alone
+   - ✅ Use GroupNode: "User Login" → TaskNode(validate) + ServiceNode(API call) + DecisionNode(success/failure branch)
+   - ❌ Do NOT use GroupNode: "Send Email Notification" → a single ServiceNode is sufficient
+   - Rule: if the feature can be expressed as one node, use that node directly without a GroupNode wrapper
+
+2. PRD REFERENCES (REQUIRED FOR EVERY NODE)
+   - Every node MUST include prdReference field with:
+     * section: Section title from PRD (e.g., "User Authentication", "Payment Flow")
+     * requirement: Exact requirement text from PRD
+     * rationale: Clear explanation of why this node implements this requirement
+   - Example:
+     {
+       "prdReference": {
+         "section": "User Authentication",
+         "requirement": "System must validate user email and password",
+         "rationale": "This task node validates input before API call to ensure data integrity"
+       }
+     }
+
+3. TEST CASES (MINIMUM 3 PER NODE)
+   - Every node MUST include testCases array with at least 3 test cases
+   - Cover: success case, failure case, edge case
+   - Format:
+     {
+       "testCases": [
+         {
+           "id": "test-550e8400-e29b-41d4-a716-446655440001",
+           "name": "Valid credentials",
+           "description": "Test successful login with correct email/password",
+           "inputData": { "email": "user@test.com", "password": "Pass123!" },
+           "expectedOutput": { "success": true, "token": "mock-token" }
+         },
+         {
+           "id": "test-550e8400-e29b-41d4-a716-446655440002",
+           "name": "Invalid password",
+           "description": "Test login failure with wrong password",
+           "inputData": { "email": "user@test.com", "password": "wrong" },
+           "expectedOutput": { "success": false, "error": "Invalid credentials" }
+         },
+         {
+           "id": "test-550e8400-e29b-41d4-a716-446655440003",
+           "name": "Missing email",
+           "description": "Test validation with missing required field",
+           "inputData": { "password": "Pass123!" },
+           "expectedOutput": { "success": false, "error": "Email is required" }
+         }
+       ]
+     }
+
+4. REUSE EXISTING NODES FROM LIBRARY
+   - Prioritize reusing nodes from the provided node library
+   - Only create new nodes if no suitable library node exists
+   - When reusing, maintain the node's structure but add/update prdReference
+   - Increment usageCount for reused nodes
+
+5. FUNCTIONAL PROGRAMMING STYLE
+   - GroupNode = Feature unit (stateless, composable)
+   - Internal nodes = Pure functions (task/service/decision)
+   - Data flows sequentially through internal nodes
+   - Each node should have single responsibility
+   - Avoid side effects in TaskNodes (use ServiceNodes for external calls)
+`;
 
 /**
  * Generation-specific examples
@@ -52,7 +127,7 @@ User: "Create a document review process where if approved it goes to shipping, o
       "data": {
         "title": "Approved?",
         "description": "Is document valid?",
-        "condition": { "field": "status", "op": "eq", "value": "approved" },
+        "condition": { "truthy": "isApproved" },
         "mode": "panel",
         "ports": [
           {
@@ -144,9 +219,16 @@ Return a JSON object with a "nodes" array.
 1. **First Node**: This is your entry point. DO NOT specify \`parentNode\` for this node.
 2. **Subsequent Nodes**: MUST specify \`parentNode\` (referencing an ID from your list).
 3. **Fields**:
-   - **task**: id, type="task", parentNode, position, data: { title, description, assignee, estimatedTime, metadata, ports, [branchLabel] }
-   - **service**: id, type="service", parentNode, position, data: { title, description, serviceType, http?, ports, [branchLabel] }
-   - **decision**: id, type="decision", parentNode, position, data: { title, description, condition, mode, ports, [branchLabel] }
+   - **task**: id, type="task", parentNode, position, data: { title, description, assignee, estimatedTime, metadata, ports }
+   - **service**: id, type="service", parentNode, position, data: { title, description, serviceType, http?, ports }
+   - **decision**: id, type="decision", parentNode, position, data: { title, description, condition, mode, ports }
+   - **group**: id, type="group", parentNode, position, data: { title, description, groups, ports }
+
+⚠️ **branchLabel RULE (MANDATORY)**:
+   - When a node's \`parentNode\` is a **Decision Node**, you MUST add \`"branchLabel": "yes"\` or \`"branchLabel": "no"\` to its \`data\` object.
+   - This applies to ALL node types without exception: task, service, decision, group.
+   - ❌ Wrong: child of decision node with no branchLabel field
+   - ✅ Correct: \`"data": { "branchLabel": "yes", "title": "..." }\`
 
 DO NOT generate Start ("start") or End ("end") nodes.
 DO NOT generate "edges".
@@ -156,6 +238,8 @@ export const GENERATION_PROMPT_CONTENT = `
 ${CORE_NODE_TYPES}
 
 ${PARENT_CHILD_RULES}
+
+${PRD_GENERATION_RULES}
 
 ${GENERATION_RESPONSE_FORMAT}
 
@@ -171,6 +255,34 @@ export const GENERATION_SYSTEM_PROMPT = buildPrompt({
   promptContent: GENERATION_PROMPT_CONTENT,
 });
 
-export function getGenerationContent(prompt: string): string {
-  return `Create a workflow based on this request: "${prompt}"\n\nRemember: No Start/End nodes, No Edges. Use parentNode logic.`;
+export function getGenerationContent(
+  prompt: string,
+  prdText?: string,
+  nodeLibrary?: ReusableNodeTemplate[],
+): string {
+  let content = `Create a workflow based on this request: "${prompt}"\n\n`;
+
+  // Add PRD context if provided
+  if (prdText) {
+    content += `${buildPRDContext(prdText)}\n\n`;
+    content += `IMPORTANT: Reference specific PRD sections in prdReference field for every node.\n\n`;
+  }
+
+  // Add available reusable nodes from library
+  if (nodeLibrary && nodeLibrary.length > 0) {
+    content += `═══════════════════════════════════════════════════════════════\n`;
+    content += `AVAILABLE REUSABLE NODES FROM LIBRARY\n`;
+    content += `═══════════════════════════════════════════════════════════════\n\n`;
+    content += nodeLibrary
+      .map(
+        (node) =>
+          `- ${node.name} (${node.category}, ${node.nodeType}): ${node.description}\n  Used ${node.usageCount} time(s)`,
+      )
+      .join("\n");
+    content += `\n\nPrioritize reusing these nodes where applicable. When reusing, maintain the node structure but update prdReference to match current requirements.\n\n`;
+  }
+
+  content += `Remember: No Start/End nodes, No Edges. Use parentNode logic.`;
+
+  return content;
 }

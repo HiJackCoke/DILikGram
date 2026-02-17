@@ -33,7 +33,8 @@ export default function ExecutorEditorDrawer({
   const drawerClassName = [
     "rounded-xl",
     "[&_.drawer-body]:p-0",
-    "[&_.drawer-body>*:first-child]:h-full",
+    "[&_.drawer-body]:flex",
+    "[&_.drawer-body]:flex-col",
   ].join(" ");
 
   return (

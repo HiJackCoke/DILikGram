@@ -27,6 +27,11 @@ import {
   createWorkflow,
   sanitizeNewNodeIds,
 } from "@/ai/utils/workflowProcessor";
+import {
+  loadNodeLibrary,
+  saveToNodeLibrary,
+  extractReusableNodes,
+} from "@/utils/nodeLibrary";
 import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
 
 interface WorkflowGeneratorProviderProps {
@@ -74,22 +79,36 @@ export function WorkflowGeneratorProvider({
   }, []);
 
   const handleGenerate = useCallback(
-    async (prompt: string) => {
+    async (prompt: string, prdText?: string) => {
       setIsGenerating(true);
       setError(null);
 
       try {
-        // 1. Call OpenAI API (server-side)
-        const generated = await generateWorkflowAction(prompt);
+        // 1. Load node library
+        const nodeLibrary = loadNodeLibrary();
 
-        // 2. Process workflow (validate, layout, and map to WorkflowNode/Edge)
+        // 2. Call OpenAI API with PRD text and node library
+        const generated = await generateWorkflowAction(
+          prompt,
+          prdText,
+          nodeLibrary,
+        );
+
+        // 3. Process workflow (validate, layout, and map to WorkflowNode/Edge)
         const sanitized = sanitizeNewNodeIds(generated.nodes);
         const { nodes, edges } = createWorkflow(sanitized);
 
-        // 3. Notify listeners
+        // 4. Extract and save reusable nodes to library
+        const reusableNodes = extractReusableNodes(nodes);
+        if (reusableNodes.length > 0) {
+          saveToNodeLibrary(reusableNodes);
+          console.log(`Saved ${reusableNodes.length} reusable nodes to library`);
+        }
+
+        // 5. Notify listeners
         listeners.current.forEach((listener) => listener(nodes, edges));
 
-        // 4. Close modal
+        // 6. Close modal
         close();
       } catch (err) {
         const errorMessage =

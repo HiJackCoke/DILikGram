@@ -57,6 +57,9 @@ export function ExecutorEditorProvider({
     const internalNodes =
       node?.type === "group" ? (node.data as GroupNodeData)?.groups : undefined;
 
+    // Extract testCases from node.data (set by AI generation)
+    const testCases = node?.data?.testCases;
+
     if (!node?.type) return;
 
     setShow(true);
@@ -65,6 +68,7 @@ export function ExecutorEditorProvider({
       nodeType: node?.type,
       config,
       internalNodes,
+      testCases,
     });
   }, []);
 

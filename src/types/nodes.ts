@@ -48,6 +48,8 @@ type WorkflowNodeData<T> = T & {
   branchLabel?: "yes" | "no";
   /** PRD reference linking node to requirements */
   prdReference?: PRDReference;
+  /** Test cases for node validation (minimum 3 recommended) */
+  testCases?: TestCase[];
 };
 
 export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {
