@@ -14,7 +14,7 @@ export const PALETTE = {
     color: "#94a3b8", // slate-400 (edge gradient end)
     border: "#64748b", // slate-500
     bg: "#475569", // slate-600
-    hover: "#cbd5f5",
+    hover: "#cbd5e1",
     active: "#475569",
   },
   // Success - 초록색 (Start Node, Success Edge)
