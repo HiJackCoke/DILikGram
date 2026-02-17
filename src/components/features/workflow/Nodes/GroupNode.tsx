@@ -61,7 +61,7 @@ export function GroupNode(nodeProps: GroupNodeProps) {
         className={`
           
           relative min-w-[240px] max-w-[320px] min-h-[140px]
-          bg-white rounded-xl shadow-lg border-2 transition-all duration-200 overflow-hidden
+          bg-white rounded-xl shadow-lg border-2 transition-all duration-200
           ${
             selected
               ? "border-palette-warning-bg shadow-yellow-200 shadow-xl"
@@ -73,7 +73,7 @@ export function GroupNode(nodeProps: GroupNodeProps) {
         `}
       >
         {/* 헤더 */}
-        <div className="bg-gradient-to-r from-palette-warning-bg to-palette-warning-border px-4 py-2">
+        <div className="rounded-t-[10px] bg-gradient-to-r from-palette-warning-bg to-palette-warning-border px-4 py-2">
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleCollapse}

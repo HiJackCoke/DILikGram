@@ -123,7 +123,7 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
         {/* Ports */}
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-palette-secondary-bg to-palette-secondary-border px-4 py-2">
+        <div className="rounded-t-[10px] bg-gradient-to-r from-palette-secondary-bg to-palette-secondary-border px-4 py-2">
           <div className="flex items-center gap-2">
             <span className="text-white">
               {data.icon || <ServiceIcon className="w-4 h-4" />}

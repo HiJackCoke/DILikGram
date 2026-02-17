@@ -99,7 +99,7 @@ export function TaskNode(nodeProps: TaskNodeProps) {
       `}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-palette-primary-bg to-palette-primary-border px-4 py-2">
+        <div className="rounded-t-[10px] bg-gradient-to-r from-palette-primary-bg to-palette-primary-border px-4 py-2">
           <div className="flex items-center gap-2">
             <span className="text-white">
               {data.icon || <ClipboardList className="w-4 h-4" />}
