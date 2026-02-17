@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { NodeProps, Position, Node } from "react-cosmos-diagram";
 import type { ExecutionData } from "./workflow";
+import type { PRDReference, TestCase } from "./prd";
 
 // ============================================
 // Port 타입 정의
@@ -45,6 +46,8 @@ type WorkflowNodeData<T> = T & {
   execution?: ExecutionData;
   ports?: NodePort[];
   branchLabel?: "yes" | "no";
+  /** PRD reference linking node to requirements */
+  prdReference?: PRDReference;
 };
 
 export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {

@@ -1,8 +1,10 @@
 import { Port, Position } from "react-cosmos-diagram";
-import { GitBranch, Settings } from "lucide-react";
+import { GitBranch, Settings, FileText } from "lucide-react";
 import type { DecisionNodeProps, WorkflowNodeProps } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
+import PRDTooltip from "../PRDTooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export function DecisionNode(nodeProps: DecisionNodeProps) {
   const { data, selected } = nodeProps;
@@ -79,6 +81,20 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
           <div className="text-center px-2">
             <div className="flex items-center justify-center gap-1 mb-1">
               <GitBranch className="w-6 h-6 text-yellow-900" />
+              {/* PRD Reference Badge */}
+
+              <Tooltip
+                content={
+                  data.prdReference && <PRDTooltip prdRef={data.prdReference} />
+                }
+              >
+                <button
+                  className="p-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition"
+                  title="PRD Reference"
+                >
+                  <FileText className="w-3 h-3" />
+                </button>
+              </Tooltip>
               {/* Executor Configuration Button */}
               <button
                 disabled={data.mode === "panel"}

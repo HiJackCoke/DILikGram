@@ -5,16 +5,20 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 
 import type { GroupNodeProps, WorkflowNodeProps } from "@/types/nodes";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
+import PRDTooltip from "../PRDTooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export function GroupNode(nodeProps: GroupNodeProps) {
   const { data, selected } = nodeProps;
   const [collapsed, setCollapsed] = useState(data.collapsed ?? true);
+
   const { open } = useExecutorEditor();
 
   const ports = data.ports || getDefaultPorts("group");
@@ -91,6 +95,20 @@ export function GroupNode(nodeProps: GroupNodeProps) {
             <span className="text-white font-semibold text-sm truncate flex-1">
               {data.title}
             </span>
+
+            {/* PRD Reference Badge */}
+            <Tooltip
+              content={
+                data.prdReference && <PRDTooltip prdRef={data.prdReference} />
+              }
+            >
+              <button
+                className="p-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition"
+                title="PRD Reference"
+              >
+                <FileText className="w-3 h-3" />
+              </button>
+            </Tooltip>
 
             {/* Settings 버튼 */}
             <button

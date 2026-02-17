@@ -9,6 +9,7 @@ import {
   Mail,
   Webhook,
   Settings,
+  FileText,
 } from "lucide-react";
 import type {
   ServiceNodeProps,
@@ -19,6 +20,8 @@ import type {
 } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
+import PRDTooltip from "../PRDTooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const statusConfig: Record<
   NodeStatus,
@@ -106,7 +109,7 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
         className={`
         relative w-[200px] max-w-[280px] min-h-[120px] bg-white rounded-xl shadow-lg 
         border-2 transition-all duration-200
-        overflow-hidden
+
         ${
           selected
             ? "border-palette-secondary-bg shadow-purple-200 shadow-xl"
@@ -128,6 +131,20 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
             <span className="text-white font-semibold text-sm truncate flex-1">
               {data.title}
             </span>
+            {/* PRD Reference Badge */}
+            <Tooltip
+              content={
+                data.prdReference && <PRDTooltip prdRef={data.prdReference} />
+              }
+            >
+              <button
+                className="p-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition"
+                title="PRD Reference"
+              >
+                <FileText className="w-3 h-3" />
+              </button>
+            </Tooltip>
+
             {/* Executor Configuration Button */}
             <button
               disabled={data.mode === "panel"}
