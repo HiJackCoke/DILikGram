@@ -408,7 +408,6 @@ export default function WorkflowPage() {
     // Fallback: 모든 자동화 실패 시 캔버스에 추가
     setNodes((prevNodes) => [...prevNodes, newNode]);
   };
-  console.log(nodes);
 
   function handleWorkflowGenerator(
     newNodes: WorkflowNode[],

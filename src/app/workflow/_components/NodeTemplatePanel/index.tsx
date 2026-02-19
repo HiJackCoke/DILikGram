@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import {
   SortableContext,
@@ -42,6 +42,7 @@ export default function NodeTemplatePanel({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const sortingRef = useRef<ReturnType<CollisionDetection>>([]);
 
+  const [show, setShow] = useState(false);
   const transform = useStore((state) => state.transform);
 
   const hasMouseSupport = useBrowserEnv(({ window }) => {
@@ -62,7 +63,6 @@ export default function NodeTemplatePanel({
     }),
   );
 
-  const [show, setShow] = useState(false);
   useKeyPress("escape", () => {
     setShow(false);
   });
@@ -155,6 +155,12 @@ export default function NodeTemplatePanel({
     updateSorting(event);
     onDragEnd?.(event);
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      setShow(true);
+    }, 1000);
+  }, []);
 
   return (
     <>
