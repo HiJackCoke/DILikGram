@@ -208,8 +208,8 @@ export class WorkflowExecutor {
    * Returns null if no execution configured or node doesn't support executions
    */
   private getExecutorForNode(node: WorkflowNode): ExecutorFunction | null {
-    // Start, End, and Group nodes don't have executions
-    if (node.type === "start" || node.type === "group") {
+    // Start and End nodes don't have executions
+    if (node.type === "start" || node.type === "end") {
       return null;
     }
 
@@ -360,7 +360,7 @@ export class WorkflowExecutor {
 
   /**
    * Group 노드의 내부 순차 실행
-   * 데이터 플로우: inputData → groups[0] → groups[1] → ... → groups[n] → outputData
+   * 데이터 플로우: inputData → groups[0] → groups[1] → ... → groups[n] → functionCode → outputData
    */
   private async executeGroupInternals(
     groupNode: WorkflowNode,
@@ -375,6 +375,33 @@ export class WorkflowExecutor {
       console.warn(`Group node ${groupNode.id} has no internal nodes`);
       return { outputData: inputData, success: true };
     }
+
+    // NEW: executor가 있으면 runtime.ts 사용 (내부 노드 + functionCode 처리)
+    const executor = this.getExecutorForNode(groupNode);
+
+    if (executor) {
+      try {
+        await this.delay(500);
+        const result = await executeFunction(executor, inputData, 30000);
+
+        if (!result.success) {
+          throw new Error(
+            result.error?.message || "GroupNode execution failed"
+          );
+        }
+
+        return {
+          outputData: result.data,
+          success: true,
+        };
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`GroupNode ${groupNode.id} failed: ${errorMsg}`);
+      }
+    }
+
+    // Fallback: executor 없으면 기존 방식 사용 (하위 호환성)
 
     let currentData = inputData;
     let allSucceeded = true;
