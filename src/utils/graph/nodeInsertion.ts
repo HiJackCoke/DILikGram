@@ -44,7 +44,7 @@ export function canInsertIntoGroup(
   allNodes: WorkflowNode[],
 ): { valid: boolean; reason?: string } {
   // 1. Exception nodes: start, end, group cannot be inserted into groups
-  if (["start", "end", "group"].includes(draggingNode.type || "")) {
+  if (["start", "end", "group", "decision"].includes(draggingNode.type || "")) {
     return {
       valid: false,
       reason: "Cannot insert start/end/group nodes into group",
