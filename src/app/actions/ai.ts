@@ -9,9 +9,19 @@
 
 import OpenAI from "openai";
 import { v4 as uuid } from "uuid";
-import type { GenerateWorkflowResponse, UpdateWorkflowResponse } from "@/types/ai";
-import type { WorkflowNode } from "@/types/nodes";
-import type { ReusableNodeTemplate, TestCase } from "@/types/prd";
+import type {
+  GenerateWorkflowAction,
+  GenerateWorkflowResponse,
+  UpdateWorkflowAction,
+  UpdateWorkflowResponse,
+} from "@/types/ai";
+import type {
+  WorkflowNode,
+  GroupNodeData,
+  ServiceNodeData,
+  DecisionNodeData,
+} from "@/types/nodes";
+import type { TestCase } from "@/types/prd";
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -32,7 +42,7 @@ function getOpenAIClient(): OpenAI {
   if (!apiKey) {
     throw new Error(
       "OPENAI_API_KEY environment variable is not set. " +
-        "Please add it to your .env.local file."
+        "Please add it to your .env.local file.",
     );
   }
 
@@ -50,17 +60,17 @@ function handleOpenAIError(error: unknown): never {
   if (error instanceof OpenAI.APIError) {
     if (error.status === 401) {
       throw new Error(
-        "Invalid OpenAI API key. Please check your environment configuration."
+        "Invalid OpenAI API key. Please check your environment configuration.",
       );
     }
     if (error.status === 429) {
       throw new Error(
-        "OpenAI rate limit exceeded. Please try again in a moment."
+        "OpenAI rate limit exceeded. Please try again in a moment.",
       );
     }
     if (error.status === 500 || error.status === 503) {
       throw new Error(
-        "OpenAI service temporarily unavailable. Please try again later."
+        "OpenAI service temporarily unavailable. Please try again later.",
       );
     }
 
@@ -71,12 +81,15 @@ function handleOpenAIError(error: unknown): never {
     throw error;
   }
 
-  throw new Error("An unexpected error occurred while processing your request.");
+  throw new Error(
+    "An unexpected error occurred while processing your request.",
+  );
 }
 
 // ============================================================================
 // SERVER ACTIONS
 // ============================================================================
+
 
 /**
  * Generate workflow from prompt using GPT-4o-mini
@@ -86,11 +99,11 @@ function handleOpenAIError(error: unknown): never {
  * @param nodeLibrary - Optional array of reusable node templates
  * @returns Generated workflow with nodes and metadata
  */
-export async function generateWorkflowAction(
-  prompt: string,
-  prdText?: string,
-  nodeLibrary?: ReusableNodeTemplate[],
-): Promise<GenerateWorkflowResponse> {
+export const generateWorkflowAction: GenerateWorkflowAction = async (
+  prompt,
+  prdText,
+  nodeLibrary,
+) => {
   if (!prompt || !prompt.trim()) {
     throw new Error("Workflow description is required");
   }
@@ -102,9 +115,12 @@ export async function generateWorkflowAction(
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: GENERATION_SYSTEM_PROMPT },
-        { role: "user", content: getGenerationContent(prompt, prdText, nodeLibrary) },
+        {
+          role: "user",
+          content: getGenerationContent(prompt, prdText, nodeLibrary),
+        },
       ],
-      temperature: 0.6,
+      temperature: 0.7,
       response_format: { type: "json_object" },
     });
 
@@ -120,11 +136,99 @@ export async function generateWorkflowAction(
       throw new Error("Generated workflow missing nodes array");
     }
 
+    // Build a map of groupId → child nodes (used for GroupNode post-processing)
+    const groupChildren: Record<string, WorkflowNode[]> = {};
+    generatedWorkflow.nodes.forEach((node) => {
+      if (node.parentNode) {
+        if (!groupChildren[node.parentNode])
+          groupChildren[node.parentNode] = [];
+        groupChildren[node.parentNode].push(node);
+      }
+    });
+
+    // Populate GroupNode.data.groups from child nodes — Task/Service only (Decision excluded)
+    // Decision nodes run at workflow level after GroupNode, not inside sequential pipeline
+    generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
+      if (node.type === "group") {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            groups: (groupChildren[node.id] ?? []).filter(
+              (child) => child.type !== "decision",
+            ),
+          },
+        };
+      }
+      return node;
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // 🚨 CIRCULAR REFERENCE CHECK (CRITICAL - PREVENTS INFINITE LOOP)
+    // ─────────────────────────────────────────────────────────
+    generatedWorkflow.nodes.forEach((node) => {
+      if (node.type === "group" && node.parentNode) {
+        // Extract all internal node IDs from groups[]
+        const groupData = node.data as GroupNodeData;
+        const internalNodeIds = new Set(
+          (groupData.groups || []).map((n: WorkflowNode) => n.id),
+        );
+
+        // Check if GroupNode.parentNode is in groups[]
+        if (internalNodeIds.has(node.parentNode)) {
+          throw new Error(
+            `CIRCULAR REFERENCE DETECTED: GroupNode "${node.data.title}" (id: ${node.id}) ` +
+              `has parentNode "${node.parentNode}" which is also in its groups[] array. ` +
+              `This will cause infinite loop. ` +
+              `Fix: Make "${node.parentNode}" a standalone node OUTSIDE the GroupNode.`,
+          );
+        }
+      }
+    });
+    // ─────────────────────────────────────────────────────────
+
+    // Remove GroupNodes with < 2 non-Decision children and re-parent their orphaned children
+    const invalidGroupIds = new Set(
+      generatedWorkflow.nodes
+        .filter((n) => {
+          if (n.type !== "group") return false;
+          const validChildren = (groupChildren[n.id] ?? []).filter(
+            (c) => c.type !== "decision",
+          );
+          return validChildren.length < 2;
+        })
+        .map((n) => n.id),
+    );
+
+    if (invalidGroupIds.size > 0) {
+      const groupParentMap: Record<string, string | undefined> = {};
+      generatedWorkflow.nodes
+        .filter((n) => invalidGroupIds.has(n.id))
+        .forEach((n) => {
+          groupParentMap[n.id] = n.parentNode;
+        });
+
+      generatedWorkflow.nodes = generatedWorkflow.nodes
+        .filter((n) => !invalidGroupIds.has(n.id))
+        .map((n) => {
+          if (n.parentNode && invalidGroupIds.has(n.parentNode)) {
+            return { ...n, parentNode: groupParentMap[n.parentNode] };
+          }
+          return n;
+        });
+    }
+
     // Apply node type-specific normalization (always, regardless of PRD)
-    const VALID_CONDITION_OPERATORS = new Set(["has", "hasNot", "truthy", "falsy"]);
+    const VALID_CONDITION_OPERATORS = new Set([
+      "has",
+      "hasNot",
+      "truthy",
+      "falsy",
+    ]);
     generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
       // ServiceNode: ensure required fields have defaults
       if (node.type === "service") {
+        const serviceData = node.data as ServiceNodeData;
         return {
           ...node,
           data: {
@@ -135,30 +239,71 @@ export async function generateWorkflowAction(
               endpoint: "",
               headers: {},
               body: {},
-              ...node.data.http,
+              ...serviceData.http,
             },
-            retry: node.data.retry ?? { count: 3, delay: 1000 },
-            timeout: node.data.timeout ?? 5000,
+            retry: serviceData.retry ?? { count: 3, delay: 1000 },
+            timeout: serviceData.timeout ?? 5000,
           },
         };
       }
 
       // DecisionNode: sanitize condition keys to valid operators only
-      if (node.type === "decision" && node.data.condition) {
-        const sanitized: Record<string, string> = {};
-        for (const [key, value] of Object.entries(node.data.condition)) {
-          if (VALID_CONDITION_OPERATORS.has(key)) {
-            sanitized[key] = value as string;
+      if (node.type === "decision") {
+        const decisionData = node.data as DecisionNodeData;
+        if (decisionData.condition) {
+          const sanitized: Record<string, string> = {};
+          for (const [key, value] of Object.entries(decisionData.condition)) {
+            if (VALID_CONDITION_OPERATORS.has(key)) {
+              sanitized[key] = value as string;
+            }
           }
+          return {
+            ...node,
+            data: {
+              mode: "panel",
+              ...node.data,
+              condition: sanitized,
+            },
+          };
         }
-        return {
-          ...node,
-          data: {
-            mode: "panel",
-            ...node.data,
-            condition: sanitized,
-          },
-        };
+      }
+
+      // NEW: GroupNode - inject default functionCode if missing
+      if (node.type === "group") {
+        const hasExecutionConfig = node.data.execution?.config;
+        const hasFunctionCode = hasExecutionConfig?.functionCode;
+
+        if (!hasFunctionCode) {
+          console.warn(
+            `GroupNode ${node.id} missing functionCode. Injecting default: "return inputData;"`,
+          );
+
+          const groupData = node.data as GroupNodeData;
+          const groups = groupData.groups || [];
+          const lastNode = groups[groups.length - 1];
+          const lastNodeOutputData =
+            lastNode?.data?.execution?.config?.nodeData?.outputData;
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              execution: {
+                ...node.data.execution,
+                config: {
+                  ...hasExecutionConfig,
+                  functionCode:
+                    "// inputData: output from last internal node\nreturn inputData;",
+                  nodeData: {
+                    inputData: node.data.execution?.config?.nodeData?.inputData,
+                    outputData: lastNodeOutputData || {},
+                  },
+                  lastModified: Date.now(),
+                },
+              },
+            },
+          };
+        }
       }
 
       return node;
@@ -177,20 +322,56 @@ export async function generateWorkflowAction(
             rationale: "Generated without explicit PRD reference",
           },
           // Add default test cases if missing or insufficient, and assign real UUIDs
-          testCases: (
-            node.data.testCases && node.data.testCases.length >= 3
-              ? node.data.testCases
-              : generateDefaultTestCases(node)
+          testCases: (node.data.testCases && node.data.testCases.length >= 3
+            ? node.data.testCases
+            : generateDefaultTestCases(node)
           ).map((tc) => ({ ...tc, id: `test-${uuid()}` })),
         },
       }));
     }
 
+    // Normalize root nodes AND start node children: Start node produces no output → inputData must be null
+    generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
+      // Check if root node OR start node child
+      const isRootNode = !node.parentNode;
+      const parentNode = generatedWorkflow.nodes.find(
+        (n) => n.id === node.parentNode,
+      );
+      const isStartNodeChild = parentNode?.type === "start";
+
+      // Only normalize if root or start child
+      if (!isRootNode && !isStartNodeChild) return node;
+
+      // Extract to variables - TypeScript narrows types properly
+      const execution = node.data.execution;
+      const config = execution?.config;
+      const nodeData = config?.nodeData;
+
+      if (!nodeData) return node;
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          execution: {
+            ...execution,
+            config: {
+              ...config,
+              nodeData: {
+                ...nodeData,
+                inputData: null,
+              },
+            },
+          },
+        },
+      };
+    });
+
     return generatedWorkflow;
   } catch (error) {
     handleOpenAIError(error);
   }
-}
+};
 
 /**
  * Generate default test cases for a node when AI doesn't provide them
@@ -237,11 +418,11 @@ function generateDefaultTestCases(node: WorkflowNode): TestCase[] {
  * @param nodes - Current workflow nodes
  * @returns Incremental edit operations (update/create/delete)
  */
-export async function updateWorkflowAction(
-  nodeId: string,
-  prompt: string,
-  nodes: WorkflowNode[]
-): Promise<UpdateWorkflowResponse> {
+export const updateWorkflowAction: UpdateWorkflowAction = async (
+  nodeId,
+  prompt,
+  nodes,
+) => {
   if (!prompt || !prompt.trim()) {
     throw new Error("Edit description is required");
   }
@@ -304,4 +485,4 @@ export async function updateWorkflowAction(
   } catch (error) {
     handleOpenAIError(error);
   }
-}
+};

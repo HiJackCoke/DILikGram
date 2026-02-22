@@ -1,4 +1,4 @@
-import type { UpdateWorkflowProps } from "@/types";
+import type { WorkflowNode } from "@/types";
 import { buildPrompt } from "./utils";
 import {
   CORE_NODE_TYPES,
@@ -140,6 +140,57 @@ Response (Add node to specific branch):
 }
 `;
 
+const MODIFICATION_EXECUTION_SCOPE_RULES = `
+═══════════════════════════════════════════════════════════════
+FUNCTIONCODE EXECUTION SCOPE (ABSOLUTE RULE)
+═══════════════════════════════════════════════════════════════
+
+When modifying or creating functionCode, remember these ABSOLUTE constraints:
+
+**ONLY 2 VARIABLES ARE AVAILABLE:**
+1. \`inputData\` - Data from parent node
+2. \`fetch\` - Global fetch API
+
+**THESE ARE FORBIDDEN (NOT IN SCOPE):**
+- ❌ \`metadata\` (lives at node.data.metadata, not accessible in function)
+- ❌ \`node\` (no access to node object)
+- ❌ \`config\` (no access to execution config)
+- ❌ \`this\` (no context binding)
+- ❌ Any external/global variables except \`fetch\`
+
+**FIXING CODE WITH EXTERNAL REFERENCES:**
+
+If you see code like this:
+\`\`\`javascript
+// ❌ WRONG - metadata not in scope
+const limit = metadata.maxTasks;
+return { tasks: inputData.tasks.slice(0, limit) };
+\`\`\`
+
+Fix it by passing the value via inputData:
+\`\`\`javascript
+// ✅ CORRECT - all values from inputData
+const limit = inputData.maxTasks;
+return { tasks: inputData.tasks.slice(0, limit) };
+\`\`\`
+
+And update the inputData schema:
+\`\`\`json
+{
+  "nodeData": {
+    "inputData": {
+      "tasks": [...],
+      "maxTasks": 3  // ← Add the value here
+    }
+  }
+}
+\`\`\`
+
+**RULE OF THUMB:**
+- If you need a value in functionCode, it MUST come from \`inputData\`
+- Store documentation/notes in \`metadata\`, but pass actual values via \`inputData\`
+`;
+
 const MODIFICATION_RESPONSE_FORMAT = `
 RESPONSE FORMAT (JSON):
 {
@@ -185,6 +236,8 @@ ${MODIFICATION_CONTEXT_RULES}
 
 ${PARENT_CHILD_RULES}
 
+${MODIFICATION_EXECUTION_SCOPE_RULES}
+
 ${MODIFICATION_RESPONSE_FORMAT}
 
 ${MODIFICATION_EXAMPLES}
@@ -203,7 +256,11 @@ export function getModificationContent({
   nodeId,
   prompt,
   nodes,
-}: Omit<UpdateWorkflowProps, "apiKey">): string {
+}: {
+  prompt: string;
+  nodeId: string;
+  nodes: WorkflowNode[];
+}): string {
   // Basic context preparation logic handled by caller, just passing prompt
   // Ideally you would serialize the 'effective scope' here.
   return `

@@ -1,8 +1,5 @@
 import type { WorkflowNode } from "@/types";
-
-export interface GenerateWorkflowProps {
-  prompt: string;
-}
+import { ReusableNodeTemplate } from "./prd";
 
 export interface GenerateWorkflowResponse {
   nodes: WorkflowNode[];
@@ -17,14 +14,15 @@ export interface GenerateWorkflowResponse {
   };
 }
 
+export type GenerateWorkflowAction = (
+  prompt: string,
+  prdText?: string,
+  nodeLibrary?: ReusableNodeTemplate[],
+) => Promise<GenerateWorkflowResponse>;
+
 // export type GenerateWorkflow = (
 //   props: GenerateWorkflowProps,
 // ) => Promise<GenerateWorkflowResponse>;
-
-export interface UpdateWorkflowProps extends GenerateWorkflowProps {
-  nodeId: string;
-  nodes: WorkflowNode[];
-}
 
 export interface UpdateWorkflowResponse {
   nodes: {
@@ -40,6 +38,8 @@ export interface UpdateWorkflowResponse {
   };
 }
 
-export type UpdateWorkflow = (
-  props: UpdateWorkflowProps,
+export type UpdateWorkflowAction = (
+  nodeId: string,
+  prompt: string,
+  nodes: WorkflowNode[],
 ) => Promise<UpdateWorkflowResponse>;

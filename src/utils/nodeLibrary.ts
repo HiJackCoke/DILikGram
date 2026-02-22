@@ -5,11 +5,9 @@
  * Automatically categorizes and tags nodes for easy discovery
  */
 
-import type {
-  ReusableNodeTemplate,
-  NodeCategory,
-} from "@/types/prd";
+import type { ReusableNodeTemplate, NodeCategory } from "@/types/prd";
 import type { WorkflowNode } from "@/types/nodes";
+import { getNodeTitle, getNodeDescription } from "@/contexts/WorkflowGenerator/utils/typeGuards";
 
 const LIBRARY_STORAGE_KEY = "dilikgram:node-library";
 
@@ -74,22 +72,24 @@ export function extractReusableNodes(
   nodes: WorkflowNode[],
 ): ReusableNodeTemplate[] {
   return nodes
-    .filter((node) => isReusableNode(node))
-    .map((node) => ({
-      id: node.id,
-      category: categorizeNode(node),
-      name: node.data?.title || node.type,
-      description: node.data?.description || "",
-      nodeType: node.type,
-      template: {
-        type: node.type,
-        data: node.data,
-        parentNode: node.parentNode,
-      },
-      usageCount: 1,
-      createdAt: Date.now(),
-      tags: extractTags(node),
-    }));
+    .filter((node) => isReusableNode(node) && node.type)
+    .map((node) => {
+      return {
+        id: node.id,
+        category: categorizeNode(node),
+        name: getNodeTitle(node) || node.type || "Untitled",
+        description: getNodeDescription(node),
+        nodeType: node.type!,
+        template: {
+          type: node.type!,
+          data: node.data,
+          parentNode: node.parentNode,
+        },
+        usageCount: 1,
+        createdAt: Date.now(),
+        tags: extractTags(node),
+      };
+    });
 }
 
 /**
@@ -104,8 +104,8 @@ function isReusableNode(node: WorkflowNode): boolean {
     return false;
   }
 
-  const title = node.data?.title?.toLowerCase() || "";
-  const description = node.data?.description?.toLowerCase() || "";
+  const title = getNodeTitle(node).toLowerCase();
+  const description = getNodeDescription(node).toLowerCase();
 
   // Skip feature-specific nodes (login, signup, checkout, etc.)
   const featureKeywords = [
@@ -142,8 +142,8 @@ function isReusableNode(node: WorkflowNode): boolean {
  * @returns Node category
  */
 export function categorizeNode(node: WorkflowNode): NodeCategory {
-  const title = node.data?.title?.toLowerCase() || "";
-  const description = node.data?.description?.toLowerCase() || "";
+  const title = getNodeTitle(node).toLowerCase();
+  const description = getNodeDescription(node).toLowerCase();
   const text = `${title} ${description}`;
 
   // Check for validation patterns
@@ -225,8 +225,8 @@ export function categorizeNode(node: WorkflowNode): NodeCategory {
  */
 export function extractTags(node: WorkflowNode): string[] {
   const tags: string[] = [];
-  const title = node.data?.title?.toLowerCase() || "";
-  const description = node.data?.description?.toLowerCase() || "";
+  const title = getNodeTitle(node).toLowerCase();
+  const description = getNodeDescription(node).toLowerCase();
   const text = `${title} ${description}`;
 
   // Common keywords
@@ -251,7 +251,9 @@ export function extractTags(node: WorkflowNode): string[] {
   });
 
   // Add node type as tag
-  tags.push(node.type);
+  if (node.type) {
+    tags.push(node.type);
+  }
 
   // Remove duplicates
   return Array.from(new Set(tags));

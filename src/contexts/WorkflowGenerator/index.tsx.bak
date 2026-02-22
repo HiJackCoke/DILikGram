@@ -1,0 +1,824 @@
+"use client";
+
+/**
+ * WorkflowGenerator context provider
+ *
+ * Manages state for AI-powered workflow generation modal
+ * and orchestrates the generation pipeline.
+ */
+
+import {
+  createContext,
+  useState,
+  useCallback,
+  useRef,
+  use,
+  useEffect,
+} from "react";
+import type { ReactNode } from "react";
+import type { WorkflowNode } from "@/types/nodes";
+
+import type {
+  WorkflowGeneratorContextValue,
+  RegisterOnWorkflowGenerated,
+} from "./type";
+import { generateWorkflowAction, updateWorkflowAction } from "@/app/actions/ai";
+import {
+  createWorkflow,
+  sanitizeNewNodeIds,
+} from "@/ai/utils/workflowProcessor";
+import {
+  loadNodeLibrary,
+  saveToNodeLibrary,
+  extractReusableNodes,
+} from "@/utils/nodeLibrary";
+import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
+import { runValidationPipeline } from "./validators";
+import { dialog } from "./utils/dialog";
+
+interface WorkflowGeneratorProviderProps {
+  children: ReactNode;
+}
+
+const WorkflowGeneratorContext =
+  createContext<WorkflowGeneratorContextValue | null>(null);
+
+export function WorkflowGeneratorProvider({
+  children,
+}: WorkflowGeneratorProviderProps) {
+  const listeners = useRef<RegisterOnWorkflowGenerated[]>([]);
+  const existingNodesRef = useRef<WorkflowNode[]>([]);
+
+  const [show, setShow] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const open = useCallback(() => {
+    setShow(true);
+    setError(null);
+  }, []);
+
+  const close = useCallback(() => {
+    setShow(false);
+    setError(null);
+  }, []);
+
+  const registerOnGenerate = useCallback(
+    (callback: RegisterOnWorkflowGenerated) => {
+      listeners.current.push(callback);
+
+      return () => {
+        listeners.current = listeners.current.filter(
+          (listener) => listener !== callback,
+        );
+      };
+    },
+    [],
+  );
+
+  const setExistingNodes = useCallback((nodes: WorkflowNode[]) => {
+    existingNodesRef.current = nodes;
+  }, []);
+
+  const handleGenerate = useCallback(
+    async (prompt: string, prdText?: string) => {
+      setIsGenerating(true);
+      setError(null);
+
+      try {
+        // 1. Load node library
+        const nodeLibrary = loadNodeLibrary();
+
+        // 2. Call OpenAI API with PRD text and node library
+        const generated = await generateWorkflowAction(
+          prompt,
+          prdText,
+          nodeLibrary,
+        );
+
+        // 3. Process workflow (validate, layout, and map to WorkflowNode/Edge)
+        const sanitized = sanitizeNewNodeIds(generated.nodes);
+        let workingNodes = [...sanitized];
+
+        // 3-A. Detect incomplete Decision nodes (missing yes or no branch)
+        const incompleteDecisionNodes = workingNodes
+          .filter((n) => n.type === "decision")
+          .filter((decisionNode) => {
+            const children = workingNodes.filter(
+              (n) => n.parentNode === decisionNode.id,
+            );
+            const hasYes = children.some((n) => n.data.branchLabel === "yes");
+            const hasNo = children.some((n) => n.data.branchLabel === "no");
+            return !hasYes || !hasNo;
+          });
+
+        // 3-A-2. Detect nodes with Decision parent but missing branchLabel (double-check)
+        const allDecisionIds = new Set(
+          workingNodes.filter((n) => n.type === "decision").map((n) => n.id),
+        );
+
+        const orphanedNodes = workingNodes.filter(
+          (n) =>
+            n.parentNode &&
+            allDecisionIds.has(n.parentNode) &&
+            (!n.data.branchLabel ||
+              (n.data.branchLabel !== "yes" && n.data.branchLabel !== "no")),
+        );
+
+        if (incompleteDecisionNodes.length > 0 || orphanedNodes.length > 0) {
+          const details = incompleteDecisionNodes
+            .map((n) => {
+              const children = workingNodes.filter(
+                (c) => c.parentNode === n.id,
+              );
+              const hasYes = children.some(
+                (c) => c.data.branchLabel === "yes",
+              );
+              return `"${n.data.title}" (missing ${hasYes ? "NO" : "YES"} branch)`;
+            })
+            .join(", ");
+
+          const confirmed = await dialog.confirm(
+            "Incomplete Decision Node Detected",
+            `${incompleteDecisionNodes.length} Decision node(s) are missing a branch: ${details}.\n\nConfirm: Auto-fix by adding the missing branch.\nCancel: Remove the Decision node(s) and connect their children directly to the parent.`,
+          );
+
+          if (confirmed) {
+            // ── CONFIRM: AI auto-fix ──────────────────────────────
+            for (const decisionNode of incompleteDecisionNodes) {
+              const children = workingNodes.filter(
+                (n) => n.parentNode === decisionNode.id,
+              );
+              const hasYes = children.some(
+                (n) => n.data.branchLabel === "yes",
+              );
+              const hasNo = children.some((n) => n.data.branchLabel === "no");
+              const missingBranches = [
+                ...(!hasYes ? ["yes"] : []),
+                ...(!hasNo ? ["no"] : []),
+              ];
+
+              const fixPrompt = `The Decision node "${decisionNode.data.title}" (id: ${decisionNode.id}) is missing the ${missingBranches.join(" and ")} branch(es). Add the missing ${missingBranches.join("/")} branch node(s) with the correct branchLabel.`;
+
+              const editResult = await updateWorkflowAction(
+                decisionNode.id,
+                fixPrompt,
+                workingNodes,
+              );
+
+              if (editResult.nodes.create?.length > 0) {
+                workingNodes = [...workingNodes, ...editResult.nodes.create];
+              }
+              editResult.nodes.update?.forEach((update) => {
+                const idx = workingNodes.findIndex((n) => n.id === update.id);
+                if (idx >= 0) {
+                  workingNodes[idx] = {
+                    ...workingNodes[idx],
+                    data: { ...workingNodes[idx].data, ...update.data },
+                  };
+                }
+              });
+            }
+
+            // ── POST-FIX VALIDATION: 자동 fallback (무한루프 방지) ──────
+            const allDecisionIds = new Set(
+              workingNodes
+                .filter((n) => n.type === "decision")
+                .map((n) => n.id),
+            );
+
+            // Check 1: 여전히 incomplete한 Decision 노드 (yes/no 자식 누락)
+            const stillIncomplete = workingNodes
+              .filter((n) => n.type === "decision")
+              .filter((d) => {
+                const children = workingNodes.filter(
+                  (n) => n.parentNode === d.id,
+                );
+                return (
+                  !children.some((n) => n.data.branchLabel === "yes") ||
+                  !children.some((n) => n.data.branchLabel === "no")
+                );
+              });
+
+            // Check 2: Decision 부모를 가지지만 branchLabel 자체가 없는 orphaned children
+            // (createWorkflow가 throw하는 실제 조건)
+            const orphanedDecisionIds = new Set(
+              workingNodes
+                .filter(
+                  (n) =>
+                    n.parentNode &&
+                    allDecisionIds.has(n.parentNode) &&
+                    !n.data.branchLabel,
+                )
+                .map((n) => n.parentNode as string),
+            );
+
+            const problematicIds = new Set([
+              ...stillIncomplete.map((n) => n.id),
+              ...orphanedDecisionIds,
+            ]);
+
+            if (problematicIds.size > 0) {
+              // AI fix 실패 → dialog 없이 자동 bypass
+              workingNodes = workingNodes
+                .filter((n) => !problematicIds.has(n.id))
+                .map((n) => {
+                  if (n.parentNode && problematicIds.has(n.parentNode)) {
+                    const decisionNode = workingNodes.find(
+                      (d) => d.id === n.parentNode,
+                    )!;
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { branchLabel: _bl, ...dataWithoutBranchLabel } =
+                      n.data as typeof n.data & { branchLabel?: string };
+                    return {
+                      ...n,
+                      parentNode: decisionNode.parentNode,
+                      data: dataWithoutBranchLabel,
+                    };
+                  }
+                  return n;
+                });
+            }
+          } else {
+            // ── CANCEL: Remove Decision, bypass to parent ─────────
+            // parent → decision → child  becomes  parent → child
+            const incompleteIds = new Set(
+              incompleteDecisionNodes.map((n) => n.id),
+            );
+
+            workingNodes = workingNodes
+              .filter((n) => !incompleteIds.has(n.id))
+              .map((n) => {
+                if (n.parentNode && incompleteIds.has(n.parentNode)) {
+                  const decisionNode = incompleteDecisionNodes.find(
+                    (d) => d.id === n.parentNode,
+                  )!;
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { branchLabel: _bl, ...dataWithoutBranchLabel } =
+                    n.data as typeof n.data & { branchLabel?: string };
+                  return {
+                    ...n,
+                    parentNode: decisionNode.parentNode,
+                    data: dataWithoutBranchLabel,
+                  };
+                }
+                return n;
+              });
+          }
+        }
+
+        // 3-B. Detect GroupNodes with broken internal pipelines
+        type BrokenGroupInfo = {
+          groupNode: WorkflowNode;
+          breakIndex: number;
+          prevTitle: string;
+          nextTitle: string;
+        };
+
+        const detectBrokenGroups = (nodes: WorkflowNode[]): BrokenGroupInfo[] => {
+          const groupNodeIds = new Set(
+            nodes.filter((n) => n.type === "group").map((n) => n.id),
+          );
+          const groupChildrenSorted: Record<string, WorkflowNode[]> = {};
+          nodes.forEach((n) => {
+            if (n.parentNode && groupNodeIds.has(n.parentNode) && n.type !== "decision") {
+              if (!groupChildrenSorted[n.parentNode]) groupChildrenSorted[n.parentNode] = [];
+              groupChildrenSorted[n.parentNode].push(n);
+            }
+          });
+          Object.values(groupChildrenSorted).forEach((arr) =>
+            arr.sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0)),
+          );
+
+          const broken: BrokenGroupInfo[] = [];
+          Object.entries(groupChildrenSorted).forEach(([groupId, children]) => {
+            for (let i = 0; i < children.length - 1; i++) {
+              const outputKeys = new Set(
+                Object.keys(
+                  (children[i].data as { execution?: { config?: { nodeData?: { outputData?: Record<string, unknown> } } } })
+                    ?.execution?.config?.nodeData?.outputData ?? {},
+                ),
+              );
+              const nextRaw = (children[i + 1].data as {
+                execution?: { config?: { nodeData?: { inputData?: Record<string, unknown> | null } } };
+              })?.execution?.config?.nodeData?.inputData;
+              const isNull = nextRaw === null;
+              const inputKeys = Object.keys(nextRaw ?? {});
+              const hasOverlap = inputKeys.some((k) => outputKeys.has(k));
+              if (outputKeys.size > 0 && (isNull || (!hasOverlap && inputKeys.length > 0))) {
+                const groupNode = nodes.find((n) => n.id === groupId)!;
+                broken.push({
+                  groupNode,
+                  breakIndex: i,
+                  prevTitle: children[i].data.title as string,
+                  nextTitle: children[i + 1].data.title as string,
+                });
+                break;
+              }
+            }
+          });
+          return broken;
+        };
+
+        const brokenGroups = detectBrokenGroups(workingNodes);
+
+        if (brokenGroups.length > 0) {
+          const details = brokenGroups
+            .map(({ groupNode, prevTitle, nextTitle }) =>
+              `"${groupNode.data.title as string}" (${prevTitle} → ${nextTitle})`,
+            )
+            .join(", ");
+
+          const confirmed = await dialog.confirm(
+            "GroupNode Pipeline Disconnection Detected",
+            `${brokenGroups.length} GroupNode(s) have a broken internal pipeline: ${details}.\n\nConfirm: Ask AI to repair the data chain.\nCancel: Split the disconnected nodes out of the GroupNode.`,
+          );
+
+          if (confirmed) {
+            // ── CONFIRM: AI fix ──────────────────────────────────────
+            for (const { groupNode, breakIndex } of brokenGroups) {
+              const children = workingNodes
+                .filter((n) => n.parentNode === groupNode.id && n.type !== "decision")
+                .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0));
+              const prevNode = children[breakIndex];
+              const nextNode = children[breakIndex + 1];
+
+              const prevOutput = (prevNode.data as { execution?: { config?: { nodeData?: { outputData?: unknown } } } })
+                ?.execution?.config?.nodeData?.outputData;
+              const nextInput = (nextNode.data as { execution?: { config?: { nodeData?: { inputData?: unknown } } } })
+                ?.execution?.config?.nodeData?.inputData;
+
+              const fixPrompt = `The GroupNode "${groupNode.data.title as string}" (id: ${groupNode.id}) has a broken pipeline between "${prevNode.data.title as string}" and "${nextNode.data.title as string}". The first node outputs ${JSON.stringify(prevOutput)} but the next node expects ${JSON.stringify(nextInput)}. Fix the data chain by adjusting outputData/inputData/functionCode so data flows correctly from one node to the next.`;
+
+              const editResult = await updateWorkflowAction(
+                groupNode.id,
+                fixPrompt,
+                workingNodes,
+              );
+
+              if (editResult.nodes.create?.length > 0) {
+                workingNodes = [...workingNodes, ...editResult.nodes.create];
+              }
+              editResult.nodes.update?.forEach((update) => {
+                const idx = workingNodes.findIndex((n) => n.id === update.id);
+                if (idx >= 0) {
+                  workingNodes[idx] = {
+                    ...workingNodes[idx],
+                    data: { ...workingNodes[idx].data, ...update.data },
+                  };
+                }
+              });
+            }
+
+            // ── POST-FIX VALIDATION: still broken? → auto-split silently ──
+            const stillBroken = detectBrokenGroups(workingNodes);
+            if (stillBroken.length > 0) {
+              const ejectIds = new Set<string>();
+              stillBroken.forEach(({ groupNode, breakIndex }) => {
+                const children = workingNodes
+                  .filter((n) => n.parentNode === groupNode.id && n.type !== "decision")
+                  .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0));
+                for (let j = breakIndex + 1; j < children.length; j++) {
+                  ejectIds.add(children[j].id);
+                }
+              });
+              const groupParentMapFix: Record<string, string | undefined> = {};
+              workingNodes.filter((n) => n.type === "group").forEach((n) => {
+                groupParentMapFix[n.id] = n.parentNode;
+              });
+              workingNodes = workingNodes.map((n) => {
+                if (ejectIds.has(n.id) && n.parentNode) {
+                  return { ...n, parentNode: groupParentMapFix[n.parentNode] };
+                }
+                return n;
+              });
+            }
+          } else {
+            // ── CANCEL: Split disconnected nodes out of GroupNode ────────
+            const ejectIds = new Set<string>();
+            brokenGroups.forEach(({ groupNode, breakIndex }) => {
+              const children = workingNodes
+                .filter((n) => n.parentNode === groupNode.id && n.type !== "decision")
+                .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0));
+              for (let j = breakIndex + 1; j < children.length; j++) {
+                ejectIds.add(children[j].id);
+              }
+            });
+            const groupParentMap: Record<string, string | undefined> = {};
+            workingNodes.filter((n) => n.type === "group").forEach((n) => {
+              groupParentMap[n.id] = n.parentNode;
+            });
+            workingNodes = workingNodes.map((n) => {
+              if (ejectIds.has(n.id) && n.parentNode) {
+                return { ...n, parentNode: groupParentMap[n.parentNode] };
+              }
+              return n;
+            });
+
+            // Dissolve GroupNodes that now have < 2 Task/Service children
+            const updatedGroupChildren: Record<string, WorkflowNode[]> = {};
+            workingNodes.forEach((n) => {
+              if (n.parentNode) {
+                if (!updatedGroupChildren[n.parentNode]) updatedGroupChildren[n.parentNode] = [];
+                updatedGroupChildren[n.parentNode].push(n);
+              }
+            });
+            const nowInvalid = new Set(
+              workingNodes
+                .filter((n) => {
+                  if (n.type !== "group") return false;
+                  return (updatedGroupChildren[n.id] ?? []).filter((c) => c.type !== "decision").length < 2;
+                })
+                .map((n) => n.id),
+            );
+            if (nowInvalid.size > 0) {
+              const invalidParentMap: Record<string, string | undefined> = {};
+              workingNodes.filter((n) => nowInvalid.has(n.id)).forEach((n) => {
+                invalidParentMap[n.id] = n.parentNode;
+              });
+              workingNodes = workingNodes
+                .filter((n) => !nowInvalid.has(n.id))
+                .map((n) => {
+                  if (n.parentNode && nowInvalid.has(n.parentNode)) {
+                    return { ...n, parentNode: invalidParentMap[n.parentNode] };
+                  }
+                  return n;
+                });
+            }
+          }
+        }
+
+        // 3-C. Detect Root GroupNodes (GroupNode as direct child of Start)
+        const rootGroupNodes = workingNodes.filter(
+          (n) => n.type === "group" && !n.parentNode,
+        );
+
+        if (rootGroupNodes.length > 0) {
+          const details = rootGroupNodes
+            .map((n) => `"${n.data.title as string}"`)
+            .join(", ");
+
+          const confirmed = await dialog.confirm(
+            "Invalid Root GroupNode Detected",
+            `${rootGroupNodes.length} GroupNode(s) are direct children of Start: ${details}.\n\nGroupNodes cannot be root nodes because they require input data.\n\nConfirm: Ask AI to insert initialization Task node(s) before the GroupNode(s).\nCancel: Convert GroupNode(s) to standalone Task node(s).`,
+          );
+
+          if (confirmed) {
+            // AI fix: Insert initialization Task before each Root GroupNode
+            for (const groupNode of rootGroupNodes) {
+              const fixPrompt = `The GroupNode "${groupNode.data.title as string}" (id: ${groupNode.id}) is a direct child of Start, which is invalid. GroupNodes require input data but Start provides none. Insert a Task node before this GroupNode to initialize the required data (e.g., { date, tasks: [] }). The Task node should have no parentNode (root), and the GroupNode should have the Task as its parentNode.`;
+
+              const editResult = await updateWorkflowAction(
+                groupNode.id,
+                fixPrompt,
+                workingNodes,
+              );
+
+              if (editResult.nodes.create?.length > 0) {
+                workingNodes = [...workingNodes, ...editResult.nodes.create];
+              }
+              editResult.nodes.update?.forEach((update) => {
+                const idx = workingNodes.findIndex((n) => n.id === update.id);
+                if (idx >= 0) {
+                  workingNodes[idx] = {
+                    ...workingNodes[idx],
+                    data: { ...workingNodes[idx].data, ...update.data },
+                    parentNode: update.parentNode || workingNodes[idx].parentNode,
+                  };
+                }
+              });
+            }
+          } else {
+            // Cancel: Convert GroupNodes to Task nodes
+            workingNodes = workingNodes.map((n) => {
+              if (rootGroupNodes.some((rg) => rg.id === n.id)) {
+                // Convert GroupNode to Task
+                return {
+                  ...n,
+                  type: "task" as const,
+                  data: {
+                    title: n.data.title,
+                    description: n.data.description,
+                    assignee: "",
+                    estimatedTime: 0,
+                    metadata: {},
+                    execution: n.data.execution,
+                    ports: n.data.ports,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+        }
+
+        // 3-D. Detect functionCode ↔ inputData mismatch
+        const nodesWithMismatch = workingNodes.filter((n) => {
+          if (n.type !== "task" && n.type !== "service") return false;
+
+          const functionCode = n.data?.execution?.config?.functionCode;
+          const inputData = n.data?.execution?.config?.nodeData?.inputData;
+
+          if (!functionCode) return false;
+
+          // Extract all inputData.<field> references from functionCode (always execute)
+          const regex = /inputData\.(\w+)/g;
+          const referencedFields = new Set<string>();
+          let match;
+          while ((match = regex.exec(functionCode)) !== null) {
+            referencedFields.add(match[1]);
+          }
+
+          // If functionCode references inputData but no inputData exists → mismatch
+          if (referencedFields.size > 0 && !inputData) {
+            return true; // MISMATCH: functionCode uses inputData but inputData is missing
+          }
+
+          // If no inputData references in functionCode → no mismatch
+          if (referencedFields.size === 0) {
+            return false;
+          }
+
+          // If inputData exists, check if all referenced fields are present
+          const inputKeys = Object.keys(inputData);
+          const missingFields = Array.from(referencedFields).filter(
+            (field) => !inputKeys.includes(field),
+          );
+
+          return missingFields.length > 0;
+        });
+
+        if (nodesWithMismatch.length > 0) {
+          const details = nodesWithMismatch
+            .map((n) => {
+              const functionCode = n.data.execution!.config!
+                .functionCode as string;
+              const inputData = n.data.execution!.config!.nodeData?.inputData;
+
+              const regex = /inputData\.(\w+)/g;
+              const referencedFields = new Set<string>();
+              let match;
+              while ((match = regex.exec(functionCode)) !== null) {
+                referencedFields.add(match[1]);
+              }
+
+              if (!inputData) {
+                return `"${n.data.title as string}" (functionCode uses ${Array.from(referencedFields).join(", ")} but inputData is MISSING)`;
+              }
+
+              const inputKeys = Object.keys(inputData);
+              const missingFields = Array.from(referencedFields).filter(
+                (field) => !inputKeys.includes(field),
+              );
+
+              return `"${n.data.title as string}" (functionCode uses ${missingFields.join(", ")} but inputData only has ${inputKeys.join(", ")})`;
+            })
+            .join(", ");
+
+          const confirmed = await dialog.confirm(
+            "functionCode ↔ inputData Mismatch Detected",
+            `${nodesWithMismatch.length} node(s) have functionCode that references fields not in inputData: ${details}.\n\nConfirm: Ask AI to fix the mismatch.\nCancel: Proceed anyway (may cause runtime errors).`,
+          );
+
+          if (confirmed) {
+            // AI fix: Update each node to align functionCode and inputData
+            for (const node of nodesWithMismatch) {
+              const functionCode = node.data.execution!.config!
+                .functionCode as string;
+              const inputData = node.data.execution!.config!.nodeData?.inputData;
+
+              // Extract referenced fields for context
+              const regex = /inputData\.(\w+)/g;
+              const referencedFields = new Set<string>();
+              let match;
+              while ((match = regex.exec(functionCode)) !== null) {
+                referencedFields.add(match[1]);
+              }
+
+              // Build context-aware fix prompt
+              let fixPrompt = "";
+
+              // GroupNode 내부 노드인 경우
+              const parentNode = workingNodes.find((n) => n.id === node.parentNode);
+              if (parentNode?.type === "group") {
+                if (!inputData) {
+                  fixPrompt = `The node "${node.data.title as string}" (id: ${node.id}) is inside a GroupNode but is MISSING execution.config.nodeData.inputData.
+
+functionCode: ${functionCode} (references inputData fields)
+
+RULE: You MUST add execution.config.nodeData.inputData with all fields that functionCode references.
+
+Extract fields from functionCode and analyze how they are used:
+
+- Example 1: if functionCode uses "inputData.tasks.filter(t => t.completed)"
+  → tasks is an array of objects with "completed" property
+  → Add: execution.config.nodeData.inputData = { tasks: [{ completed: false }] }
+
+- Example 2: if functionCode uses "inputData.tasks.slice(0, 3)"
+  → tasks is an array (infer structure from context)
+  → Add: execution.config.nodeData.inputData = { tasks: [{ id: "1", content: "..." }] }
+
+- Example 3: if functionCode uses "inputData.date.toString()"
+  → date is a Date or string
+  → Add: execution.config.nodeData.inputData = { date: "2024-01-01" }
+
+CRITICAL: Match the VALUE TYPE and STRUCTURE that functionCode expects.
+DO NOT use [null] or empty arrays if functionCode expects specific properties.
+
+This inputData should match what the previous node in the GroupNode outputs.`;
+                } else {
+                  const missingFields = Array.from(referencedFields).filter(
+                    (field) => !Object.keys(inputData).includes(field),
+                  );
+
+                  fixPrompt = `The node "${node.data.title as string}" (id: ${node.id}) is inside a GroupNode and has a mismatch:
+
+inputData: ${JSON.stringify(inputData)} (THIS IS CORRECT - from previous node)
+functionCode: ${functionCode} (THIS IS INCORRECT - uses fields: ${Array.from(referencedFields).join(", ")})
+Missing fields: ${missingFields.join(", ")}
+
+RULE: You MUST update functionCode to ONLY use fields that exist in inputData: ${Object.keys(inputData).join(", ")}.
+DO NOT change inputData - it is already correct.`;
+                }
+              }
+              // Root 노드인 경우
+              else if (!node.parentNode) {
+                fixPrompt = `The node "${node.data.title as string}" (id: ${node.id}) is a root node (direct child of Start) but functionCode references inputData fields.
+
+functionCode: ${functionCode} (INCORRECT - references inputData)
+
+RULE: Root nodes receive inputData: null. You MUST update functionCode to NOT reference any inputData fields.
+Initialize data from scratch instead.`;
+              }
+              // 일반 노드인 경우
+              else {
+                if (!inputData) {
+                  fixPrompt = `The node "${node.data.title as string}" (id: ${node.id}) is missing execution.config.nodeData.inputData but functionCode references inputData fields.
+
+functionCode: ${functionCode}
+
+RULE: Add execution.config.nodeData.inputData with all fields that functionCode references.
+
+Analyze how functionCode uses each field:
+- If functionCode uses field.property → field must have that property
+- If functionCode uses array.filter/map/etc → field must be an array with proper structure
+- Example: "inputData.tasks.filter(t => t.completed)" → { tasks: [{ completed: false }] }
+
+CRITICAL: Match the VALUE TYPE and STRUCTURE that functionCode expects.
+DO NOT use [null] or empty arrays if functionCode expects specific properties.`;
+                } else {
+                  fixPrompt = `The node "${node.data.title as string}" (id: ${node.id}) has a mismatch.
+
+inputData: ${JSON.stringify(inputData)}
+functionCode: ${functionCode}
+
+RULE: Update functionCode to ONLY use fields in inputData, OR update inputData to include missing fields.`;
+                }
+              }
+
+              const editResult = await updateWorkflowAction(
+                node.id,
+                fixPrompt,
+                workingNodes,
+              );
+
+              // Apply updates
+              if (editResult.nodes.update?.length > 0) {
+                editResult.nodes.update.forEach((update) => {
+                  const idx = workingNodes.findIndex((n) => n.id === update.id);
+                  if (idx >= 0) {
+                    workingNodes[idx] = {
+                      ...workingNodes[idx],
+                      data: { ...workingNodes[idx].data, ...update.data },
+                      parentNode:
+                        update.parentNode || workingNodes[idx].parentNode,
+                    };
+                  }
+                });
+              }
+
+              // Apply creations (if AI created helper nodes)
+              if (editResult.nodes.create?.length > 0) {
+                workingNodes = [...workingNodes, ...editResult.nodes.create];
+              }
+
+              // Apply deletions (if AI removed problematic nodes)
+              if (editResult.nodes.delete?.length > 0) {
+                const deleteIds = new Set(editResult.nodes.delete);
+                workingNodes = workingNodes.filter((n) => !deleteIds.has(n.id));
+              }
+            }
+          }
+        }
+
+        // Rebuild data.groups from final flat workingNodes (fixes stale groups[] from ai.ts)
+        {
+          const finalGroupChildren: Record<string, WorkflowNode[]> = {};
+          workingNodes.forEach((n) => {
+            if (n.parentNode) {
+              if (!finalGroupChildren[n.parentNode]) finalGroupChildren[n.parentNode] = [];
+              finalGroupChildren[n.parentNode].push(n);
+            }
+          });
+          workingNodes = workingNodes.map((node) => {
+            if (node.type !== "group") return node;
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                groups: (finalGroupChildren[node.id] ?? [])
+                  .filter((c) => c.type !== "decision")
+                  .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  .map(({ parentNode: _p, ...rest }) => rest as WorkflowNode),
+              },
+            };
+          });
+        }
+
+        // Deduplicate by id (AI fix updates override originals — Map keeps last value)
+        workingNodes = Array.from(
+          new Map(workingNodes.map((n) => [n.id, n])).values(),
+        );
+
+        const { nodes, edges } = createWorkflow(workingNodes);
+
+        // 4. Extract and save reusable nodes to library
+        const reusableNodes = extractReusableNodes(nodes);
+        if (reusableNodes.length > 0) {
+          saveToNodeLibrary(reusableNodes);
+          console.log(`Saved ${reusableNodes.length} reusable nodes to library`);
+        }
+
+        // 5. Notify listeners
+        listeners.current.forEach((listener) => listener(nodes, edges));
+
+        // 6. Close modal
+        close();
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to generate workflow";
+        setError(errorMessage);
+        console.error("Workflow generation error:", err);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [close],
+  );
+
+  return (
+    <WorkflowGeneratorContext
+      value={{
+        open,
+        close,
+        registerOnGenerate,
+        setExistingNodes,
+        isGenerating,
+        error,
+      }}
+    >
+      {children}
+
+      <WorkflowGeneratorModal
+        show={show}
+        isGenerating={isGenerating}
+        error={error}
+        onGenerate={handleGenerate}
+        onClose={close}
+      />
+    </WorkflowGeneratorContext>
+  );
+}
+
+/**
+ * Hook to access WorkflowGenerator context
+ *
+ * @throws Error if used outside WorkflowGeneratorProvider
+ */
+export function useWorkflowGenerator(handlers?: {
+  onGenerate: RegisterOnWorkflowGenerated;
+}): Omit<WorkflowGeneratorContextValue, "registerOnGenerate"> {
+  const context = use(WorkflowGeneratorContext);
+  if (!context) {
+    throw new Error(
+      "useWorkflowGenerator must be used within WorkflowGeneratorProvider",
+    );
+  }
+
+  const { registerOnGenerate, ...rest } = context;
+
+  useEffect(() => {
+    const unregisterFns: (() => void)[] = [];
+
+    if (handlers?.onGenerate) {
+      unregisterFns.push(registerOnGenerate(handlers?.onGenerate));
+    }
+
+    return () => {
+      unregisterFns.forEach((fn) => fn());
+    };
+  }, []);
+
+  return rest;
+}

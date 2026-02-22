@@ -22,7 +22,7 @@ import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
 } from "./type";
-import { generateWorkflowAction } from "@/app/actions/ai";
+import { generateWorkflowAction, updateWorkflowAction } from "@/app/actions/ai";
 import {
   createWorkflow,
   sanitizeNewNodeIds,
@@ -33,6 +33,11 @@ import {
   extractReusableNodes,
 } from "@/utils/nodeLibrary";
 import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
+import { runValidationPipeline } from "./validators";
+import {
+  rebuildGroupChildren,
+  deduplicateNodesById,
+} from "./utils/validationUtils";
 
 interface WorkflowGeneratorProviderProps {
   children: ReactNode;
@@ -96,13 +101,28 @@ export function WorkflowGeneratorProvider({
 
         // 3. Process workflow (validate, layout, and map to WorkflowNode/Edge)
         const sanitized = sanitizeNewNodeIds(generated.nodes);
-        const { nodes, edges } = createWorkflow(sanitized);
+        let workingNodes = [...sanitized];
+
+        // 3. Run validation pipeline
+        workingNodes = await runValidationPipeline({
+          nodes: workingNodes,
+          dialog: dialog,
+          updateWorkflowAction,
+        });
+
+        // Rebuild data.groups from final flat workingNodes (fixes stale groups[] from ai.ts)
+        workingNodes = rebuildGroupChildren(workingNodes);
+        workingNodes = deduplicateNodesById(workingNodes);
+
+        const { nodes, edges } = createWorkflow(workingNodes);
 
         // 4. Extract and save reusable nodes to library
         const reusableNodes = extractReusableNodes(nodes);
         if (reusableNodes.length > 0) {
           saveToNodeLibrary(reusableNodes);
-          console.log(`Saved ${reusableNodes.length} reusable nodes to library`);
+          console.log(
+            `Saved ${reusableNodes.length} reusable nodes to library`,
+          );
         }
 
         // 5. Notify listeners

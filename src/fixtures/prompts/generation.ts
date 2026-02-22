@@ -6,7 +6,7 @@ import {
   TECHNICAL_SPECIFICATION_RULES,
 } from "./common";
 import { buildPRDContext } from "@/utils/prd/contextBuilder";
-import type { ReusableNodeTemplate } from "@/types/prd";
+import { GenerateWorkflowAction } from "@/types";
 
 /**
  * PRD-based generation rules
@@ -23,7 +23,79 @@ PRD-BASED WORKFLOW GENERATION RULES
    - ❌ Do NOT use GroupNode: "Send Email Notification" → a single ServiceNode is sufficient
    - Rule: if the feature can be expressed as one node, use that node directly without a GroupNode wrapper
 
-2. PRD REFERENCES (REQUIRED FOR EVERY NODE)
+2. START NODE CHILDREN (CRITICAL)
+   - Start nodes produce NO OUTPUT
+   - Nodes with \`parentNode: <start-node-id>\` MUST have:
+     * execution.config.nodeData.inputData: null
+     * functionCode that does NOT reference inputData fields
+   - ❌ WRONG:
+     {
+       "parentNode": "node-start-abc123",
+       "data": {
+         "execution": {
+           "config": {
+             "functionCode": "return inputData.tasks;",
+             "nodeData": { "inputData": { "tasks": [] } }
+           }
+         }
+       }
+     }
+   - ✅ CORRECT:
+     {
+       "parentNode": "node-start-abc123",
+       "data": {
+         "execution": {
+           "config": {
+             "functionCode": "return []; // init from scratch",
+             "nodeData": { "inputData": null }
+           }
+         }
+       }
+     }
+
+3. FUNCTIONCODE EXECUTION SCOPE (CRITICAL)
+   - functionCode executes in a sandboxed environment with ONLY these variables:
+     * \`inputData\` - Output from parent node
+     * \`fetch\` - Global fetch API
+   - NO OTHER VARIABLES ARE ACCESSIBLE:
+     - ❌ \`metadata\` is NOT in scope (it's at node.data.metadata, not accessible)
+     - ❌ \`node\` is NOT in scope (no access to node object)
+     - ❌ \`config\` is NOT in scope (no access to execution config)
+     - ❌ \`this\` is NOT bound (no context)
+   - **How to handle configuration values:**
+     - BAD: Try to access \`metadata.maxTasks\` in functionCode
+       \`\`\`javascript
+       // ❌ WRONG - metadata is not in scope!
+       return { tasks: inputData.tasks.slice(0, metadata.maxTasks) };
+       \`\`\`
+     - GOOD: Pass config values explicitly in inputData
+       \`\`\`javascript
+       // ✅ CORRECT - maxTasks passed via inputData
+       // inputData: { tasks: [...], maxTasks: 3 }
+       return { tasks: inputData.tasks.slice(0, inputData.maxTasks) };
+       \`\`\`
+   - **Example - Task selection with limit:**
+     \`\`\`json
+     {
+       "data": {
+         "metadata": { "maxTasks": 3 },  // Stored in metadata for documentation
+         "execution": {
+           "config": {
+             "functionCode": "return { tasks: inputData.tasks.slice(0, inputData.maxTasks) };",
+             "nodeData": {
+               "inputData": {
+                 "tasks": ["Task 1", "Task 2"],
+                 "maxTasks": 3  // Pass limit via inputData!
+               },
+               "outputData": { "tasks": ["Task 1", "Task 2"] }
+             }
+           }
+         }
+       }
+     }
+     \`\`\`
+
+4. PRD REFERENCES (REQUIRED FOR EVERY NODE)
    - Every node MUST include prdReference field with:
      * section: Section title from PRD (e.g., "User Authentication", "Payment Flow")
      * requirement: Exact requirement text from PRD
@@ -37,7 +109,7 @@ PRD-BASED WORKFLOW GENERATION RULES
        }
      }
 
-3. TEST CASES (MINIMUM 3 PER NODE)
+5. TEST CASES (MINIMUM 3 PER NODE)
    - Every node MUST include testCases array with at least 3 test cases
    - Cover: success case, failure case, edge case
    - Format:
@@ -67,13 +139,13 @@ PRD-BASED WORKFLOW GENERATION RULES
        ]
      }
 
-4. REUSE EXISTING NODES FROM LIBRARY
+6. REUSE EXISTING NODES FROM LIBRARY
    - Prioritize reusing nodes from the provided node library
    - Only create new nodes if no suitable library node exists
    - When reusing, maintain the node's structure but add/update prdReference
    - Increment usageCount for reused nodes
 
-5. FUNCTIONAL PROGRAMMING STYLE
+7. FUNCTIONAL PROGRAMMING STYLE
    - GroupNode = Feature unit (stateless, composable)
    - Internal nodes = Pure functions (task/service/decision)
    - Data flows sequentially through internal nodes
@@ -256,9 +328,9 @@ export const GENERATION_SYSTEM_PROMPT = buildPrompt({
 });
 
 export function getGenerationContent(
-  prompt: string,
-  prdText?: string,
-  nodeLibrary?: ReusableNodeTemplate[],
+  prompt: Parameters<GenerateWorkflowAction>[0],
+  prdText?: Parameters<GenerateWorkflowAction>[1],
+  nodeLibrary?: Parameters<GenerateWorkflowAction>[2],
 ): string {
   let content = `Create a workflow based on this request: "${prompt}"\n\n`;
 

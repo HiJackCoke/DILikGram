@@ -26,9 +26,24 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
      - \`execution\`: object (**REQUIRED**)
        - \`config.functionCode\`: business logic implementation (function body only, no "function" wrapper)
          - **CRITICAL**: Receives \`inputData\` (output from parent node) and \`fetch\` as parameters
+         - **EXCEPTION**: If parent is a START NODE, inputData will be NULL
+           - ❌ Wrong (start child): \`return inputData.tasks.length;\`
+           - ✅ Correct (start child): \`return [];\` // initialize data from scratch
          - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
          - ❌ Wrong: \`return tasks.length <= maxTasks\`
          - ✅ Correct: \`return inputData.tasks.length <= maxTasks\`
+         - **CRITICAL SCOPE RULE**: functionCode has ONLY 2 variables available:
+           1. \`inputData\` - Data from parent node's output
+           2. \`fetch\` - Global fetch API for external calls
+         - **FORBIDDEN REFERENCES**:
+           - ❌ NEVER reference \`metadata\`, \`node\`, \`config\`, \`this\`, or any external variables
+           - ❌ Wrong: \`metadata.maxTasks\`, \`node.data.title\`, \`config.timeout\`
+           - ✅ Correct: Pass all values via \`inputData\`: \`inputData.maxTasks\`, \`inputData.title\`
+         - **How to use metadata/config values**:
+           - DON'T try to access \`node.data.metadata\` in functionCode (not in scope!)
+           - DO pass required values explicitly in \`inputData\`:
+             - Example: If you need \`maxTasks\` limit, include it in \`inputData: { maxTasks: 3 }\`
+             - Then reference as \`inputData.maxTasks\` in functionCode
          - **CRITICAL**: MUST always end with a \`return\` statement that produces the outputData object
          - ❌ Wrong (no return, mutates inputData): \`inputData.tasks.push(inputData.newTask);\`
          - ✅ Correct (compute new state, return as output): \`const updated = [...inputData.tasks, inputData.newTask]; return { tasks: updated };\`
@@ -69,6 +84,18 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
          - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
          - ❌ Wrong: \`userId\`, \`email\`, \`endpoint\`
          - ✅ Correct: \`inputData.userId\`, \`inputData.email\`, \`inputData.endpoint\`
+         - **CRITICAL SCOPE RULE**: functionCode has ONLY 2 variables available:
+           1. \`inputData\` - Data from parent node's output
+           2. \`fetch\` - Global fetch API for external calls
+         - **FORBIDDEN REFERENCES**:
+           - ❌ NEVER reference \`metadata\`, \`node\`, \`config\`, \`this\`, or any external variables
+           - ❌ Wrong: \`metadata.maxTasks\`, \`node.data.title\`, \`config.timeout\`
+           - ✅ Correct: Pass all values via \`inputData\`: \`inputData.maxTasks\`, \`inputData.title\`
+         - **How to use metadata/config values**:
+           - DON'T try to access \`node.data.metadata\` in functionCode (not in scope!)
+           - DO pass required values explicitly in \`inputData\`:
+             - Example: If you need \`maxTasks\` limit, include it in \`inputData: { maxTasks: 3 }\`
+             - Then reference as \`inputData.maxTasks\` in functionCode
          - **CRITICAL**: MUST always end with a \`return\` statement that produces the outputData object
          - ❌ Wrong (result discarded, no return): \`await fetch(endpoint, options);\`
          - ✅ Correct (return the API response): \`const res = await fetch(endpoint, options); return await res.json();\`
@@ -211,6 +238,16 @@ VALIDATION CHECKLIST (Self-Correction):
    - Does \`functionCode\` use \`inputData.<field>\` (not bare variable names)?
    - ❌ Wrong: \`tasks.length\`, \`userId\`, \`email\`, \`endpoint\`
    - ✅ Correct: \`inputData.tasks.length\`, \`inputData.userId\`, \`inputData.email\`
+□ **Execution Scope Check:**
+   - Does functionCode ONLY use \`inputData\` and \`fetch\`?
+   - Does functionCode avoid referencing \`metadata\`, \`node\`, \`config\`, or other external variables?
+   - ❌ FORBIDDEN: \`metadata.maxTasks\`, \`node.data.title\`, \`config.timeout\`, \`this.value\`
+   - ✅ REQUIRED: \`inputData.maxTasks\`, \`inputData.title\`, \`inputData.timeout\`
+   - If config values are needed, include them in \`inputData\` schema
+□ **Start Node Child Check:**
+   - Do children of start nodes have \`inputData: null\`?
+   - Does functionCode in start node children avoid referencing inputData?
+   - Start nodes produce NO OUTPUT → children receive null input
 □ **ServiceType Validation:**
    - Is \`serviceType: "api"\` for all nodes with \`http.method\` and \`http.endpoint\`?
    - Are you NOT using "database" or "email" for HTTP endpoints?
