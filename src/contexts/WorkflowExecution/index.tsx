@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   createContext,
@@ -13,7 +13,6 @@ import { createWorkflowExecutor } from "@/utils/workflow";
 import type {
   WorkflowNode,
   WorkflowEdge,
-  WorkflowMode,
   WorkflowRuntimeState,
   ExecutionData,
   OnNodeUpdateCallback,
@@ -32,6 +31,7 @@ interface WorkflowExecutionContextValue {
 
   executeFromStartNode: (startNodeId: string) => void;
   stopExecution: () => void;
+  setSimulationMode: (enabled: boolean) => void;
   subscribeNodeUpdate: (cb: OnNodeUpdateCallback) => () => void;
   subscribeEdgeUpdate: (cb: OnEdgeUpdateCallback) => () => void;
 }
@@ -45,12 +45,12 @@ const WorkflowExecutionContext =
 
 interface WorkflowExecutionProviderProps {
   children: ReactNode;
-  mode?: WorkflowMode;
+  // mode?: WorkflowMode;
 }
 
 export function WorkflowExecutionProvider({
   children,
-  mode = "auto",
+  // mode = "auto",
 }: WorkflowExecutionProviderProps) {
   const store = useStoreApi();
 
@@ -63,8 +63,10 @@ export function WorkflowExecutionProvider({
     string | null
   >(null);
 
+  const [simulationMode, setSimulationMode] = useState(true); // Default: simulation mode
+
   const executionRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
-    null
+    null,
   );
 
   /* -------------------------------------------------------------- */
@@ -92,14 +94,14 @@ export function WorkflowExecutionProvider({
     (nodeId: string, data: ExecutionData) => {
       nodeSubscribers.current.forEach((cb) => cb(nodeId, data));
     },
-    []
+    [],
   );
 
   const handleEdgeUpdate = useCallback(
     (edgeId: string, data: Partial<WorkflowEdge["data"]>) => {
       edgeSubscribers.current.forEach((cb) => cb(edgeId, data));
     },
-    []
+    [],
   );
 
   /* -------------------------------------------------------------- */
@@ -115,8 +117,9 @@ export function WorkflowExecutionProvider({
       executionRef.current = createWorkflowExecutor({
         nodes: store.getState().getNodes() as WorkflowNode[],
         edges: store.getState().edges,
-        mode,
+        // mode,
         startNodeId,
+        simulationMode, // Pass simulation mode to executor
         onStateChange: (state) => {
           setExecutionState(state);
           if (!state.isRunning) {
@@ -129,7 +132,14 @@ export function WorkflowExecutionProvider({
 
       executionRef.current.execute();
     },
-    [executionState.isRunning, store, mode, handleNodeUpdate, handleEdgeUpdate]
+    [
+      executionState.isRunning,
+      store,
+      // mode,
+      simulationMode,
+      handleNodeUpdate,
+      handleEdgeUpdate,
+    ],
   );
 
   const stopExecution = useCallback(() => {
@@ -153,6 +163,7 @@ export function WorkflowExecutionProvider({
         executionState,
         executeFromStartNode,
         stopExecution,
+        setSimulationMode,
         subscribeNodeUpdate,
         subscribeEdgeUpdate,
       }}
@@ -167,6 +178,7 @@ export function WorkflowExecutionProvider({
 /* ------------------------------------------------------------------ */
 
 export function useWorkflowExecution(options?: {
+  simulationMode?: boolean;
   onNodeUpdate?: OnNodeUpdateCallback;
   onEdgeUpdate?: OnEdgeUpdateCallback;
 }) {
@@ -174,11 +186,23 @@ export function useWorkflowExecution(options?: {
 
   if (!context) {
     throw new Error(
-      "useWorkflowExecution must be used within WorkflowExecutionProvider"
+      "useWorkflowExecution must be used within WorkflowExecutionProvider",
     );
   }
 
-  const { subscribeNodeUpdate, subscribeEdgeUpdate, ...api } = context;
+  const {
+    subscribeNodeUpdate,
+    subscribeEdgeUpdate,
+    setSimulationMode,
+    ...api
+  } = context;
+
+  // Update simulation mode when option changes
+  useEffect(() => {
+    if (options?.simulationMode !== undefined) {
+      setSimulationMode(options.simulationMode);
+    }
+  }, [options?.simulationMode, setSimulationMode]);
 
   useEffect(() => {
     if (!options?.onNodeUpdate) return;

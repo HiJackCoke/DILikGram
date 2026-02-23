@@ -158,6 +158,15 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
             >
               <Settings className="w-3 h-3" />
             </button>
+            {/* Simulation Badge */}
+            {data.execution?.config?.simulation?.enabled && (
+              <div
+                className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 text-[10px] font-bold border border-yellow-300"
+                title="Simulation mode enabled"
+              >
+                SIM
+              </div>
+            )}
             <div className={`p-1 rounded-full ${statusConfig[status]?.bg}`}>
               <StatusIcon
                 className={`w-3 h-3 ${statusConfig[status]?.color} ${statusConfig[status]?.animate || ""}`}

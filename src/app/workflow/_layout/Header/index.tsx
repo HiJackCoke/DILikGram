@@ -1,10 +1,11 @@
-import { Square, Sparkles, History } from "lucide-react";
+import { Square, Sparkles, History, TestTube } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 import UndoRedoButtons from "./UndoRedoButtons";
 
+import { useState } from "react";
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
+  const [simulationMode, setSimulationMode] = useState(true); // Default: simulation mode
   const { open: openGenerator } = useWorkflowGenerator();
   const { open: openHistory } = useWorkflowVersioning();
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
@@ -41,6 +43,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
     );
   };
   const { isExecuting, executionState, stopExecution } = useWorkflowExecution({
+    simulationMode,
     onNodeUpdate: handleNodeUpdate,
     onEdgeUpdate: handleEdgeUpdate,
   });
@@ -84,6 +87,18 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
           History
         </Button>
 
+        {/* Simulation Mode Toggle - Phase 1: Simple Button */}
+        <Button
+          palette={simulationMode ? "warning" : "neutral"}
+          variant={simulationMode ? "solid" : "outline"}
+          icon={<TestTube />}
+          iconPosition="left"
+          onClick={() => setSimulationMode(!simulationMode)}
+          disabled={isExecuting}
+        >
+          {simulationMode ? "SIM" : "REAL"}
+        </Button>
+
         {/* Undo/Redo Buttons */}
         <UndoRedoButtons />
 
@@ -99,6 +114,17 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
           </Button>
         )}
       </div>
+
+      {/* Simulation Mode Indicator */}
+      {simulationMode && !isExecuting && (
+        <div className="px-3 py-1.5 bg-yellow-600/90 border border-yellow-500 text-white rounded-lg text-sm flex items-center gap-2">
+          <TestTube className="w-4 h-4" />
+          <span className="font-semibold">SIMULATION MODE</span>
+          <span className="text-yellow-200 text-xs">
+            Mock responses enabled
+          </span>
+        </div>
+      )}
 
       {/* Status */}
       {isExecuting &&

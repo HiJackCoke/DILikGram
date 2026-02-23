@@ -9,7 +9,7 @@ import type { WorkflowEdge } from "./edges";
  * Workflow execution mode
  * Decision nodes branch based on function result (outputData.success)
  */
-export type WorkflowMode = "auto";
+// export type WorkflowMode = "auto";
 
 /**
  * Workflow runtime state
@@ -64,9 +64,11 @@ export type WorkflowExecutorConfig = {
   /** Edges connecting the workflow nodes */
   edges: WorkflowEdge[];
   /** Execution mode: success or failure path simulation */
-  mode: WorkflowMode;
+  // mode: WorkflowMode;
   /** Optional specific Start node ID to execute from */
   startNodeId?: string;
+  /** Enable global simulation mode (use mock responses instead of real execution) */
+  simulationMode?: boolean;
   /** Callback invoked when execution state changes */
   onStateChange: OnStateChangeCallback;
   /** Optional callback invoked when node executor data updates */
@@ -107,6 +109,10 @@ export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
   nodeData?: {
     inputData?: TInput;
     outputData?: TOutput;
+  };
+  simulation?: {
+    enabled: boolean; // Enable simulation mode for this node
+    mockResponse?: TOutput; // User-defined mock response (optional)
   };
 };
 

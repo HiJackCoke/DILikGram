@@ -26,6 +26,7 @@ export class WorkflowExecutor {
   private executionState: WorkflowRuntimeState;
   private abortController: AbortController | null = null;
   private startNodeId?: string;
+  private simulationMode: boolean = false;
 
   private onStateChange: OnStateChangeCallback;
   private onNodeUpdate?: OnNodeUpdateCallback;
@@ -39,6 +40,7 @@ export class WorkflowExecutor {
     this.nodes = config.nodes;
     this.edges = config.edges;
     this.startNodeId = config.startNodeId;
+    this.simulationMode = config.simulationMode ?? false;
     // mode is always "auto" now - no need to store it
     this.onStateChange = config.onStateChange;
     this.onNodeUpdate = config.onNodeUpdate;
@@ -502,6 +504,16 @@ export class WorkflowExecutor {
     inputData: unknown
   ): Promise<{ outputData: unknown; success: boolean }> {
     await this.delay(500);
+
+    // Check if simulation mode is active AND node has simulation enabled
+    if (
+      this.simulationMode &&
+      node.data.execution?.config?.simulation?.enabled
+    ) {
+      return this.runSimulatedExecution(node, inputData);
+    }
+
+    // Real execution
     const result = await executeFunction(execution, inputData, 30000);
 
     // Handle execution errors differently based on node type
@@ -547,6 +559,50 @@ export class WorkflowExecutor {
 
     // Task/Service nodes succeed by default (no custom executor)
     return { outputData: inputData, success: true };
+  }
+
+  /**
+   * Run simulated execution using mock data
+   * Priority: mockResponse > nodeData.outputData > default success
+   */
+  private runSimulatedExecution(
+    node: WorkflowNode,
+    inputData: unknown
+  ): { outputData: unknown; success: boolean } {
+    const simulation = node.data.execution?.config?.simulation;
+
+    // Priority 1: User-defined mockResponse
+    if (simulation?.mockResponse !== undefined) {
+      return this.extractSuccessFromOutput(node, simulation.mockResponse);
+    }
+
+    // Priority 2: AI-generated nodeData.outputData
+    const aiMockData = node.data.execution?.config?.nodeData?.outputData;
+    if (aiMockData !== undefined) {
+      return this.extractSuccessFromOutput(node, aiMockData);
+    }
+
+    // Priority 3: Default success response
+    return {
+      outputData: { success: true, simulated: true, inputData },
+      success: true,
+    };
+  }
+
+  /**
+   * Extract success value from outputData (for Decision nodes)
+   */
+  private extractSuccessFromOutput(
+    node: WorkflowNode,
+    outputData: unknown
+  ): { outputData: unknown; success: boolean } {
+    if (node.type === "decision") {
+      const success = this.extractDecisionSuccess(node, outputData);
+      return { outputData, success };
+    }
+
+    // Task/Service nodes always succeed in simulation mode
+    return { outputData, success: true };
   }
 
   /**

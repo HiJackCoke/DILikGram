@@ -83,6 +83,13 @@ export default function ExecutorEditorContent({
   // Handlers
   const handleTest = async () => {
     try {
+      // NEW: Simulation mode - if outputData exists, use it instead of executing code
+      if (meta?.outputData !== undefined && meta?.outputData !== null) {
+        console.log("[ExecutorEditor] Simulation mode - using mock outputData");
+        setOutputData(JSON.stringify(meta.outputData, null, 2));
+        return;
+      }
+
       const testConfig: ExecutionConfig = {
         functionCode: code,
         lastModified: Date.now(),
@@ -120,13 +127,24 @@ export default function ExecutorEditorContent({
     );
 
     try {
-      const testConfig: ExecutionConfig = {
-        functionCode: code,
-        lastModified: Date.now(),
-      };
+      // NEW: Simulation mode - if outputData exists, use it instead of executing code
+      let result: unknown;
 
-      const fn = compileExecutor(testConfig, nodeType, internalNodes);
-      const result = await Promise.resolve(fn(testCase.inputData, fetch));
+      if (meta?.outputData !== undefined && meta?.outputData !== null) {
+        console.log(
+          "[ExecutorEditor] Simulation mode - using mock outputData for test case",
+        );
+        result = meta.outputData;
+      } else {
+        // Existing logic: execute functionCode
+        const testConfig: ExecutionConfig = {
+          functionCode: code,
+          lastModified: Date.now(),
+        };
+
+        const fn = compileExecutor(testConfig, nodeType, internalNodes);
+        result = await Promise.resolve(fn(testCase.inputData, fetch));
+      }
 
       // Auto-store result as output.
       // If Code Editor has a reference output (meta.outputData), validate type match.

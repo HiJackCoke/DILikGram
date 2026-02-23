@@ -228,21 +228,43 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
       // ServiceNode: ensure required fields have defaults
       if (node.type === "service") {
         const serviceData = node.data as ServiceNodeData;
+        const baseData = {
+          mode: "panel" as const,
+          ...node.data,
+          http: {
+            method: "POST" as const,
+            endpoint: "",
+            headers: {},
+            body: {},
+            ...serviceData.http,
+          },
+          retry: serviceData.retry ?? { count: 3, delay: 1000 },
+          timeout: serviceData.timeout ?? 5000,
+        };
+
+        // Enable simulation by default for AI-generated Service nodes (if execution exists)
+        if (node.data.execution?.config) {
+          return {
+            ...node,
+            data: {
+              ...baseData,
+              execution: {
+                ...node.data.execution,
+                config: {
+                  ...node.data.execution.config,
+                  simulation: {
+                    enabled: true,
+                    ...node.data.execution.config.simulation,
+                  },
+                },
+              },
+            },
+          };
+        }
+
         return {
           ...node,
-          data: {
-            mode: "panel",
-            ...node.data,
-            http: {
-              method: "POST",
-              endpoint: "",
-              headers: {},
-              body: {},
-              ...serviceData.http,
-            },
-            retry: serviceData.retry ?? { count: 3, delay: 1000 },
-            timeout: serviceData.timeout ?? 5000,
-          },
+          data: baseData,
         };
       }
 

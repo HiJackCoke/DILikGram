@@ -306,3 +306,53 @@ export const TECHNICAL_SPECIFICATION_RULES = `
    - **QA (Decision)**: Define "What determines success" in boolean logic.
    - **Frontend (Task)**: Define "How to show" based on results.
 `;
+
+export const SERVICE_NODE_MOCK_DATA_RULES = `
+═══════════════════════════════════════════════════════════════
+🎭 SERVICE NODE MOCK DATA GENERATION RULES (SIMULATION MODE)
+═══════════════════════════════════════════════════════════════
+
+CRITICAL: Every Service node MUST include realistic mock response in config.nodeData.outputData
+
+1. **Match Real API Structure**:
+   - Research the actual endpoint response format
+   - Include all fields that downstream nodes will reference
+   - Use realistic data types and values (not placeholders)
+   - Example GET /api/users → { "data": [{"id": 1, "name": "John Doe", "email": "john@example.com"}], "total": 1 }
+   - Example POST /api/auth/login → { "success": true, "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "user": {"id": 1, "name": "John Doe", "email": "john@example.com", "role": "admin"} }
+   - Example POST /api/orders → { "success": true, "orderId": "ORD-123", "status": "pending", "createdAt": "2024-12-25T10:00:00Z" }
+
+2. **Decision Node Integration** (CRITICAL):
+   - If Service node feeds into Decision node, outputData MUST include success field
+   - Example success: { "success": true, "data": {...} } → Decision takes "yes" branch
+   - Example failure: { "success": false, "error": "Invalid credentials", "code": 401 } → Decision takes "no" branch
+   - This allows users to test different Decision paths by editing mockResponse
+
+3. **Simulation Config**:
+   - Set config.simulation.enabled: true by default for all AI-generated Service nodes
+   - This allows instant workflow testing without real API calls
+   - Example:
+     \`\`\`json
+     {
+       "execution": {
+         "config": {
+           "functionCode": "const res = await fetch(...); return await res.json();",
+           "isAsync": true,
+           "nodeData": {
+             "inputData": { "email": "user@example.com", "password": "password123" },
+             "outputData": { "success": true, "token": "jwt...", "user": {...} }
+           },
+           "simulation": {
+             "enabled": true
+           }
+         }
+       }
+     }
+     \`\`\`
+
+4. **Common API Response Patterns**:
+   - GET requests: Include data array, pagination info (total, page, limit)
+   - POST requests: Include success boolean, created resource ID, timestamp
+   - Error responses: Include success: false, error message, error code
+   - Authentication: Include token, user object, expiration time
+`;

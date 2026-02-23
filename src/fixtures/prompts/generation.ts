@@ -4,6 +4,7 @@ import {
   PARENT_CHILD_RULES,
   COMMON_VALIDATION_RULES,
   TECHNICAL_SPECIFICATION_RULES,
+  SERVICE_NODE_MOCK_DATA_RULES,
 } from "./common";
 import { buildPRDContext } from "@/utils/prd/contextBuilder";
 import { GenerateWorkflowAction } from "@/types";
@@ -312,6 +313,8 @@ ${CORE_NODE_TYPES}
 ${PARENT_CHILD_RULES}
 
 ${PRD_GENERATION_RULES}
+
+${SERVICE_NODE_MOCK_DATA_RULES}
 
 ${GENERATION_RESPONSE_FORMAT}
 
