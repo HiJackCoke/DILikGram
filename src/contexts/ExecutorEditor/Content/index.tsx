@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import ExecutorEditorView from "./View";
 import {
   compileExecutor,
+  executeFunction,
   detectAsync,
   stringifyForDisplay,
   inferType,
@@ -83,35 +84,36 @@ export default function ExecutorEditorContent({
   // Handlers
   const handleTest = async () => {
     try {
-      // NEW: Simulation mode - if outputData exists, use it instead of executing code
-      if (meta?.outputData !== undefined && meta?.outputData !== null) {
-        console.log("[ExecutorEditor] Simulation mode - using mock outputData");
-        setOutputData(JSON.stringify(meta.outputData, null, 2));
-        return;
-      }
-
       const testConfig: ExecutionConfig = {
         functionCode: code,
         lastModified: Date.now(),
         nodeData: {
           inputData: inputData ? JSON.parse(inputData) : null,
           outputData: null,
-          // ...(nodeType === "group" && internalNodes ? { internalNodes } : {}),
         },
       };
 
       const fn = compileExecutor(testConfig, nodeType, internalNodes);
-
       const input = JSON.parse(inputData || "null");
 
-      const result = await Promise.resolve(fn(input, fetch));
-      const outputData = JSON.stringify(result, null, 2);
+      // Determine simulation mode
+      const isSimulation = config?.simulation?.enabled || false;
+      const mockResp = config?.simulation?.mockResponse || config?.nodeData?.outputData;
 
+      // Execute with simulation mode
+      const result = await executeFunction(fn, input, 30000, isSimulation, mockResp);
+
+      if (!result.success) {
+        setOutputData(`Error: ${result.error?.message || "Execution failed"}`);
+        return;
+      }
+
+      const outputData = JSON.stringify(result.data, null, 2);
       setOutputData(outputData);
 
       setMeta({
-        inputData: inputData ? JSON.parse(inputData) : null,
-        outputData: outputData ? JSON.parse(outputData) : null,
+        inputData: input,
+        outputData: result.data,
       });
     } catch (error) {
       setOutputData(`Error: ${(error as Error).message}`);
@@ -127,26 +129,48 @@ export default function ExecutorEditorContent({
     );
 
     try {
-      // NEW: Simulation mode - if outputData exists, use it instead of executing code
-      let result: unknown;
+      const testConfig: ExecutionConfig = {
+        functionCode: code,
+        lastModified: Date.now(),
+      };
 
-      if (meta?.outputData !== undefined && meta?.outputData !== null) {
-        console.log(
-          "[ExecutorEditor] Simulation mode - using mock outputData for test case",
+      const fn = compileExecutor(testConfig, nodeType, internalNodes);
+
+      // Determine simulation mode
+      const isSimulation = config?.simulation?.enabled || false;
+      const mockResp =
+        config?.simulation?.mockResponse ||
+        meta?.outputData ||
+        testCase.expectedOutput ||
+        { success: true };
+
+      // Execute with simulation mode
+      const executionResult = await executeFunction(
+        fn,
+        testCase.inputData,
+        30000,
+        isSimulation,
+        mockResp,
+      );
+
+      if (!executionResult.success) {
+        setTestCases((cases) =>
+          cases.map((tc) =>
+            tc.id === testCase.id
+              ? {
+                  ...tc,
+                  status: "failed" as const,
+                  error: executionResult.error?.message,
+                  lastRun: Date.now(),
+                }
+              : tc,
+          ),
         );
-        result = meta.outputData;
-      } else {
-        // Existing logic: execute functionCode
-        const testConfig: ExecutionConfig = {
-          functionCode: code,
-          lastModified: Date.now(),
-        };
-
-        const fn = compileExecutor(testConfig, nodeType, internalNodes);
-        result = await Promise.resolve(fn(testCase.inputData, fetch));
+        return;
       }
 
-      // Auto-store result as output.
+      const result = executionResult.data;
+
       // If Code Editor has a reference output (meta.outputData), validate type match.
       const hasReference =
         meta?.outputData !== null && meta?.outputData !== undefined;
@@ -161,7 +185,9 @@ export default function ExecutorEditorContent({
             tc.id === testCase.id
               ? {
                   ...tc,
-                  status: typesMatch ? ("passed" as const) : ("failed" as const),
+                  status: typesMatch
+                    ? ("passed" as const)
+                    : ("failed" as const),
                   expectedOutput: result,
                   error: typesMatch
                     ? undefined

@@ -41,11 +41,10 @@ export function detectAsync(code: string): boolean {
 export function compileExecutor<TInput = unknown, TOutput = unknown>(
   config: ExecutionConfig<TInput, TOutput>,
   nodeType?: WorkflowNodeType,
-  internalNodes?: WorkflowNode[]
+  internalNodes?: WorkflowNode[],
 ): ExecutorFunction<TInput, TOutput> {
   // Group 노드 처리: internalNodes를 순차 실행
   if (nodeType === "group" && internalNodes?.length) {
-
     const { functionCode } = config;
 
     return (async (inputData: unknown, fetch: typeof globalThis.fetch) => {
@@ -150,22 +149,52 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
 }
 
 /**
+ * Create mock fetch implementation for simulation mode
+ * Returns configured mock response without making real network calls
+ */
+function createMockFetch(mockResponse: unknown): typeof globalThis.fetch {
+  return async (_url: string | URL | Request, _init?: RequestInit) => {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Return mock Response object
+    return new Response(JSON.stringify(mockResponse), {
+      status: 200,
+      statusText: "OK",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }) as Response;
+  };
+}
+
+/**
  * Execute a compiled function with error handling and timeout protection
  *
  * @param executorFn - Compiled executor function
  * @param inputData - Input data from parent node
  * @param timeout - Maximum execution time in milliseconds (default 30s)
+ * @param simulationMode - Enable simulation mode (uses mock fetch instead of real fetch)
+ * @param mockResponse - Mock response to return in simulation mode
  * @returns Execution result with success status, data, and timing
  */
 export async function executeFunction(
   executorFn: ExecutorFunction,
   inputData: unknown,
   timeout: number = 30000,
+  simulationMode: boolean = false,
+  mockResponse?: unknown,
 ): Promise<ExecutionResult> {
   const startTime = Date.now();
 
   try {
-    const resultPromise = Promise.resolve(executorFn(inputData, fetch));
+    // Use mock fetch in simulation mode, otherwise use real fetch
+    const fetchImpl =
+      simulationMode && mockResponse !== undefined
+        ? createMockFetch(mockResponse)
+        : globalThis.fetch;
+
+    const resultPromise = Promise.resolve(executorFn(inputData, fetchImpl));
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Execution timeout")), timeout),
     );
