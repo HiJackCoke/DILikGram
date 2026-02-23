@@ -138,7 +138,10 @@ export function WorkflowGeneratorProvider({
         workingNodes = rebuildGroupChildren(workingNodes);
         workingNodes = deduplicateNodesById(workingNodes);
 
-        const { nodes, edges } = createWorkflow(workingNodes);
+        const { nodes, edges } = createWorkflow(
+          workingNodes,
+          existingNodesRef.current
+        );
 
         // 4. Extract and save reusable nodes to library
         const reusableNodes = extractReusableNodes(nodes);

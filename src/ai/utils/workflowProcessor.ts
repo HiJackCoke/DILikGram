@@ -7,6 +7,7 @@ import {
   generateNodeId,
 } from "@/utils/graph/nodes";
 import { createWorkflowEdge } from "@/utils/graph/edges";
+import { calculateNodePositions } from "./layout";
 
 export function sanitizeNewNodeIds(newNodes: WorkflowNode[]): WorkflowNode[] {
   const idMap = new Map<string, string>();
@@ -48,7 +49,10 @@ export function sanitizeNewNodeIds(newNodes: WorkflowNode[]): WorkflowNode[] {
   });
 }
 
-export const createWorkflow = (nodes: WorkflowNode[]) => {
+export const createWorkflow = (
+  nodes: WorkflowNode[],
+  existingNodes: WorkflowNode[] = []
+) => {
   const edges: WorkflowEdge[] = [];
   const leafNodes = findLeafNodes(nodes);
 
@@ -64,7 +68,7 @@ export const createWorkflow = (nodes: WorkflowNode[]) => {
         parentNode: id,
         position: {
           x: position.x,
-          y: 300,
+          y: position.y,
         },
       });
 
@@ -89,7 +93,7 @@ export const createWorkflow = (nodes: WorkflowNode[]) => {
         parentNode: startNode.id,
         position: {
           x: node.position.x,
-          y: 300,
+          y: node.position.y,
         },
       };
 
@@ -126,15 +130,19 @@ export const createWorkflow = (nodes: WorkflowNode[]) => {
       ...node,
       position: {
         x: node.position.x,
-        y: 300,
+        y: node.position.y,
       },
     };
   });
 
   const workflowNodes = [...startNodes, ...addedParentNodes, ...endNodes];
+
+  // Apply layout algorithm to calculate positions
+  const positionedNodes = calculateNodePositions(workflowNodes, existingNodes);
+
   const workflowEdges = [...startEdges, ...edges, ...endEdges];
 
-  return { nodes: workflowNodes, edges: workflowEdges };
+  return { nodes: positionedNodes, edges: workflowEdges };
 };
 
 export function mergeWorkflow(
@@ -193,5 +201,5 @@ export function mergeWorkflow(
     nodes = [...nodes, ...createNodes];
   }
 
-  return createWorkflow(nodes);
+  return createWorkflow(nodes, currentNodes);
 }

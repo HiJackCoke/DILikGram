@@ -15,7 +15,6 @@ import type { WorkflowNodeType, WorkflowNode } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import Button from "@/components/ui/Button";
-import Tabs from "@/components/ui/Tabs";
 import TestCasesTab from "./TestCasesTab";
 
 type ExecutorEditorViewProps = {

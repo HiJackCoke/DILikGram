@@ -90,7 +90,6 @@ function handleOpenAIError(error: unknown): never {
 // SERVER ACTIONS
 // ============================================================================
 
-
 /**
  * Generate workflow from prompt using GPT-4o-mini
  *
@@ -120,7 +119,7 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
           content: getGenerationContent(prompt, prdText, nodeLibrary),
         },
       ],
-      temperature: 0.7,
+      temperature: 0.8,
       response_format: { type: "json_object" },
     });
 
