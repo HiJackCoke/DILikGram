@@ -98,25 +98,25 @@ export async function repairFunctionCodeMismatch(
   }
 
   // Build dialog details
-  const details = nodesWithMismatch
-    .map((n) => {
-      const config = getExecutionConfig(n);
-      if (!config?.functionCode) return "";
+  // const details = nodesWithMismatch
+  //   .map((n) => {
+  //     const config = getExecutionConfig(n);
+  //     if (!config?.functionCode) return "";
 
-      const referencedFields = extractInputDataReferences(config.functionCode);
-      const inputData = config.nodeData?.inputData;
+  //     const referencedFields = extractInputDataReferences(config.functionCode);
+  //     const inputData = config.nodeData?.inputData;
 
-      if (!inputData) {
-        return `"${n.data.title ?? "Untitled"}" (functionCode uses ${Array.from(referencedFields).join(", ")} but inputData is MISSING)`;
-      }
+  //     if (!inputData) {
+  //       return `"${n.data.title ?? "Untitled"}" (functionCode uses ${Array.from(referencedFields).join(", ")} but inputData is MISSING)`;
+  //     }
 
-      // After null check, inputData is guaranteed to be Record<string, unknown>
-      const missingFields = findMissingFields(referencedFields, inputData);
-      const inputKeys = Object.keys(inputData);
+  //     // After null check, inputData is guaranteed to be Record<string, unknown>
+  //     const missingFields = findMissingFields(referencedFields, inputData);
+  //     const inputKeys = Object.keys(inputData);
 
-      return `"${n.data.title ?? "Untitled"}" (functionCode uses ${missingFields.join(", ")} but inputData only has ${inputKeys.join(", ")})`;
-    })
-    .join(", ");
+  //     return `"${n.data.title ?? "Untitled"}" (functionCode uses ${missingFields.join(", ")} but inputData only has ${inputKeys.join(", ")})`;
+  //   })
+  //   .join(", ");
 
   // ════════════════════════════════════════════════════════════
   // DIALOG DISABLED: Auto-confirm for seamless validation UX

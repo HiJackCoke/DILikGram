@@ -139,15 +139,15 @@ export async function repairStartNodeChildren(
 
   // AI repair for nodes with functionCode referencing inputData
   if (needsAIRepair.length > 0) {
-    const details = needsAIRepair
-      .map((n) => {
-        const config = getExecutionConfig(n);
-        const referencedFields = config?.functionCode
-          ? Array.from(extractInputDataReferences(config.functionCode))
-          : [];
-        return `"${n.data.title ?? "Untitled"}" (references ${referencedFields.join(", ")})`;
-      })
-      .join(", ");
+    // const details = needsAIRepair
+    //   .map((n) => {
+    //     const config = getExecutionConfig(n);
+    //     const referencedFields = config?.functionCode
+    //       ? Array.from(extractInputDataReferences(config.functionCode))
+    //       : [];
+    //     return `"${n.data.title ?? "Untitled"}" (references ${referencedFields.join(", ")})`;
+    //   })
+    //   .join(", ");
 
     // ════════════════════════════════════════════════════════════
     // DIALOG DISABLED: Auto-confirm for seamless validation UX

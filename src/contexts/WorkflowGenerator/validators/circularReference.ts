@@ -80,12 +80,12 @@ export async function repairCircularReferences(
     ? result.metadata.circularGroupNodes
     : [];
 
-  const details = circularGroupNodes
-    .map(
-      ({ groupNode, parentNodeTitle }) =>
-        `"${groupNode.data?.title || "Untitled"}" (parent: "${parentNodeTitle}")`
-    )
-    .join(", ");
+  // const details = circularGroupNodes
+  //   .map(
+  //     ({ groupNode, parentNodeTitle }) =>
+  //       `"${groupNode.data?.title || "Untitled"}" (parent: "${parentNodeTitle}")`
+  //   )
+  //   .join(", ");
 
   // ════════════════════════════════════════════════════════════
   // DIALOG DISABLED: Auto-confirm for seamless validation UX

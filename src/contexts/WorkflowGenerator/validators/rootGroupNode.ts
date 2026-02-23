@@ -1,6 +1,5 @@
 import type { WorkflowNode } from "@/types";
 import type { ValidationResult, ValidationContext } from "./types";
-import { getNodeTitle, getNodeDescription } from "../utils/typeGuards";
 
 /**
  * Validate that GroupNodes are not root nodes
@@ -44,9 +43,9 @@ export async function repairRootGroupNodes(
     return workingNodes;
   }
 
-  const details = rootGroupNodes
-    .map((n) => `"${n.data.title ?? "Untitled"}"`)
-    .join(", ");
+  // const details = rootGroupNodes
+  //   .map((n) => `"${n.data.title ?? "Untitled"}"`)
+  //   .join(", ");
 
   // ════════════════════════════════════════════════════════════
   // DIALOG DISABLED: Auto-confirm for seamless validation UX

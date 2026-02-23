@@ -185,12 +185,12 @@ export async function repairGroupNodePipelines(
     return workingNodes;
   }
 
-  const details = brokenGroups
-    .map(
-      ({ groupNode, prevTitle, nextTitle }) =>
-        `"${groupNode.data.title ?? "Untitled"}" (${prevTitle} → ${nextTitle})`,
-    )
-    .join(", ");
+  // const details = brokenGroups
+  //   .map(
+  //     ({ groupNode, prevTitle, nextTitle }) =>
+  //       `"${groupNode.data.title ?? "Untitled"}" (${prevTitle} → ${nextTitle})`,
+  //   )
+  //   .join(", ");
 
   // ════════════════════════════════════════════════════════════
   // DIALOG DISABLED: Auto-confirm for seamless validation UX
