@@ -9,7 +9,7 @@ import {
   Package,
   Settings,
 } from "lucide-react";
-import type { ValidationProgress } from "../validators/types";
+import type { ValidationProgress } from "../../../types/ai/validators";
 
 interface InteractiveLoaderProps {
   progress: ValidationProgress | null;

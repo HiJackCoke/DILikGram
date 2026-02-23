@@ -49,8 +49,3 @@ export interface ValidationProgress {
   /** Total steps in unified timeline (always 7) */
   totalSteps?: number;
 }
-
-/**
- * Callback function to report validation progress
- */
-export type ProgressCallback = (progress: ValidationProgress) => void;

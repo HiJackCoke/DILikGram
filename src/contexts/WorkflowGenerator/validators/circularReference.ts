@@ -1,5 +1,8 @@
 import type { WorkflowNode } from "@/types";
-import type { ValidationResult, ValidationContext } from "./types";
+import type {
+  ValidationResult,
+  ValidationContext,
+} from "../../../types/ai/validators";
 import { getGroups, getNodeTitle } from "../utils/typeGuards";
 
 /**
@@ -19,7 +22,7 @@ interface CircularGroupInfo {
  * - This creates an infinite loop: GroupNode → Child → GroupNode → ...
  */
 export function validateCircularReferences(
-  nodes: WorkflowNode[]
+  nodes: WorkflowNode[],
 ): ValidationResult {
   const circularGroupNodes: CircularGroupInfo[] = [];
 
@@ -64,7 +67,7 @@ export function validateCircularReferences(
  * - Cancel: Remove the circular parent reference, make GroupNode root
  */
 export async function repairCircularReferences(
-  context: ValidationContext
+  context: ValidationContext,
 ): Promise<WorkflowNode[]> {
   let workingNodes = [...context.nodes];
 
@@ -75,7 +78,7 @@ export async function repairCircularReferences(
 
   // Safely extract circularGroupNodes with runtime validation
   const circularGroupNodes: CircularGroupInfo[] = Array.isArray(
-    result.metadata?.circularGroupNodes
+    result.metadata?.circularGroupNodes,
   )
     ? result.metadata.circularGroupNodes
     : [];
@@ -101,7 +104,11 @@ export async function repairCircularReferences(
 
   if (confirmed) {
     // ── AI FIX PATH (ACTIVE) ──────────────────────────────────
-    for (const { groupNode, parentNodeId, parentNodeTitle } of circularGroupNodes) {
+    for (const {
+      groupNode,
+      parentNodeId,
+      parentNodeTitle,
+    } of circularGroupNodes) {
       const fixPrompt =
         `CRITICAL BUG: GroupNode "${groupNode.data?.title || "Untitled"}" (id: ${groupNode.id}) ` +
         `has a CIRCULAR REFERENCE. ` +
@@ -119,7 +126,7 @@ export async function repairCircularReferences(
       const editResult = await context.updateWorkflowAction(
         groupNode.id,
         fixPrompt,
-        workingNodes
+        workingNodes,
       );
 
       // Apply updates

@@ -22,7 +22,7 @@ import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
 } from "./type";
-import type { ValidationProgress } from "./validators/types";
+import type { ValidationProgress } from "../../types/ai/validators";
 import { generateWorkflowAction, updateWorkflowAction } from "@/app/actions/ai";
 import {
   createWorkflow,
@@ -131,7 +131,7 @@ export function WorkflowGeneratorProvider({
               currentStep: progress.completedValidators + 2, // Steps 2-7
               totalSteps: 7,
             });
-          }
+          },
         );
 
         // Rebuild data.groups from final flat workingNodes (fixes stale groups[] from ai.ts)
@@ -140,7 +140,7 @@ export function WorkflowGeneratorProvider({
 
         const { nodes, edges } = createWorkflow(
           workingNodes,
-          existingNodesRef.current
+          existingNodesRef.current,
         );
 
         // 4. Extract and save reusable nodes to library

@@ -1,6 +1,12 @@
 import type { WorkflowNode } from "@/types";
-import type { ValidationResult, ValidationContext } from "./types";
-import { getExecutionConfig, extractInputDataReferences } from "../utils/validationUtils";
+import type {
+  ValidationResult,
+  ValidationContext,
+} from "../../../types/ai/validators";
+import {
+  getExecutionConfig,
+  extractInputDataReferences,
+} from "../utils/validationUtils";
 
 /**
  * Validate that children of start nodes have null inputData
@@ -10,7 +16,7 @@ import { getExecutionConfig, extractInputDataReferences } from "../utils/validat
  * - functionCode that doesn't reference inputData fields
  */
 export function validateStartNodeChildren(
-  nodes: WorkflowNode[]
+  nodes: WorkflowNode[],
 ): ValidationResult {
   const invalidNodes = nodes.filter((node) => {
     // Skip start/end nodes
@@ -63,7 +69,7 @@ export function validateStartNodeChildren(
  * 2. If functionCode references inputData: ask AI to rewrite without inputData
  */
 export async function repairStartNodeChildren(
-  context: ValidationContext
+  context: ValidationContext,
 ): Promise<WorkflowNode[]> {
   let workingNodes = [...context.nodes];
 
@@ -167,7 +173,7 @@ export async function repairStartNodeChildren(
         if (!config?.functionCode) continue;
 
         const referencedFields = Array.from(
-          extractInputDataReferences(config.functionCode)
+          extractInputDataReferences(config.functionCode),
         );
 
         const fixPrompt = `The node "${node.data.title ?? "Untitled"}" (id: ${node.id}) has a START NODE as its parent but functionCode references inputData.
@@ -194,7 +200,7 @@ Also update execution.config.nodeData.inputData to null.`;
         const editResult = await context.updateWorkflowAction(
           node.id,
           fixPrompt,
-          workingNodes
+          workingNodes,
         );
 
         // Apply AI updates

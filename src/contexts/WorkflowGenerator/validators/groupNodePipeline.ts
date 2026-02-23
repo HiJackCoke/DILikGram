@@ -1,5 +1,8 @@
 import type { WorkflowNode } from "@/types";
-import type { ValidationResult, ValidationContext } from "./types";
+import type {
+  ValidationResult,
+  ValidationContext,
+} from "../../../types/ai/validators";
 
 import { getExecutionConfig } from "../utils/validationUtils";
 

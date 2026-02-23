@@ -1,5 +1,8 @@
 import type { WorkflowNode } from "@/types";
-import type { ValidationResult, ValidationContext } from "./types";
+import type {
+  ValidationResult,
+  ValidationContext,
+} from "../../../types/ai/validators";
 
 /**
  * Validate that GroupNodes are not root nodes

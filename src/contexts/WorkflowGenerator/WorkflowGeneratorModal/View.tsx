@@ -8,7 +8,7 @@ import { Sparkles, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import PromptInput from "./PromptInput";
 import InteractiveLoader from "./InteractiveLoader";
-import type { ValidationProgress } from "../validators/types";
+import type { ValidationProgress } from "../../../types/ai/validators";
 
 interface WorkflowGeneratorViewProps {
   prompt: string;

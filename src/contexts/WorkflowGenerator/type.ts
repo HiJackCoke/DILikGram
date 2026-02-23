@@ -4,7 +4,7 @@
 
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
-import type { ValidationProgress } from "./validators/types";
+import type { ValidationProgress } from "../../types/ai/validators";
 
 /**
  * Callback function called when workflow is generated
@@ -14,7 +14,7 @@ import type { ValidationProgress } from "./validators/types";
  */
 export type RegisterOnWorkflowGenerated = (
   nodes: WorkflowNode[],
-  edges: WorkflowEdge[]
+  edges: WorkflowEdge[],
 ) => void;
 
 /**

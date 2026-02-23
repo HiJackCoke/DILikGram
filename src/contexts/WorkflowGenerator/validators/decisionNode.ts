@@ -1,5 +1,8 @@
 import type { WorkflowNode } from "@/types";
-import type { ValidationResult, ValidationContext } from "./types";
+import type {
+  ValidationResult,
+  ValidationContext,
+} from "../../../types/ai/validators";
 
 function getChildren(nodes: WorkflowNode[], parentId: string): WorkflowNode[] {
   return nodes.filter((n) => n.parentNode === parentId);

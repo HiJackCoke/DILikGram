@@ -1,5 +1,5 @@
 import type { WorkflowNode } from "@/types";
-import { ReusableNodeTemplate } from "./prd";
+import { ReusableNodeTemplate } from "../prd";
 
 export interface GenerateWorkflowResponse {
   nodes: WorkflowNode[];

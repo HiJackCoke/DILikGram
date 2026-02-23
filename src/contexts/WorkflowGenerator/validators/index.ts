@@ -1,21 +1,18 @@
-import type { ValidationContext, ProgressCallback } from "./types";
+import type {
+  ValidationContext,
+  ValidationProgress,
+} from "../../../types/ai/validators";
 import type { WorkflowNode } from "@/types";
 import {
   validateCircularReferences,
   repairCircularReferences,
 } from "./circularReference";
-import {
-  validateDecisionNodes,
-  repairDecisionNodes,
-} from "./decisionNode";
+import { validateDecisionNodes, repairDecisionNodes } from "./decisionNode";
 import {
   validateGroupNodePipelines,
   repairGroupNodePipelines,
 } from "./groupNodePipeline";
-import {
-  validateRootGroupNodes,
-  repairRootGroupNodes,
-} from "./rootGroupNode";
+import { validateRootGroupNodes, repairRootGroupNodes } from "./rootGroupNode";
 import {
   validateFunctionCodeInputData,
   repairFunctionCodeMismatch,
@@ -49,7 +46,7 @@ const VALIDATOR_DISPLAY_NAMES: Record<string, string> = {
  */
 export async function runValidationPipeline(
   context: ValidationContext,
-  onProgress?: ProgressCallback
+  onProgress?: (progress: ValidationProgress) => void,
 ): Promise<WorkflowNode[]> {
   let workingNodes = [...context.nodes];
 

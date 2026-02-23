@@ -9,7 +9,7 @@ import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import WorkflowGeneratorView from "./View";
 import { ModalProps } from "@/types";
-import type { ValidationProgress } from "../validators/types";
+import type { ValidationProgress } from "../../../types/ai/validators";
 // import {
 //   loadApiKey,
 //   saveApiKey,
