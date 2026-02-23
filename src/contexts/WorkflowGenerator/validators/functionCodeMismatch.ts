@@ -118,13 +118,17 @@ export async function repairFunctionCodeMismatch(
     })
     .join(", ");
 
-  const confirmed = await context.dialog.confirm(
-    "functionCode ↔ inputData Mismatch Detected",
-    `${nodesWithMismatch.length} node(s) have functionCode that references fields not in inputData: ${details}.\n\nConfirm: Ask AI to fix the mismatch.\nCancel: Proceed anyway (may cause runtime errors).`,
-  );
+  // ════════════════════════════════════════════════════════════
+  // DIALOG DISABLED: Auto-confirm for seamless validation UX
+  // ════════════════════════════════════════════════════════════
+  // const confirmed = await context.dialog.confirm(
+  //   "functionCode ↔ inputData Mismatch Detected",
+  //   `${nodesWithMismatch.length} node(s) have functionCode that references fields not in inputData: ${details}.\n\nConfirm: Ask AI to fix the mismatch.\nCancel: Proceed anyway (may cause runtime errors).`,
+  // );
+  const confirmed = true; // Always use AI-powered fix
 
   if (confirmed) {
-    // ── CONFIRM: AI fix with context-aware prompts ──────────
+    // ── AI FIX PATH (ACTIVE) ──────────────────────────────────
     for (const node of nodesWithMismatch) {
       const config = getExecutionConfig(node);
       if (!config?.functionCode) continue;
@@ -249,6 +253,9 @@ RULE: Update functionCode to ONLY use fields in inputData, OR update inputData t
       }
     }
   }
+  // NOTE: No else block - if user cancels (not applicable now),
+  // simply return workingNodes unchanged
+  // ════════════════════════════════════════════════════════════
 
   return workingNodes;
 }

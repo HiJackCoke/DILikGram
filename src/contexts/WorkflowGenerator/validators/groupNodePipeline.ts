@@ -192,13 +192,17 @@ export async function repairGroupNodePipelines(
     )
     .join(", ");
 
-  const confirmed = await context.dialog.confirm(
-    "GroupNode Pipeline Disconnection Detected",
-    `${brokenGroups.length} GroupNode(s) have a broken internal pipeline: ${details}.\n\nConfirm: Ask AI to repair the data chain.\nCancel: Split the disconnected nodes out of the GroupNode.`,
-  );
+  // ════════════════════════════════════════════════════════════
+  // DIALOG DISABLED: Auto-confirm for seamless validation UX
+  // ════════════════════════════════════════════════════════════
+  // const confirmed = await context.dialog.confirm(
+  //   "GroupNode Pipeline Disconnection Detected",
+  //   `${brokenGroups.length} GroupNode(s) have a broken internal pipeline: ${details}.\n\nConfirm: Ask AI to repair the data chain.\nCancel: Split the disconnected nodes out of the GroupNode.`,
+  // );
+  const confirmed = true; // Always use AI-powered fix
 
   if (confirmed) {
-    // ── CONFIRM: AI fix ──────────────────────────────────────
+    // ── AI FIX PATH (ACTIVE) ──────────────────────────────────
     for (const { groupNode, breakIndex } of brokenGroups) {
       const children = sortNodesByPosition(
         getNonDecisionChildren(workingNodes, groupNode.id),
@@ -250,66 +254,69 @@ export async function repairGroupNodePipelines(
       const groupParentMapFix = createGroupParentMap(workingNodes);
       workingNodes = reparentNodes(workingNodes, ejectIds, groupParentMapFix);
     }
-  } else {
-    // ── CANCEL: Split disconnected nodes out of GroupNode ────────
-    const ejectIds = new Set<string>();
-    brokenGroups.forEach(({ groupNode, breakIndex }) => {
-      const children = sortNodesByPosition(
-        getNonDecisionChildren(workingNodes, groupNode.id),
-      );
-      for (let j = breakIndex + 1; j < children.length; j++) {
-        ejectIds.add(children[j].id);
-      }
-    });
-
-    const groupParentMap = createGroupParentMap(workingNodes);
-    workingNodes = reparentNodes(workingNodes, ejectIds, groupParentMap);
-
-    // Dissolve GroupNodes that now have < 2 non-Decision children
-    const updatedGroupChildren: Record<string, WorkflowNode[]> = {};
-    workingNodes.forEach((n) => {
-      if (n.parentNode) {
-        if (!updatedGroupChildren[n.parentNode]) {
-          updatedGroupChildren[n.parentNode] = [];
-        }
-        updatedGroupChildren[n.parentNode].push(n);
-      }
-    });
-
-    const nowInvalid = new Set(
-      workingNodes
-        .filter((n) => {
-          if (n.type !== "group") return false;
-          return (
-            (updatedGroupChildren[n.id] ?? []).filter(
-              (c) => c.type !== "decision",
-            ).length < 2
-          );
-        })
-        .map((n) => n.id),
-    );
-
-    if (nowInvalid.size > 0) {
-      const invalidParentMap: Record<string, string | undefined> = {};
-      workingNodes
-        .filter((n) => nowInvalid.has(n.id))
-        .forEach((n) => {
-          invalidParentMap[n.id] = n.parentNode;
-        });
-
-      workingNodes = workingNodes
-        .filter((n) => !nowInvalid.has(n.id))
-        .map((n) => {
-          if (n.parentNode && nowInvalid.has(n.parentNode)) {
-            return {
-              ...n,
-              parentNode: invalidParentMap[n.parentNode],
-            };
-          }
-          return n;
-        });
-    }
   }
+  // else {
+  //   // ── CANCEL PATH (DISABLED) ─────────────────────────────
+  //   // Split disconnected nodes out of GroupNode
+  //   const ejectIds = new Set<string>();
+  //   brokenGroups.forEach(({ groupNode, breakIndex }) => {
+  //     const children = sortNodesByPosition(
+  //       getNonDecisionChildren(workingNodes, groupNode.id),
+  //     );
+  //     for (let j = breakIndex + 1; j < children.length; j++) {
+  //       ejectIds.add(children[j].id);
+  //     }
+  //   });
+  //
+  //   const groupParentMap = createGroupParentMap(workingNodes);
+  //   workingNodes = reparentNodes(workingNodes, ejectIds, groupParentMap);
+  //
+  //   // Dissolve GroupNodes that now have < 2 non-Decision children
+  //   const updatedGroupChildren: Record<string, WorkflowNode[]> = {};
+  //   workingNodes.forEach((n) => {
+  //     if (n.parentNode) {
+  //       if (!updatedGroupChildren[n.parentNode]) {
+  //         updatedGroupChildren[n.parentNode] = [];
+  //       }
+  //       updatedGroupChildren[n.parentNode].push(n);
+  //     }
+  //   });
+  //
+  //   const nowInvalid = new Set(
+  //     workingNodes
+  //       .filter((n) => {
+  //         if (n.type !== "group") return false;
+  //         return (
+  //           (updatedGroupChildren[n.id] ?? []).filter(
+  //             (c) => c.type !== "decision",
+  //           ).length < 2
+  //         );
+  //       })
+  //       .map((n) => n.id),
+  //   );
+  //
+  //   if (nowInvalid.size > 0) {
+  //     const invalidParentMap: Record<string, string | undefined> = {};
+  //     workingNodes
+  //       .filter((n) => nowInvalid.has(n.id))
+  //       .forEach((n) => {
+  //         invalidParentMap[n.id] = n.parentNode;
+  //       });
+  //
+  //     workingNodes = workingNodes
+  //       .filter((n) => !nowInvalid.has(n.id))
+  //       .map((n) => {
+  //         if (n.parentNode && nowInvalid.has(n.parentNode)) {
+  //           return {
+  //             ...n,
+  //             parentNode: invalidParentMap[n.parentNode],
+  //           };
+  //         }
+  //         return n;
+  //       });
+  //   }
+  // }
+  // ════════════════════════════════════════════════════════════
 
   return workingNodes;
 }

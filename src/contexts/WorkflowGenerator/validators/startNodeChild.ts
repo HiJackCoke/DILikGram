@@ -149,13 +149,17 @@ export async function repairStartNodeChildren(
       })
       .join(", ");
 
-    const confirmed = await context.dialog.confirm(
-      "Start Node Child Validation Error",
-      `${needsAIRepair.length} node(s) have a start node as parent but reference inputData in functionCode: ${details}.\n\n` +
-        `RULE: Start nodes produce no output, so their children receive inputData: null.\n\n` +
-        `Confirm: Ask AI to rewrite functionCode without inputData references.\n` +
-        `Cancel: Proceed anyway (will cause runtime errors).`
-    );
+    // ════════════════════════════════════════════════════════════
+    // DIALOG DISABLED: Auto-confirm for seamless validation UX
+    // ════════════════════════════════════════════════════════════
+    // const confirmed = await context.dialog.confirm(
+    //   "Start Node Child Validation Error",
+    //   `${needsAIRepair.length} node(s) have a start node as parent but reference inputData in functionCode: ${details}.\n\n` +
+    //     `RULE: Start nodes produce no output, so their children receive inputData: null.\n\n` +
+    //     `Confirm: Ask AI to rewrite functionCode without inputData references.\n` +
+    //     `Cancel: Proceed anyway (will cause runtime errors).`
+    // );
+    const confirmed = true; // Always use AI-powered fix
 
     if (confirmed) {
       for (const node of needsAIRepair) {
@@ -217,6 +221,9 @@ Also update execution.config.nodeData.inputData to null.`;
         }
       }
     }
+    // NOTE: No else block - if user cancels (not applicable now),
+    // simply proceed with auto-fixed nodes from earlier step
+    // ════════════════════════════════════════════════════════════
   }
 
   return workingNodes;

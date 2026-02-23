@@ -87,16 +87,20 @@ export async function repairCircularReferences(
     )
     .join(", ");
 
-  const confirmed = await context.dialog.confirm(
-    "Circular Reference Detected",
-    `${circularGroupNodes.length} GroupNode(s) have circular parent-child references: ${details}.\n\n` +
-    `This will cause infinite loops.\n\n` +
-    `Confirm: Ask AI to fix by extracting the parent node from groups[].\n` +
-    `Cancel: Remove the circular parent reference (make GroupNode root).`
-  );
+  // ════════════════════════════════════════════════════════════
+  // DIALOG DISABLED: Auto-confirm for seamless validation UX
+  // ════════════════════════════════════════════════════════════
+  // const confirmed = await context.dialog.confirm(
+  //   "Circular Reference Detected",
+  //   `${circularGroupNodes.length} GroupNode(s) have circular parent-child references: ${details}.\n\n` +
+  //     `This will cause infinite loops.\n\n` +
+  //     `Confirm: Ask AI to fix by extracting the parent node from groups[].\n` +
+  //     `Cancel: Remove the circular parent reference (make GroupNode root).`
+  // );
+  const confirmed = true; // Always use AI-powered fix
 
   if (confirmed) {
-    // ── CONFIRM: AI fix ──────────────────────────────────────
+    // ── AI FIX PATH (ACTIVE) ──────────────────────────────────
     for (const { groupNode, parentNodeId, parentNodeTitle } of circularGroupNodes) {
       const fixPrompt =
         `CRITICAL BUG: GroupNode "${groupNode.data?.title || "Untitled"}" (id: ${groupNode.id}) ` +
@@ -141,21 +145,24 @@ export async function repairCircularReferences(
         workingNodes = workingNodes.filter((n) => !deleteIds.has(n.id));
       }
     }
-  } else {
-    // ── CANCEL: Remove circular parent reference ─────────
-    workingNodes = workingNodes.map((n) => {
-      const isCircular = circularGroupNodes.some(
-        (info) => info.groupNode.id === n.id
-      );
-      if (isCircular) {
-        return {
-          ...n,
-          parentNode: undefined,
-        };
-      }
-      return n;
-    });
   }
+  // else {
+  //   // ── CANCEL PATH (DISABLED) ─────────────────────────────
+  //   // Remove circular parent reference
+  //   workingNodes = workingNodes.map((n) => {
+  //     const isCircular = circularGroupNodes.some(
+  //       (info) => info.groupNode.id === n.id
+  //     );
+  //     if (isCircular) {
+  //       return {
+  //         ...n,
+  //         parentNode: undefined,
+  //       };
+  //     }
+  //     return n;
+  //   });
+  // }
+  // ════════════════════════════════════════════════════════════
 
   return workingNodes;
 }

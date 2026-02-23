@@ -48,13 +48,17 @@ export async function repairRootGroupNodes(
     .map((n) => `"${n.data.title ?? "Untitled"}"`)
     .join(", ");
 
-  const confirmed = await context.dialog.confirm(
-    "Invalid Root GroupNode Detected",
-    `${rootGroupNodes.length} GroupNode(s) are direct children of Start: ${details}.\n\nGroupNodes cannot be root nodes because they require input data.\n\nConfirm: Ask AI to insert initialization Task node(s) before the GroupNode(s).\nCancel: Convert GroupNode(s) to standalone Task node(s).`,
-  );
+  // ════════════════════════════════════════════════════════════
+  // DIALOG DISABLED: Auto-confirm for seamless validation UX
+  // ════════════════════════════════════════════════════════════
+  // const confirmed = await context.dialog.confirm(
+  //   "Invalid Root GroupNode Detected",
+  //   `${rootGroupNodes.length} GroupNode(s) are direct children of Start: ${details}.\n\nGroupNodes cannot be root nodes because they require input data.\n\nConfirm: Ask AI to insert initialization Task node(s) before the GroupNode(s).\nCancel: Convert GroupNode(s) to standalone Task node(s).`,
+  // );
+  const confirmed = true; // Always use AI-powered fix
 
   if (confirmed) {
-    // ── CONFIRM: AI fix - Insert initialization Task ──────────
+    // ── AI FIX PATH (ACTIVE) ──────────────────────────────────
     for (const groupNode of rootGroupNodes) {
       const fixPrompt = `The GroupNode "${groupNode.data.title ?? "Untitled"}" (id: ${groupNode.id}) is a direct child of Start, which is invalid. GroupNodes require input data but Start provides none. Insert a Task node before this GroupNode to initialize the required data (e.g., { date, tasks: [] }). The Task node should have no parentNode (root), and the GroupNode should have the Task as its parentNode.`;
 
@@ -78,29 +82,32 @@ export async function repairRootGroupNodes(
         }
       });
     }
-  } else {
-    // ── CANCEL: Convert GroupNodes to Task nodes ────────
-    workingNodes = workingNodes.map((n) => {
-      if (rootGroupNodes.some((rg) => rg.id === n.id)) {
-        // Convert GroupNode to Task
-        // Use helper functions to safely extract node data
-        return {
-          ...n,
-          type: "task" as const,
-          data: {
-            title: getNodeTitle(n),
-            description: getNodeDescription(n),
-            assignee: "",
-            estimatedTime: 0,
-            metadata: {},
-            execution: n.data.execution,
-            ports: n.data.ports,
-          },
-        };
-      }
-      return n;
-    });
   }
+  // else {
+  //   // ── CANCEL PATH (DISABLED) ─────────────────────────────
+  //   // Convert GroupNodes to Task nodes
+  //   workingNodes = workingNodes.map((n) => {
+  //     if (rootGroupNodes.some((rg) => rg.id === n.id)) {
+  //       // Convert GroupNode to Task
+  //       // Use helper functions to safely extract node data
+  //       return {
+  //         ...n,
+  //         type: "task" as const,
+  //         data: {
+  //           title: getNodeTitle(n),
+  //           description: getNodeDescription(n),
+  //           assignee: "",
+  //           estimatedTime: 0,
+  //           metadata: {},
+  //           execution: n.data.execution,
+  //           ports: n.data.ports,
+  //         },
+  //       };
+  //     }
+  //     return n;
+  //   });
+  // }
+  // ════════════════════════════════════════════════════════════
 
   return workingNodes;
 }
