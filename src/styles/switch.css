@@ -1,0 +1,16 @@
+/* 🌊 클릭 시 중앙에서 퍼져나가는 물결 애니메이션 */
+@keyframes ripple-animation {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.2); /* Thumb보다 크게 퍼지도록 설정 */
+    opacity: 0;
+  }
+}
+
+/* 실행 트리거: 스위치 영역을 누르고 있을 때(active) 실행 */
+.switch-root:active .ripple-effect {
+  animation: ripple-animation 0.4s ease-out;
+}

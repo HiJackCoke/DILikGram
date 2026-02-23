@@ -1,4 +1,11 @@
-import { Square, Sparkles, History, TestTube } from "lucide-react";
+import {
+  Square,
+  Sparkles,
+  History,
+  TestTube,
+  FlaskConical,
+  Beaker,
+} from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
@@ -8,6 +15,7 @@ import UndoRedoButtons from "./UndoRedoButtons";
 import { useState } from "react";
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
 import type { Dispatch, SetStateAction } from "react";
+import { Switch } from "@/components/ui/Switch";
 
 interface Props {
   nodes: WorkflowNode[];
@@ -55,11 +63,27 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
 
   return (
     <div className="absolute top-4 left-20 z-10 space-y-3">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Workflow Builder</h1>
-        <p className="text-slate-400 text-sm">
-          Click a Start node to execute its flow
-        </p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Workflow Builder
+          </h1>
+          <p className="text-slate-400 text-sm">
+            Click a Start node to execute its flow
+          </p>
+        </div>
+
+        <Switch
+          label="REAL"
+          variant="icon"
+          checkedLabel="SIM"
+          disabled={isExecuting}
+          palette="warning"
+          checked={simulationMode}
+          icon={<FlaskConical className="text-white" />}
+          checkedIcon={<Beaker className="text-white" />}
+          onChange={(_, checked) => setSimulationMode(checked)}
+        />
       </div>
 
       {/* Execution Controls */}
@@ -85,18 +109,6 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
           disabled={isExecuting}
         >
           History
-        </Button>
-
-        {/* Simulation Mode Toggle - Phase 1: Simple Button */}
-        <Button
-          palette={simulationMode ? "warning" : "neutral"}
-          variant={simulationMode ? "solid" : "outline"}
-          icon={<TestTube />}
-          iconPosition="left"
-          onClick={() => setSimulationMode(!simulationMode)}
-          disabled={isExecuting}
-        >
-          {simulationMode ? "SIM" : "REAL"}
         </Button>
 
         {/* Undo/Redo Buttons */}
