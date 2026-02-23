@@ -1,4 +1,4 @@
-import type { ValidationContext } from "./types";
+import type { ValidationContext, ProgressCallback } from "./types";
 import type { WorkflowNode } from "@/types";
 import {
   validateCircularReferences,
@@ -26,16 +26,30 @@ import {
 } from "./startNodeChild";
 
 /**
+ * User-friendly display names for validators
+ */
+const VALIDATOR_DISPLAY_NAMES: Record<string, string> = {
+  "Circular References": "Checking for circular dependencies",
+  "Start Node Children": "Validating initial node configuration",
+  "Decision Nodes": "Checking decision node branches",
+  "GroupNode Pipelines": "Verifying data flow between nodes",
+  "Root GroupNodes": "Checking group node structure",
+  "functionCode Mismatch": "Validating node execution logic",
+};
+
+/**
  * Run validation pipeline
  *
  * Executes all validators sequentially and repairs issues as they're found.
  * Order matters: earlier validators may fix issues that later validators check.
  *
  * @param context - Validation context with nodes, dialog, and updateWorkflowAction
+ * @param onProgress - Optional callback to report validation progress
  * @returns Updated nodes after all validations and repairs
  */
 export async function runValidationPipeline(
-  context: ValidationContext
+  context: ValidationContext,
+  onProgress?: ProgressCallback
 ): Promise<WorkflowNode[]> {
   let workingNodes = [...context.nodes];
 
@@ -74,11 +88,33 @@ export async function runValidationPipeline(
   ];
 
   // Run validators sequentially
-  for (const validator of validators) {
+  const totalValidators = validators.length;
+
+  for (let i = 0; i < validators.length; i++) {
+    const validator = validators[i];
+
+    // Report validation start
+    onProgress?.({
+      currentValidator: validator.name,
+      totalValidators,
+      completedValidators: i,
+      status: "validating",
+      message: VALIDATOR_DISPLAY_NAMES[validator.name] || validator.name,
+    });
+
     const result = validator.validate(workingNodes);
 
     if (!result.valid) {
       console.log(`Validation failed: ${validator.name}`, result);
+
+      // Report repair start
+      onProgress?.({
+        currentValidator: validator.name,
+        totalValidators,
+        completedValidators: i,
+        status: "repairing",
+        message: `Auto-fixing ${validator.name.toLowerCase()} issues...`,
+      });
 
       // Run repair with updated context
       workingNodes = await validator.repair({
@@ -87,6 +123,15 @@ export async function runValidationPipeline(
       });
     }
   }
+
+  // Report completion
+  onProgress?.({
+    currentValidator: null,
+    totalValidators,
+    completedValidators: totalValidators,
+    status: "completed",
+    message: "Finalizing workflow...",
+  });
 
   return workingNodes;
 }

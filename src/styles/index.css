@@ -5,6 +5,7 @@
 @import url(ports.css);
 @import url(toast.css);
 @import url(landing.css);
+@import url(workflowLoader.css);
 
 @tailwind base;
 @tailwind components;

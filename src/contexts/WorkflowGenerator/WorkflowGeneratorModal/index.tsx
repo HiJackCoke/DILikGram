@@ -9,6 +9,7 @@ import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import WorkflowGeneratorView from "./View";
 import { ModalProps } from "@/types";
+import type { ValidationProgress } from "../validators/types";
 // import {
 //   loadApiKey,
 //   saveApiKey,
@@ -20,6 +21,7 @@ interface WorkflowGeneratorModalProps
   extends Pick<ModalProps, "show" | "onClose"> {
   isGenerating: boolean;
   error: string | null;
+  validationProgress: ValidationProgress | null;
   onGenerate: (prompt: string, prdText?: string) => void;
 }
 
@@ -27,6 +29,7 @@ export default function WorkflowGeneratorModal({
   show,
   isGenerating,
   error,
+  validationProgress,
   onGenerate,
   onClose,
 }: WorkflowGeneratorModalProps) {
@@ -52,6 +55,7 @@ export default function WorkflowGeneratorModal({
         // hasSavedKey={hasSavedKey}
         isGenerating={isGenerating}
         error={error}
+        validationProgress={validationProgress}
         onPromptChange={setPrompt}
         onPRDTextChange={setPRDText}
         // onSaveApiKey={handleSaveApiKey}

@@ -22,6 +22,7 @@ import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
 } from "./type";
+import type { ValidationProgress } from "./validators/types";
 import { generateWorkflowAction, updateWorkflowAction } from "@/app/actions/ai";
 import {
   createWorkflow,
@@ -55,6 +56,8 @@ export function WorkflowGeneratorProvider({
   const [show, setShow] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationProgress, setValidationProgress] =
+    useState<ValidationProgress | null>(null);
 
   const open = useCallback(() => {
     setShow(true);
@@ -88,6 +91,17 @@ export function WorkflowGeneratorProvider({
       setIsGenerating(true);
       setError(null);
 
+      // NEW: Report AI generation start (Step 1 of 7)
+      setValidationProgress({
+        currentValidator: "AI Generation",
+        totalValidators: 6,
+        completedValidators: 0,
+        status: "validating",
+        message: "Generating workflow with AI...",
+        currentStep: 1,
+        totalSteps: 7,
+      });
+
       try {
         // 1. Load node library
         const nodeLibrary = loadNodeLibrary();
@@ -103,12 +117,22 @@ export function WorkflowGeneratorProvider({
         const sanitized = sanitizeNewNodeIds(generated.nodes);
         let workingNodes = [...sanitized];
 
-        // 3. Run validation pipeline
-        workingNodes = await runValidationPipeline({
-          nodes: workingNodes,
-          dialog: dialog,
-          updateWorkflowAction,
-        });
+        // 3. Run validation pipeline (Steps 2-7)
+        workingNodes = await runValidationPipeline(
+          {
+            nodes: workingNodes,
+            dialog: dialog,
+            updateWorkflowAction,
+          },
+          (progress) => {
+            // Map validation progress to Steps 2-7
+            setValidationProgress({
+              ...progress,
+              currentStep: progress.completedValidators + 2, // Steps 2-7
+              totalSteps: 7,
+            });
+          }
+        );
 
         // Rebuild data.groups from final flat workingNodes (fixes stale groups[] from ai.ts)
         workingNodes = rebuildGroupChildren(workingNodes);
@@ -137,6 +161,7 @@ export function WorkflowGeneratorProvider({
         console.error("Workflow generation error:", err);
       } finally {
         setIsGenerating(false);
+        setValidationProgress(null);
       }
     },
     [close],
@@ -151,6 +176,7 @@ export function WorkflowGeneratorProvider({
         setExistingNodes,
         isGenerating,
         error,
+        validationProgress,
       }}
     >
       {children}
@@ -159,6 +185,7 @@ export function WorkflowGeneratorProvider({
         show={show}
         isGenerating={isGenerating}
         error={error}
+        validationProgress={validationProgress}
         onGenerate={handleGenerate}
         onClose={close}
       />

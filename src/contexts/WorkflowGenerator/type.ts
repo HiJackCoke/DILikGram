@@ -4,6 +4,7 @@
 
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
+import type { ValidationProgress } from "./validators/types";
 
 /**
  * Callback function called when workflow is generated
@@ -22,6 +23,10 @@ export type RegisterOnWorkflowGenerated = (
 export interface WorkflowGeneratorContextValue {
   isGenerating: boolean;
   error: string | null;
+  /**
+   * Current validation progress information (null if not validating)
+   */
+  validationProgress: ValidationProgress | null;
   open: () => void;
   close: () => void;
   /**
