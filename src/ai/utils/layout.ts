@@ -12,7 +12,7 @@ import type { WorkflowNode } from "@/types/nodes";
  */
 const LAYOUT_CONSTANTS = {
   /** Vertical spacing between hierarchy levels */
-  VERTICAL_SPACING: 100,
+  VERTICAL_SPACING: 150,
 
   /** Horizontal spacing between siblings */
   HORIZONTAL_SPACING: 300,
@@ -24,7 +24,7 @@ const LAYOUT_CONSTANTS = {
   },
 
   /** Starting Y position for root nodes */
-  START_Y: 50,
+  START_Y: 100,
 
   /** Starting X position for root nodes */
   START_X: 300,
@@ -243,7 +243,11 @@ function resolveCollisions(
   // If collision detected, offset entire new workflow downward
   if (hasCollision) {
     const maxExistingY = Math.max(...existingNodes.map((n) => n.position.y));
-    const offsetY = maxExistingY + LAYOUT_CONSTANTS.VERTICAL_SPACING;
+    // Add node height + spacing to create consistent gap below existing nodes
+    const offsetY =
+      maxExistingY +
+      LAYOUT_CONSTANTS.NODE_HEIGHT +
+      LAYOUT_CONSTANTS.VERTICAL_SPACING;
 
     return newNodes.map((node) => ({
       ...node,

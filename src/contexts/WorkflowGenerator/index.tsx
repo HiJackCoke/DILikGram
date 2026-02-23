@@ -91,15 +91,15 @@ export function WorkflowGeneratorProvider({
       setIsGenerating(true);
       setError(null);
 
-      // NEW: Report AI generation start (Step 1 of 7)
+      // NEW: Report AI generation start (Step 1 of 8)
       setValidationProgress({
         currentValidator: "AI Generation",
-        totalValidators: 6,
+        totalValidators: 7,
         completedValidators: 0,
         status: "validating",
         message: "Generating workflow with AI...",
         currentStep: 1,
-        totalSteps: 7,
+        totalSteps: 8,
       });
 
       try {
@@ -117,7 +117,7 @@ export function WorkflowGeneratorProvider({
         const sanitized = sanitizeNewNodeIds(generated.nodes);
         let workingNodes = [...sanitized];
 
-        // 3. Run validation pipeline (Steps 2-7)
+        // 3. Run validation pipeline (Steps 2-8)
         workingNodes = await runValidationPipeline(
           {
             nodes: workingNodes,
@@ -125,11 +125,11 @@ export function WorkflowGeneratorProvider({
             updateWorkflowAction,
           },
           (progress) => {
-            // Map validation progress to Steps 2-7
+            // Map validation progress to Steps 2-8
             setValidationProgress({
               ...progress,
-              currentStep: progress.completedValidators + 2, // Steps 2-7
-              totalSteps: 7,
+              currentStep: progress.completedValidators + 2, // Steps 2-8
+              totalSteps: 8,
             });
           },
         );

@@ -4,6 +4,10 @@ import type {
 } from "../../../types/ai/validators";
 import type { WorkflowNode } from "@/types";
 import {
+  validateParentNodeStructure,
+  repairParentNodeStructure,
+} from "./parentNodeStructure";
+import {
   validateCircularReferences,
   repairCircularReferences,
 } from "./circularReference";
@@ -26,6 +30,7 @@ import {
  * User-friendly display names for validators
  */
 const VALIDATOR_DISPLAY_NAMES: Record<string, string> = {
+  "Parent Node Structure": "Validating node hierarchy",
   "Circular References": "Checking for circular dependencies",
   "Start Node Children": "Validating initial node configuration",
   "Decision Nodes": "Checking decision node branches",
@@ -50,8 +55,13 @@ export async function runValidationPipeline(
 ): Promise<WorkflowNode[]> {
   let workingNodes = [...context.nodes];
 
-  // Validator registry (order is important - circular reference FIRST)
+  // Validator registry (order is important - parent node structure FIRST)
   const validators = [
+    {
+      name: "Parent Node Structure",
+      validate: validateParentNodeStructure,
+      repair: repairParentNodeStructure,
+    },
     {
       name: "Circular References",
       validate: validateCircularReferences,

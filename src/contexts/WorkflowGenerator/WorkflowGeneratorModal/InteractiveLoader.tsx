@@ -8,6 +8,7 @@ import {
   Link,
   Package,
   Settings,
+  Network,
 } from "lucide-react";
 import type { ValidationProgress } from "../../../types/ai/validators";
 
@@ -29,6 +30,12 @@ const STEP_CONFIG = [
     icon: Sparkles,
     color: "text-purple-600",
     bgColor: "bg-purple-100",
+  },
+  {
+    label: "Validating node hierarchy",
+    icon: Network,
+    color: "text-teal-600",
+    bgColor: "bg-teal-100",
   },
   {
     label: "Checking for circular dependencies",
@@ -88,7 +95,7 @@ export default function InteractiveLoader({
 
   // Trigger celebration on completion
   useEffect(() => {
-    if (progress?.status === "completed" && progress.currentStep === 7) {
+    if (progress?.status === "completed" && progress.currentStep === 8) {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2000);
     }
@@ -105,7 +112,7 @@ export default function InteractiveLoader({
   if (!progress) return null;
 
   const currentStep = progress.currentStep || 1;
-  const totalSteps = progress.totalSteps || 7;
+  const totalSteps = progress.totalSteps || 8;
   const stepIndex = currentStep - 1;
   const stepConfig = STEP_CONFIG[stepIndex];
   const StepIcon = stepConfig?.icon || Sparkles;

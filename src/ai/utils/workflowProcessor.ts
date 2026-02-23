@@ -106,10 +106,19 @@ export const createWorkflow = (
     }
 
     if (!parentNode) {
-      throw new Error(
-        `Node ${node.id} has no parent node. ` +
-          `All nodes except the start node must have a parentNode.`,
+      console.warn(
+        `[Defensive Check] Node ${node.id} has no parent node. ` +
+          `This should have been fixed by validation pipeline. Skipping edge creation.`,
       );
+      // Defensive: This should never happen after validation pipeline
+      // Skip edge creation for this orphaned node
+      return {
+        ...node,
+        position: {
+          x: node.position.x,
+          y: node.position.y,
+        },
+      };
     }
 
     if (parentNode?.type === "decision") {
