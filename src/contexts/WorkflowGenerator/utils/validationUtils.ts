@@ -61,25 +61,83 @@ export function extractInputDataReferences(functionCode: string): Set<string> {
  * @example
  * workingNodes = rebuildGroupChildren(workingNodes);
  */
+
+// export function rebuildGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
+//   const groupChildren = buildParentChildMap(nodes);
+
+//   const result: WorkflowNode[] = [];
+
+//   for (const node of nodes) {
+//     if (node.type !== "group") {
+//       result.push(node);
+//       continue;
+//     }
+
+//     const children = groupChildren[node.id] || [];
+
+//     result.push({
+//       ...node,
+//       data: {
+//         ...node.data,
+//         groups: children
+//           .filter((child) => child.type !== "decision")
+//           .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+//           .map(({ parentNode: _p, ...rest }) => rest),
+//       },
+//     });
+//   }
+
+//   return result;
+// }
+
+// export function rebuildGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
+//   const groupChildren = buildParentChildMap(nodes);
+
+//   // function 키워드를 사용하고, 첫 번째 인자로 this의 타입을 명시합니다.
+//   return nodes.map(function (this: Record<string, WorkflowNode[]>, node) {
+//     if (node.type !== "group") return node;
+
+//     // 이제 이 안에서 this는 Record<string, WorkflowNode[]> 타입으로 안전하게 추론됩니다.
+//     const children = this[node.id] ?? [];
+
+//     return {
+//       ...node,
+//       data: {
+//         ...node.data,
+//         groups: children
+//           .filter((child) => child.type !== "decision")
+//           .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+//           .map(({ parentNode: _p, ...rest }) => rest),
+//       },
+//     };
+//   }, groupChildren); // 실제 groupChildren이 this로 주입됨
+// }
+
+// 1. 노드 하나를 변환하는 로직을 완전히 분리 (Minifier가 접근 못 함)
+const transformNode = (
+  node: WorkflowNode,
+  lookup: Record<string, WorkflowNode[]>,
+) => {
+  if (node.type !== "group") return node;
+  const children = lookup[node.id] ?? [];
+
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      groups: children
+        .filter((child) => child.type !== "decision")
+        .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+        .map(({ parentNode: _p, ...rest }) => rest),
+    },
+  };
+};
+
 export function rebuildGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
   const groupChildren = buildParentChildMap(nodes);
 
-  return nodes.map((node) => {
-    if (node.type !== "group") return node;
-
-    const children = groupChildren[node.id] ?? [];
-
-    return {
-      ...node,
-      data: {
-        ...node.data,
-        groups: children
-          .filter((child) => child.type !== "decision") // Decision nodes execute at workflow level
-          .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0)) // Top-to-bottom
-          .map(({ parentNode: _p, ...rest }) => rest), // Remove parentNode to avoid circular refs
-      },
-    };
-  });
+  // 2. lookup이라는 명시적 인자로 넘기기 (this 타입 고민 없음)
+  return nodes.map((node) => transformNode(node, groupChildren));
 }
 
 /**
