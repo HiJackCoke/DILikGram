@@ -147,7 +147,7 @@ export const createWorkflow = (
   const workflowNodes = [...startNodes, ...addedParentNodes, ...endNodes];
 
   // Apply layout algorithm to calculate positions
-  const positionedNodes = calculateNodePositions(workflowNodes, existingNodes);
+  const positionedNodes = calculateNodePositions(workflowNodes);
 
   const workflowEdges = [...startEdges, ...edges, ...endEdges];
 

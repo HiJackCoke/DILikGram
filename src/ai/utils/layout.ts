@@ -41,19 +41,9 @@ const LAYOUT_CONSTANTS = {
  * Extended node type with layout metadata
  */
 interface LayoutNode extends WorkflowNode {
-  depth: number;
+  // depth: number;
   siblingIndex: number;
-  parentId?: string;
-}
-
-/**
- * Bounding box for collision detection
- */
-interface BoundingBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  // parentNode?: string;
 }
 
 /**
@@ -65,23 +55,24 @@ interface BoundingBox {
  */
 export function calculateNodePositions(
   nodes: WorkflowNode[],
-  existingNodes: WorkflowNode[] = [],
+  // existingNodes: WorkflowNode[] = [],
 ): WorkflowNode[] {
   if (nodes.length === 0) return [];
 
   // Step 1: Calculate depth for each node
-  const nodesWithDepth = calculateDepths(nodes);
+  // const nodesWithDepth = calculateDepths(nodes);
 
   // Step 2: Group by parent and assign sibling indices
-  const nodesWithSiblings = assignSiblingIndices(nodesWithDepth);
+  const nodesWithSiblings = assignSiblingIndices(nodes);
 
   // Step 3: Calculate positions based on depth, siblings, and branch type
   const positionedNodes = applyPositioning(nodesWithSiblings);
 
   // Step 4: Detect and resolve collisions with existing nodes
-  const finalNodes = resolveCollisions(positionedNodes, existingNodes);
+  // const finalNodes = resolveCollisions(positionedNodes, existingNodes);
 
-  return finalNodes;
+  // return finalNodes;
+  return positionedNodes;
 }
 
 /**
@@ -90,35 +81,35 @@ export function calculateNodePositions(
  * @param nodes - Input nodes
  * @returns Nodes with depth metadata
  */
-function calculateDepths(nodes: WorkflowNode[]): LayoutNode[] {
-  // Find root nodes (no parentNode)
-  const roots = nodes.filter((n) => !n.parentNode);
+// function calculateDepths(nodes: WorkflowNode[]): LayoutNode[] {
+//   // Find root nodes (no parentNode)
+//   const roots = nodes.filter((n) => !n.parentNode);
 
-  // BFS to assign depth
-  const depthMap = new Map<string, number>();
-  const queue: Array<{ id: string; depth: number }> = roots.map((r) => ({
-    id: r.id,
-    depth: 0,
-  }));
+//   // BFS to assign depth
+//   const depthMap = new Map<string, number>();
+//   const queue: Array<{ id: string; depth: number }> = roots.map((r) => ({
+//     id: r.id,
+//     depth: 0,
+//   }));
 
-  while (queue.length > 0) {
-    const { id, depth } = queue.shift()!;
-    depthMap.set(id, depth);
+//   while (queue.length > 0) {
+//     const { id, depth } = queue.shift()!;
+//     depthMap.set(id, depth);
 
-    // Find children
-    const children = nodes.filter((n) => n.parentNode === id);
-    children.forEach((child) => {
-      queue.push({ id: child.id, depth: depth + 1 });
-    });
-  }
+//     // Find children
+//     const children = nodes.filter((n) => n.parentNode === id);
+//     children.forEach((child) => {
+//       queue.push({ id: child.id, depth: depth + 1 });
+//     });
+//   }
 
-  return nodes.map((node) => ({
-    ...node,
-    depth: depthMap.get(node.id) ?? 0,
-    siblingIndex: 0,
-    parentId: node.parentNode,
-  }));
-}
+//   return nodes.map((node) => ({
+//     ...node,
+//     depth: depthMap.get(node.id) ?? 0,
+//     siblingIndex: 0,
+//     parentNode: node.parentNode,
+//   }));
+// }
 
 /**
  * Assign sibling indices within parent groups
@@ -126,12 +117,12 @@ function calculateDepths(nodes: WorkflowNode[]): LayoutNode[] {
  * @param nodes - Nodes with depth
  * @returns Nodes with sibling index metadata
  */
-function assignSiblingIndices(nodes: LayoutNode[]): LayoutNode[] {
+function assignSiblingIndices(nodes: WorkflowNode[]): LayoutNode[] {
   // Group by parent
-  const siblingGroups = new Map<string | undefined, LayoutNode[]>();
+  const siblingGroups = new Map<string | undefined, WorkflowNode[]>();
 
   nodes.forEach((node) => {
-    const key = node.parentId ?? "root";
+    const key = node.parentNode ?? "root";
     if (!siblingGroups.has(key)) {
       siblingGroups.set(key, []);
     }
@@ -140,7 +131,7 @@ function assignSiblingIndices(nodes: LayoutNode[]): LayoutNode[] {
 
   // Assign indices within each group
   return nodes.map((node) => {
-    const key = node.parentId ?? "root";
+    const key = node.parentNode ?? "root";
     const siblings = siblingGroups.get(key)!;
     const index = siblings.findIndex((s) => s.id === node.id);
 
@@ -161,11 +152,14 @@ function applyPositioning(nodes: LayoutNode[]): WorkflowNode[] {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
   return nodes.map((node) => {
-    const parent = node.parentId ? nodeMap.get(node.parentId) : null;
+    const parent = node.parentNode ? nodeMap.get(node.parentNode) : null;
 
     // Calculate Y position (depth-based)
-    const y =
-      LAYOUT_CONSTANTS.START_Y + node.depth * LAYOUT_CONSTANTS.VERTICAL_SPACING;
+    // const y =
+    //   LAYOUT_CONSTANTS.START_Y + node.depth * LAYOUT_CONSTANTS.VERTICAL_SPACING;
+
+    const nodeWidth = node.width ?? LAYOUT_CONSTANTS.NODE_WIDTH;
+    const y = LAYOUT_CONSTANTS.VERTICAL_SPACING + nodeWidth;
 
     // Calculate X position
     let x: number;
@@ -184,7 +178,7 @@ function applyPositioning(nodes: LayoutNode[]): WorkflowNode[] {
       x = parent.position.x + offset;
     } else {
       // Regular sibling: centered spread around parent
-      const siblingCount = getSiblingCount(nodes, node.parentId!);
+      const siblingCount = getSiblingCount(nodes, node.parentNode!);
       const siblingOffset =
         (node.siblingIndex - (siblingCount - 1) / 2) *
         LAYOUT_CONSTANTS.HORIZONTAL_SPACING;
@@ -203,11 +197,11 @@ function applyPositioning(nodes: LayoutNode[]): WorkflowNode[] {
  * Count siblings with the same parent
  *
  * @param nodes - All nodes
- * @param parentId - Parent node ID
+ * @param parentNode - Parent node ID
  * @returns Number of siblings
  */
-function getSiblingCount(nodes: LayoutNode[], parentId: string): number {
-  return nodes.filter((n) => n.parentId === parentId).length;
+function getSiblingCount(nodes: LayoutNode[], parentNode: string): number {
+  return nodes.filter((n) => n.parentNode === parentNode).length;
 }
 
 /**
@@ -217,49 +211,56 @@ function getSiblingCount(nodes: LayoutNode[], parentId: string): number {
  * @param existingNodes - Existing nodes on canvas
  * @returns Nodes with collision-free positions
  */
-function resolveCollisions(
-  newNodes: WorkflowNode[],
-  existingNodes: WorkflowNode[],
-): WorkflowNode[] {
-  if (existingNodes.length === 0) return newNodes;
+// function resolveCollisions(
+//   newNodes: WorkflowNode[],
+//   existingNodes: WorkflowNode[],
+// ): WorkflowNode[] {
+//   if (existingNodes.length === 0) return newNodes;
 
-  const existingBounds = existingNodes.map(getBoundingBox);
+//   const existingBounds = existingNodes.map(getBoundingBox);
 
-  // Check if any new node collides with existing nodes
-  let hasCollision = false;
-  for (const newNode of newNodes) {
-    const newBounds = getBoundingBox(newNode);
+//   // Check if any new node collides with existing nodes
+//   let hasCollision = false;
+//   for (const newNode of newNodes) {
+//     const newBounds = getBoundingBox(newNode);
 
-    for (const existing of existingBounds) {
-      if (boxesIntersect(newBounds, existing)) {
-        hasCollision = true;
-        break;
-      }
-    }
+//     for (const existing of existingBounds) {
+//       if (boxesIntersect(newBounds, existing)) {
+//         hasCollision = true;
+//         break;
+//       }
+//     }
 
-    if (hasCollision) break;
-  }
+//     if (hasCollision) break;
+//   }
 
-  // If collision detected, offset entire new workflow downward
-  if (hasCollision) {
-    const maxExistingY = Math.max(...existingNodes.map((n) => n.position.y));
-    // Add node height + spacing to create consistent gap below existing nodes
-    const offsetY =
-      maxExistingY +
-      LAYOUT_CONSTANTS.NODE_HEIGHT +
-      LAYOUT_CONSTANTS.VERTICAL_SPACING;
+//   // If collision detected, offset entire new workflow downward
+//   if (hasCollision) {
+//     const maxExistingY = Math.max(...existingNodes.map((n) => n.position.y));
+//     // Add node height + spacing to create consistent gap below existing nodes
+//     const offsetY =
+//       maxExistingY +
+//       LAYOUT_CONSTANTS.NODE_HEIGHT +
+//       LAYOUT_CONSTANTS.VERTICAL_SPACING;
 
-    return newNodes.map((node) => ({
-      ...node,
-      position: {
-        x: node.position.x,
-        y: node.position.y + offsetY,
-      },
-    }));
-  }
+//     console.log(
+//       234234,
+//       maxExistingY,
+//       LAYOUT_CONSTANTS.NODE_HEIGHT,
+//       LAYOUT_CONSTANTS.VERTICAL_SPACING,
+//       newNodes,
+//     );
+//     return newNodes.map((node) => ({
+//       ...node,
+//       position: {
+//         x: node.position.x,
+//         y: node.position.y + offsetY,
+//       },
+//     }));
+//   }
 
-  return newNodes;
-}
+//   return newNodes;
+// }
 
 /**
  * Calculate bounding box for collision detection
@@ -267,14 +268,14 @@ function resolveCollisions(
  * @param node - Node to calculate bounds for
  * @returns Bounding box
  */
-function getBoundingBox(node: WorkflowNode): BoundingBox {
-  return {
-    x: node.position.x - LAYOUT_CONSTANTS.NODE_WIDTH / 2,
-    y: node.position.y - LAYOUT_CONSTANTS.NODE_HEIGHT / 2,
-    width: LAYOUT_CONSTANTS.NODE_WIDTH + LAYOUT_CONSTANTS.COLLISION_PADDING,
-    height: LAYOUT_CONSTANTS.NODE_HEIGHT + LAYOUT_CONSTANTS.COLLISION_PADDING,
-  };
-}
+// function getBoundingBox(node: WorkflowNode): Rect {
+//   return {
+//     x: node.position.x - LAYOUT_CONSTANTS.NODE_WIDTH / 2,
+//     y: node.position.y - LAYOUT_CONSTANTS.NODE_HEIGHT / 2,
+//     width: LAYOUT_CONSTANTS.NODE_WIDTH + LAYOUT_CONSTANTS.COLLISION_PADDING,
+//     height: LAYOUT_CONSTANTS.NODE_HEIGHT + LAYOUT_CONSTANTS.COLLISION_PADDING,
+//   };
+// }
 
 /**
  * Check if two bounding boxes intersect
@@ -283,11 +284,11 @@ function getBoundingBox(node: WorkflowNode): BoundingBox {
  * @param b - Second bounding box
  * @returns True if boxes intersect
  */
-function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
-  return !(
-    a.x + a.width < b.x ||
-    b.x + b.width < a.x ||
-    a.y + a.height < b.y ||
-    b.y + b.height < a.y
-  );
-}
+// function boxesIntersect(a: Rect, b: Rect): boolean {
+//   return !(
+//     a.x + a.width < b.x ||
+//     b.x + b.width < a.x ||
+//     a.y + a.height < b.y ||
+//     b.y + b.height < a.y
+//   );
+// }
