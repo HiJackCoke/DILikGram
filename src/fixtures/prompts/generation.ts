@@ -225,16 +225,37 @@ User: "Create a document review process where if approved it goes to shipping, o
     },
     // 3. Yes Branch (Parent is Decision)
     {
-      "id": "node-\${type}-\${uuid}",
+      "id": "node-service-abc123",
       "type": "service",
       "parentNode": "node-check",
       "position": { "x": 200, "y": 300 },
       "data": {
         "branchLabel": "yes",  // REQUIRED
         "title": "Initiate Shipping",
-        "description": "Call shipping API",
+        "description": "Call shipping API to create shipment",
+        "mode": "panel",
         "serviceType": "api",
-        "http": { "method": "POST", "endpoint": "/ship" },
+        "timeout": 10000,
+        "retry": { "retry": 0, "delay": 3000 },
+        "http": {
+          "method": "POST",
+          "endpoint": "/api/shipping",
+          "headers": { "Content-Type": "application/json" },
+          "body": { "orderId": "{{inputData.orderId}}", "address": "{{inputData.address}}" }
+        },
+        "execution": {
+          "config": {
+            "functionCode": "const headers = { \\"Content-Type\\": \\"application/json\\" }\\nconst body = { orderId: inputData.orderId, address: inputData.address }\\nconst endpoint = \\"/api/shipping\\"\\nconst method = \\"POST\\"\\n\\ntry {\\n  const response = await fetch(endpoint, {\\n    method,\\n    headers,\\n    body: JSON.stringify(body),\\n  })\\n\\n  if (!response.ok) {\\n    throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)\\n  }\\n\\n  return await response.json()\\n} catch (error) {\\n  throw new Error(\`API Request Failed: \${error.message}\`)\\n}",
+            "isAsync": true,
+            "nodeData": {
+              "inputData": { "orderId": "ORD-123", "address": "123 Main St" },
+              "outputData": { "success": true, "trackingNumber": "TRACK-456" }
+            },
+            "simulation": {
+              "enabled": true
+            }
+          }
+        },
         "ports": [
           {
               "id": "input",

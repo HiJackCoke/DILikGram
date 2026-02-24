@@ -262,19 +262,6 @@ VALIDATION CHECKLIST (Self-Correction):
 □ **Description Minimalism**: (Task) Is description a single summary sentence?
 □ **API Granularity**: (Service) Is each API/logic in its own node?
 □ **Schema Format**: (Service) Are \`request_schema\` & \`response_schema\` in {key: "value"} format?
-□ **HTTP Config Synchronization**: (Service)
-   - Does \`data.http.method\` match the \`method\` variable in functionCode?
-   - Does \`data.http.endpoint\` match the \`endpoint\` variable in functionCode?
-   - Does \`data.http.headers\` match the \`headers\` variable in functionCode?
-   - For non-GET methods: Does \`data.http.body\` structure match the \`body\` variable in functionCode?
-   - For GET methods: Is \`data.http.body\` field omitted (not present)?
-□ **HTTP Headers**: (Service)
-   - Does \`data.http.headers\` include \`{ "Content-Type": "application/json" }\`?
-   - Does this match the \`headers\` variable in functionCode?
-□ **HTTP Body**: (Service)
-   - For POST/PUT/PATCH/DELETE: Is \`data.http.body\` populated with field structure?
-   - Does \`data.http.body\` use \`{{inputData.fieldName}}\` syntax for dynamic values?
-   - For GET: Is \`body\` field omitted entirely?
 `;
 
 export const TECHNICAL_SPECIFICATION_RULES = `

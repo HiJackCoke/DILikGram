@@ -9,7 +9,7 @@ const SIZE_CONFIG = {
     label: "text-xs", // Matches Select label for sm
     gap: "gap-2", // Consistent with Button sm
     icon: "w-2.5 h-2.5", // Matches Select tagIcon for sm
-    translate: "translate-x-4", // thumb travel distance
+    translate: "peer-checked:translate-x-4", // thumb travel distance
   },
   md: {
     track: "w-11 h-6", // 44px × 24px (current default)
@@ -17,7 +17,7 @@ const SIZE_CONFIG = {
     label: "text-sm", // Matches Select label for md
     gap: "gap-3", // Slightly larger than current
     icon: "w-3 h-3", // Matches Select tagIcon for md
-    translate: "translate-x-5", // thumb travel distance
+    translate: "peer-checked:translate-x-5", // thumb travel distance
   },
   lg: {
     track: "w-14 h-7", // 56px × 28px (larger touch target)
@@ -25,7 +25,7 @@ const SIZE_CONFIG = {
     label: "text-base", // Matches Select label for lg
     gap: "gap-4", // Larger gap for visual balance
     icon: "w-4 h-4", // Matches Button icon for lg
-    translate: "translate-x-7", // thumb travel distance
+    translate: "peer-checked:translate-x-7", // thumb travel distance
   },
 } as const;
 
@@ -76,7 +76,7 @@ export const SwitchView: React.FC<SwitchViewProps> = ({
 
         {/* Thumb & Ripple */}
         <div
-          className={`absolute left-[2px] top-[2px] flex items-center justify-center transition-transform duration-200 peer-checked:${sizeClasses.translate}`}
+          className={`absolute left-[2px] top-[2px] flex items-center justify-center transition-transform duration-200 ${sizeClasses.translate}`}
         >
           {/* Ripple Effect (Active) */}
           <div

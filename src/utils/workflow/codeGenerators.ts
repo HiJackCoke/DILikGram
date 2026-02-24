@@ -1,3 +1,10 @@
+export function convertTemplateCode(code: string): string {
+  const stringCode = JSON.stringify(code, null, 2);
+
+  return stringCode.replace(/"\{\{?\s*([^{}]+?)\s*\}?\}"/g, (_, expr) =>
+    expr.trim(),
+  );
+}
 /**
  * Panel Code Generators Registry
  *
@@ -43,7 +50,8 @@ const PANEL_CODE_GENERATORS: Partial<
 
     // Only declare body for non-GET methods
     if (!isGetMethod) {
-      const bodyStr = JSON.stringify(body, null, 2);
+      const bodyStr = convertTemplateCode(body);
+
       code += `const body = ${bodyStr}\n`;
     }
 
@@ -171,7 +179,7 @@ return {
 export function generatePanelCode(
   nodeType: WorkflowNodeType,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  formData: Record<string, any>
+  formData: Record<string, any>,
 ): string | null {
   const generator = PANEL_CODE_GENERATORS[nodeType];
 
@@ -196,7 +204,7 @@ export function generatePanelCode(
  * ```
  */
 export function supportsPanelCodeGeneration(
-  nodeType: WorkflowNodeType
+  nodeType: WorkflowNodeType,
 ): boolean {
   return nodeType in PANEL_CODE_GENERATORS;
 }
