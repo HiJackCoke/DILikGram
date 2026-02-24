@@ -51,7 +51,7 @@ export function sanitizeNewNodeIds(newNodes: WorkflowNode[]): WorkflowNode[] {
 
 export const createWorkflow = (
   nodes: WorkflowNode[],
-  existingNodes: WorkflowNode[] = [],
+  _existingNodes: WorkflowNode[] = [],
 ) => {
   const edges: WorkflowEdge[] = [];
   const leafNodes = findLeafNodes(nodes);
