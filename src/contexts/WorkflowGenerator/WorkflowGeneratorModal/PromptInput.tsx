@@ -12,21 +12,21 @@ interface PromptInputProps {
   disabled?: boolean;
 }
 
-const EXAMPLE_PROMPTS = [
-  "Create a user registration workflow with email verification",
-  "Build an order processing workflow with payment and inventory check",
-  "Make a data validation workflow with format checking",
-  "Design a customer support ticket workflow with routing",
-];
+// const EXAMPLE_PROMPTS = [
+//   "Create a user registration workflow with email verification",
+//   "Build an order processing workflow with payment and inventory check",
+//   "Make a data validation workflow with format checking",
+//   "Design a customer support ticket workflow with routing",
+// ];
 
 export default function PromptInput({
   value,
   onChange,
   disabled,
 }: PromptInputProps) {
-  const handleExampleClick = (example: string) => {
-    onChange(example);
-  };
+  // const handleExampleClick = (example: string) => {
+  //   onChange(example);
+  // };
 
   return (
     <div className="space-y-3">
@@ -46,7 +46,7 @@ export default function PromptInput({
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-palette-primary-color focus:border-transparent resize-none text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
       />
 
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <p className="text-xs font-medium text-gray-600">Try these examples:</p>
         <div className="flex flex-wrap gap-2">
           {EXAMPLE_PROMPTS.map((example, index) => (
@@ -61,7 +61,7 @@ export default function PromptInput({
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
