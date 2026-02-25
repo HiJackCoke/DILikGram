@@ -27,7 +27,7 @@ import { generateWorkflowAction, updateWorkflowAction } from "@/app/actions/ai";
 import {
   createWorkflow,
   sanitizeNewNodeIds,
-} from "@/ai/utils/workflowProcessor";
+} from "@/utils/ai/workflowProcessor";
 import {
   loadNodeLibrary,
   saveToNodeLibrary,

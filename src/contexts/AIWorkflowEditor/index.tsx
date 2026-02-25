@@ -30,7 +30,7 @@ import { updateWorkflowAction } from "@/app/actions/ai";
 import {
   mergeWorkflow,
   sanitizeNewNodeIds,
-} from "@/ai/utils/workflowProcessor";
+} from "@/utils/ai/workflowProcessor";
 import AIEditPanel from "@/contexts/AIWorkflowEditor/Popover";
 
 interface AIWorkflowEditorProviderProps {
