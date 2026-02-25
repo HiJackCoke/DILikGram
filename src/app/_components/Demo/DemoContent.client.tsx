@@ -34,7 +34,8 @@ export default function DemoContent() {
       >
         {/* Placeholder area */}
         <div className="aspect-video bg-gray-900 flex items-center justify-center">
-          <div className="text-center p-8">
+          <video src="/demo-video.mp4" autoPlay loop />
+          {/* <div className="text-center p-8">
             <p className="text-white text-xl mb-4">📹 Demo Video Placeholder</p>
             <p className="text-gray-400 text-sm mb-2">
               Replace /public/demo-video.mp4 with your screen recording
@@ -42,7 +43,7 @@ export default function DemoContent() {
             <p className="text-gray-500 text-xs">
               Recommended: OBS Studio, QuickTime, Loom
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* Try Demo Button */}
