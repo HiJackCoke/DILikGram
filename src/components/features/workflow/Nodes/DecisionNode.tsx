@@ -3,7 +3,7 @@ import { GitBranch, Settings, FileText } from "lucide-react";
 import type { DecisionNodeProps, WorkflowNodeProps } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
-import PRDTooltip from "../PRDTooltip";
+import PRDTooltip from "./PRDTooltip";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 export function DecisionNode(nodeProps: DecisionNodeProps) {

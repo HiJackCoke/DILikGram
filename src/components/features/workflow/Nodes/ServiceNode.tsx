@@ -20,7 +20,7 @@ import type {
 } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
-import PRDTooltip from "../PRDTooltip";
+import PRDTooltip from "./PRDTooltip";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 const statusConfig: Record<
