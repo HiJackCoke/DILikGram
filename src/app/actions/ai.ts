@@ -94,30 +94,56 @@ function handleOpenAIError(error: unknown): never {
  * Generate workflow from prompt using GPT-4o-mini
  *
  * @param prompt - User's workflow description
- * @param prdText - Optional PRD requirements text
+ * @param prdPDFBase64 - Optional PRD PDF as base64 data URL (client→server transport)
  * @param nodeLibrary - Optional array of reusable node templates
  * @returns Generated workflow with nodes and metadata
  */
 export const generateWorkflowAction: GenerateWorkflowAction = async (
   prompt,
-  prdText,
+  prdPDFBase64,
   nodeLibrary,
 ) => {
   if (!prompt || !prompt.trim()) {
     throw new Error("Workflow description is required");
   }
 
-  try {
-    const openai = getOpenAIClient();
+  const openai = getOpenAIClient();
 
+  let userContent: string | OpenAI.ChatCompletionContentPart[];
+  let uploadedFileId: string | undefined;
+
+  if (prdPDFBase64) {
+    // base64 → Buffer → File → OpenAI Files API
+    const base64Data = prdPDFBase64.replace(
+      /^data:application\/pdf;base64,/,
+      "",
+    );
+    const buffer = Buffer.from(base64Data, "base64");
+    const file = new File([buffer], "prd.pdf", { type: "application/pdf" });
+
+    const uploadedFile = await openai.files.create({
+      file,
+      purpose: "user_data",
+    });
+    uploadedFileId = uploadedFile.id;
+
+    userContent = [
+      {
+        type: "text",
+        text: getGenerationContent(prompt, undefined, nodeLibrary),
+      },
+      { type: "file", file: { file_id: uploadedFileId } },
+    ] as OpenAI.ChatCompletionContentPart[];
+  } else {
+    userContent = getGenerationContent(prompt, undefined, nodeLibrary);
+  }
+
+  try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: GENERATION_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: getGenerationContent(prompt, prdText, nodeLibrary),
-        },
+        { role: "user", content: userContent as string },
       ],
       temperature: 0.8,
       response_format: { type: "json_object" },
@@ -330,8 +356,8 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
       return node;
     });
 
-    // Apply fallbacks if PRD was provided but AI didn't include references/test cases
-    if (prdText) {
+    // Apply fallbacks if PRD PDF was provided but AI didn't include references/test cases
+    if (prdPDFBase64) {
       generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => ({
         ...node,
         data: {
@@ -391,6 +417,10 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     return generatedWorkflow;
   } catch (error) {
     handleOpenAIError(error);
+  } finally {
+    if (uploadedFileId) {
+      await openai.files.delete(uploadedFileId).catch(() => {});
+    }
   }
 };
 

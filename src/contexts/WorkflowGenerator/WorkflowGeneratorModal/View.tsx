@@ -6,19 +6,19 @@
 
 import { Sparkles, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
+import PDFUploader from "@/components/ui/PDFUploader";
 import PromptInput from "./PromptInput";
 import InteractiveLoader from "./InteractiveLoader";
 import type { ValidationProgress } from "../../../types/ai/validators";
 
 interface WorkflowGeneratorViewProps {
   prompt: string;
-  prdText: string;
   // hasSavedKey: boolean;
   isGenerating: boolean;
   error: string | null;
   validationProgress: ValidationProgress | null;
   onPromptChange: (value: string) => void;
-  onPRDTextChange: (value: string) => void;
+  onPRDFileChange: (file: File | null) => void;
   // onSaveApiKey: (key: string) => void;
   // onRemoveApiKey: () => void;
   onGenerate: () => void;
@@ -46,13 +46,12 @@ function Header() {
 
 function WorkflowGeneratorView({
   prompt,
-  prdText,
   // hasSavedKey,
   isGenerating,
   error,
   validationProgress,
   onPromptChange,
-  onPRDTextChange,
+  onPRDFileChange,
   // onSaveApiKey,
   // onRemoveApiKey,
   onGenerate,
@@ -65,20 +64,14 @@ function WorkflowGeneratorView({
       <div className="p-6 space-y-6 overflow-scroll">
         {/* Header */}
 
-        {/* PRD Requirements Input */}
+        {/* PRD Document Upload */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            PRD Requirements (Optional)
+            PRD Document (Optional)
           </label>
-          <textarea
-            value={prdText}
-            onChange={(e) => onPRDTextChange(e.target.value)}
-            disabled={isGenerating}
-            placeholder="Paste your PRD text here...&#10;&#10;Example:&#10;User Authentication&#10;- System must validate user email and password&#10;- Support OAuth 2.0 authentication&#10;- Session timeout after 30 minutes"
-            className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-palette-primary-border focus:border-palette-primary-border disabled:bg-gray-100 disabled:text-gray-500"
-          />
+          <PDFUploader onFileSelect={onPRDFileChange} />
           <p className="text-xs text-gray-500">
-            Optional: Provide PRD requirements for AI to generate nodes with PRD
+            Optional: Upload PRD PDF for AI to generate nodes with PRD
             references and test cases
           </p>
         </div>

@@ -22,7 +22,7 @@ interface WorkflowGeneratorModalProps
   isGenerating: boolean;
   error: string | null;
   validationProgress: ValidationProgress | null;
-  onGenerate: (prompt: string, prdText?: string) => void;
+  onGenerate: (prompt: string, prdPDFBase64?: string) => void;
 }
 
 export default function WorkflowGeneratorModal({
@@ -34,12 +34,24 @@ export default function WorkflowGeneratorModal({
   onClose,
 }: WorkflowGeneratorModalProps) {
   const [prompt, setPrompt] = useState("");
-  const [prdText, setPRDText] = useState("");
+  const [prdFile, setPRDFile] = useState<File | null>(null);
 
-  const handleGenerate = () => {
-    if (prompt.trim()) {
-      onGenerate(prompt.trim(), prdText.trim() || undefined);
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+
+    let prdPDFBase64: string | undefined;
+    if (prdFile) {
+      const arrayBuffer = await prdFile.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          "",
+        ),
+      );
+      prdPDFBase64 = `data:application/pdf;base64,${base64}`;
     }
+
+    onGenerate(prompt.trim(), prdPDFBase64);
   };
 
   return (
@@ -51,13 +63,12 @@ export default function WorkflowGeneratorModal({
     >
       <WorkflowGeneratorView
         prompt={prompt}
-        prdText={prdText}
         // hasSavedKey={hasSavedKey}
         isGenerating={isGenerating}
         error={error}
         validationProgress={validationProgress}
         onPromptChange={setPrompt}
-        onPRDTextChange={setPRDText}
+        onPRDFileChange={setPRDFile}
         // onSaveApiKey={handleSaveApiKey}
         // onRemoveApiKey={handleRemoveApiKey}
         onGenerate={handleGenerate}

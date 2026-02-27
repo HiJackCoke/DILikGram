@@ -16,7 +16,7 @@ export interface GenerateWorkflowResponse {
 
 export type GenerateWorkflowAction = (
   prompt: string,
-  prdText?: string,
+  prdPDFBase64?: string,
   nodeLibrary?: ReusableNodeTemplate[],
 ) => Promise<GenerateWorkflowResponse>;
 
