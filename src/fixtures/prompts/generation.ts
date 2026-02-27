@@ -378,7 +378,7 @@ export function getGenerationContent(
     content += `\n\nPrioritize reusing these nodes where applicable. When reusing, maintain the node structure but update prdReference to match current requirements.\n\n`;
   }
 
-  content += `Remember: No Start/End nodes, No Edges. Use parentNode logic.`;
+  content += `Remember: No Start/End nodes, No Edges. Use parentNode logic. Return your response as a JSON object.`;
 
   return content;
 }

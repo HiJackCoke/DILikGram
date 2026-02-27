@@ -9,6 +9,7 @@
 
 import OpenAI from "openai";
 import { v4 as uuid } from "uuid";
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import type {
   GenerateWorkflowAction,
   GenerateWorkflowResponse,
@@ -107,49 +108,31 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     throw new Error("Workflow description is required");
   }
 
-  const openai = getOpenAIClient();
-
-  let userContent: string | OpenAI.ChatCompletionContentPart[];
-  let uploadedFileId: string | undefined;
-
-  if (prdPDFBase64) {
-    // base64 → Buffer → File → OpenAI Files API
-    const base64Data = prdPDFBase64.replace(
-      /^data:application\/pdf;base64,/,
-      "",
-    );
-    const buffer = Buffer.from(base64Data, "base64");
-    const file = new File([buffer], "prd.pdf", { type: "application/pdf" });
-
-    const uploadedFile = await openai.files.create({
-      file,
-      purpose: "user_data",
-    });
-    uploadedFileId = uploadedFile.id;
-
-    userContent = [
-      {
-        type: "text",
-        text: getGenerationContent(prompt, undefined, nodeLibrary),
-      },
-      { type: "file", file: { file_id: uploadedFileId } },
-    ] as OpenAI.ChatCompletionContentPart[];
-  } else {
-    userContent = getGenerationContent(prompt, undefined, nodeLibrary);
-  }
-
   try {
-    const completion = await openai.chat.completions.create({
+    const openai = getOpenAIClient();
+
+    let prdText: string | undefined;
+    if (prdPDFBase64) {
+      const base64Data = prdPDFBase64.replace(/^data:application\/pdf;base64,/, "");
+      const pdfBuffer = Buffer.from(base64Data, "base64");
+      const pdfData = await pdfParse(pdfBuffer);
+      prdText = pdfData.text;
+    }
+
+    const response = await openai.responses.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: GENERATION_SYSTEM_PROMPT },
-        { role: "user", content: userContent as string },
-      ],
-      temperature: 0.8,
-      response_format: { type: "json_object" },
+      temperature: 0.3,
+      instructions: GENERATION_SYSTEM_PROMPT,
+      input: getGenerationContent(prompt, prdText, nodeLibrary),
+      text: {
+        format: { type: "json_object" },
+      },
     });
 
-    const content = completion.choices[0]?.message?.content;
+    
+    const content = response.output_text;
+
+    console.log(content)
     if (!content) {
       throw new Error("No response from OpenAI");
     }
@@ -159,6 +142,12 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     // Validation
     if (!generatedWorkflow.nodes || !Array.isArray(generatedWorkflow.nodes)) {
       throw new Error("Generated workflow missing nodes array");
+    }
+
+    if (generatedWorkflow.nodes.length === 0) {
+      throw new Error(
+        "AI returned an empty workflow. Please try again with a more specific prompt.",
+      );
     }
 
     // Build a map of groupId → child nodes (used for GroupNode post-processing)
@@ -417,10 +406,6 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     return generatedWorkflow;
   } catch (error) {
     handleOpenAIError(error);
-  } finally {
-    if (uploadedFileId) {
-      await openai.files.delete(uploadedFileId).catch(() => {});
-    }
   }
 };
 
