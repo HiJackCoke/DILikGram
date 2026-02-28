@@ -22,7 +22,7 @@ interface WorkflowGeneratorModalProps
   isGenerating: boolean;
   error: string | null;
   validationProgress: ValidationProgress | null;
-  onGenerate: (prompt: string, prdPDFBase64?: string) => void;
+  onGenerate: (prompt: string, prdContent?: string) => void;
 }
 
 export default function WorkflowGeneratorModal({
@@ -35,12 +35,19 @@ export default function WorkflowGeneratorModal({
 }: WorkflowGeneratorModalProps) {
   const [prompt, setPrompt] = useState("");
   const [prdFile, setPRDFile] = useState<File | null>(null);
+  const [prdMode, setPrdMode] = useState<"pdf" | "text">("pdf");
+  const [prdText, setPrdText] = useState("");
+
+  const canGenerate =
+    prompt.trim().length > 0 &&
+    (prdMode === "pdf" ? prdFile !== null : prdText.trim().length > 0);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!canGenerate) return;
 
-    let prdPDFBase64: string | undefined;
-    if (prdFile) {
+    let prdContent: string | undefined;
+
+    if (prdMode === "pdf" && prdFile) {
       const arrayBuffer = await prdFile.arrayBuffer();
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce(
@@ -48,10 +55,12 @@ export default function WorkflowGeneratorModal({
           "",
         ),
       );
-      prdPDFBase64 = `data:application/pdf;base64,${base64}`;
+      prdContent = `data:application/pdf;base64,${base64}`;
+    } else if (prdMode === "text" && prdText.trim()) {
+      prdContent = prdText.trim();
     }
 
-    onGenerate(prompt.trim(), prdPDFBase64);
+    onGenerate(prompt.trim(), prdContent);
   };
 
   return (
@@ -63,12 +72,17 @@ export default function WorkflowGeneratorModal({
     >
       <WorkflowGeneratorView
         prompt={prompt}
+        prdMode={prdMode}
+        prdText={prdText}
+        canGenerate={canGenerate}
         // hasSavedKey={hasSavedKey}
         isGenerating={isGenerating}
         error={error}
         validationProgress={validationProgress}
         onPromptChange={setPrompt}
         onPRDFileChange={setPRDFile}
+        onPrdModeChange={setPrdMode}
+        onPrdTextChange={setPrdText}
         // onSaveApiKey={handleSaveApiKey}
         // onRemoveApiKey={handleRemoveApiKey}
         onGenerate={handleGenerate}

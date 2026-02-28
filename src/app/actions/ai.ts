@@ -95,13 +95,13 @@ function handleOpenAIError(error: unknown): never {
  * Generate workflow from prompt using GPT-4o-mini
  *
  * @param prompt - User's workflow description
- * @param prdPDFBase64 - Optional PRD PDF as base64 data URL (client→server transport)
+ * @param prdContent - Optional PRD content: base64 PDF data URL or plain text
  * @param nodeLibrary - Optional array of reusable node templates
  * @returns Generated workflow with nodes and metadata
  */
 export const generateWorkflowAction: GenerateWorkflowAction = async (
   prompt,
-  prdPDFBase64,
+  prdContent,
   nodeLibrary,
 ) => {
   if (!prompt || !prompt.trim()) {
@@ -112,11 +112,15 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     const openai = getOpenAIClient();
 
     let prdText: string | undefined;
-    if (prdPDFBase64) {
-      const base64Data = prdPDFBase64.replace(/^data:application\/pdf;base64,/, "");
-      const pdfBuffer = Buffer.from(base64Data, "base64");
-      const pdfData = await pdfParse(pdfBuffer);
-      prdText = pdfData.text;
+    if (prdContent) {
+      if (prdContent.startsWith("data:application/pdf;base64,")) {
+        const base64Data = prdContent.replace(/^data:application\/pdf;base64,/, "");
+        const pdfBuffer = Buffer.from(base64Data, "base64");
+        const pdfData = await pdfParse(pdfBuffer);
+        prdText = pdfData.text;
+      } else {
+        prdText = prdContent;
+      }
     }
 
     const response = await openai.responses.create({
@@ -345,8 +349,8 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
       return node;
     });
 
-    // Apply fallbacks if PRD PDF was provided but AI didn't include references/test cases
-    if (prdPDFBase64) {
+    // Apply fallbacks if PRD content was provided but AI didn't include references/test cases
+    if (prdContent) {
       generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => ({
         ...node,
         data: {

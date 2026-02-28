@@ -13,12 +13,17 @@ import type { ValidationProgress } from "../../../types/ai/validators";
 
 interface WorkflowGeneratorViewProps {
   prompt: string;
+  prdMode: "pdf" | "text";
+  prdText: string;
+  canGenerate: boolean;
   // hasSavedKey: boolean;
   isGenerating: boolean;
   error: string | null;
   validationProgress: ValidationProgress | null;
   onPromptChange: (value: string) => void;
   onPRDFileChange: (file: File | null) => void;
+  onPrdModeChange: (mode: "pdf" | "text") => void;
+  onPrdTextChange: (text: string) => void;
   // onSaveApiKey: (key: string) => void;
   // onRemoveApiKey: () => void;
   onGenerate: () => void;
@@ -46,33 +51,74 @@ function Header() {
 
 function WorkflowGeneratorView({
   prompt,
+  prdMode,
+  prdText,
+  canGenerate,
   // hasSavedKey,
   isGenerating,
   error,
   validationProgress,
   onPromptChange,
   onPRDFileChange,
+  onPrdModeChange,
+  onPrdTextChange,
   // onSaveApiKey,
   // onRemoveApiKey,
   onGenerate,
   onClose,
 }: WorkflowGeneratorViewProps) {
-  const canGenerate = prompt.trim() && !isGenerating;
-
   return (
     <>
       <div className="p-6 space-y-6 overflow-scroll">
         {/* Header */}
 
-        {/* PRD Document Upload */}
+        {/* PRD Document */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            PRD Document (Optional)
+            PRD Document
           </label>
-          <PDFUploader onFileSelect={onPRDFileChange} />
+
+          {/* Mode toggle */}
+          <div className="flex gap-1 rounded-lg bg-palette-neutral-bg p-1">
+            <button
+              onClick={() => onPrdModeChange("pdf")}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                prdMode === "pdf"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              PDF 업로드
+            </button>
+            <button
+              onClick={() => onPrdModeChange("text")}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                prdMode === "text"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              텍스트 입력
+            </button>
+          </div>
+
+          <div className="h-full content-center aspect-video md:aspect-[2/1]">
+            {prdMode === "pdf" ? (
+              <PDFUploader onFileSelect={onPRDFileChange} />
+            ) : (
+              <textarea
+                value={prdText}
+                onChange={(e) => onPrdTextChange(e.target.value)}
+                placeholder="PRD 내용을 붙여넣기 하세요..."
+                disabled={isGenerating}
+                className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-palette-primary-bg focus:bg-white focus:outline-none focus:ring-1 focus:ring-palette-primary-bg resize-none disabled:opacity-50"
+              />
+            )}
+          </div>
+
           <p className="text-xs text-gray-500">
-            Optional: Upload PRD PDF for AI to generate nodes with PRD
-            references and test cases
+            PRD를 입력하면 AI가 PRD 참조와 테스트 케이스를 포함한 노드를
+            생성합니다
           </p>
         </div>
 
@@ -106,7 +152,7 @@ function WorkflowGeneratorView({
             icon={<Sparkles className="w-4 h-4" />}
             iconPosition="left"
             onClick={onGenerate}
-            disabled={!canGenerate}
+            disabled={!canGenerate || isGenerating}
             loading={isGenerating}
           >
             {isGenerating ? "Generating..." : "Generate Workflow"}

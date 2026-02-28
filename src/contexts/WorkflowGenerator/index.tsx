@@ -87,7 +87,7 @@ export function WorkflowGeneratorProvider({
   }, []);
 
   const handleGenerate = useCallback(
-    async (prompt: string, prdPDFBase64?: string) => {
+    async (prompt: string, prdContent?: string) => {
       setIsGenerating(true);
       setError(null);
 
@@ -106,10 +106,10 @@ export function WorkflowGeneratorProvider({
         // 1. Load node library
         const nodeLibrary = loadNodeLibrary();
 
-        // 2. Call OpenAI API with PRD PDF and node library
+        // 2. Call OpenAI API with PRD content and node library
         const generated = await generateWorkflowAction(
           prompt,
-          prdPDFBase64,
+          prdContent,
           nodeLibrary,
         );
 
