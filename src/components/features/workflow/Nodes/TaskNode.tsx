@@ -16,7 +16,7 @@ import type {
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import PRDTooltip from "./PRDTooltip";
-import { Tooltip } from "@/components/ui/Tooltip";
+import  Tooltip  from "@/components/ui/Tooltip";
 
 const statusConfig: Record<
   NodeStatus,

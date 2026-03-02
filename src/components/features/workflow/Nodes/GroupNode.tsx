@@ -13,7 +13,7 @@ import type { GroupNodeProps, WorkflowNodeProps } from "@/types/nodes";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import PRDTooltip from "./PRDTooltip";
-import { Tooltip } from "@/components/ui/Tooltip";
+import  Tooltip  from "@/components/ui/Tooltip";
 
 export function GroupNode(nodeProps: GroupNodeProps) {
   const { data, selected } = nodeProps;
