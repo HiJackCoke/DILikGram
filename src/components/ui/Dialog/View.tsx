@@ -26,7 +26,7 @@ export default function DialogView({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center animate-in fade-in duration-200"
         onClick={type === "alert" ? undefined : onCancel}
       >
         {/* Dialog Section */}

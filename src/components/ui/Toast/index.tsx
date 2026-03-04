@@ -29,8 +29,8 @@ declare global {
     toast: ToastReturnType;
   }
   const toast: {
-    success(message: string, onClick: () => void): void;
-    alert(message: string, onClick: () => void): void;
+    success(message: string, onClick?: () => void): void;
+    alert(message: string, onClick?: () => void): void;
   };
 }
 
@@ -101,17 +101,4 @@ class Toast {
   }
 }
 
-function checkSSR() {
-  if (typeof window !== "undefined") {
-    const toast = new Toast();
-    window.toast = toast;
-
-    return toast;
-  }
-
-  return { success: () => {}, alert: () => {} };
-}
-
-const toast = checkSSR();
-
-export default toast;
+export default new Toast();

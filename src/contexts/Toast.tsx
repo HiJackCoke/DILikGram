@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
-import toast from "@/components/ui/Toast";
+import Toast from "@/components/ui/Toast";
+import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 
 import type { ReactNode } from "react";
 
 export default function ToastProvider({ children }: { children: ReactNode }) {
-  useEffect(() => {
+  useBrowserEnv(({ document }) => {
     const root = document.querySelector("#toast");
     if (typeof window !== "undefined") {
       if (root) {
-        window.toast = toast;
+        window.toast = Toast;
       }
     }
-  }, []);
+  }, null);
 
   return (
     <>

@@ -1,18 +1,19 @@
 "use client";
 
 import Dialog from "@/components/ui/Dialog";
-import { useEffect } from "react";
+import { useBrowserEnv } from "@/hooks/useBrowserEnv";
+
 import type { ReactNode } from "react";
 
 export default function DialogProvider({ children }: { children: ReactNode }) {
-  useEffect(() => {
+  useBrowserEnv(({ document }) => {
     const root = document.querySelector("#dialog");
     if (typeof window !== "undefined") {
       if (root) {
         if (window.dialog === root) window.dialog = new Dialog();
       }
     }
-  }, []);
+  }, null);
 
   return (
     <>
