@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import type { ExecutionConfig } from "@/types/workflow";
 import ExecutorEditorModal from "@/contexts/ExecutorEditor/Modal";
 import type {
-  WorkflowNodeProps,
+  CoreWorkflowNode,
   GroupNodeData,
   WorkflowNode,
 } from "@/types/nodes";
@@ -21,13 +21,18 @@ import type {
   ExecutorOnSave,
   ExecutorOnInternalNodesChange,
 } from "./type";
+import { NodeProps } from "react-cosmos-diagram";
 
+type ExecutorEditorNodeProps = NodeProps<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  CoreWorkflowNode<Record<string, unknown>, any>
+>;
 interface ExecutorEditorContextValue {
   registerOnSave: (callback: ExecutorOnSave) => () => void;
   registerOnInternalNodesChange: (
     callback: ExecutorOnInternalNodesChange,
   ) => () => void;
-  open: (node: WorkflowNodeProps) => void;
+  open: (node: ExecutorEditorNodeProps) => void;
   close: () => void;
 }
 
@@ -50,7 +55,7 @@ export function ExecutorEditorProvider({
   const [show, setShow] = useState(false);
   const [state, setState] = useState<ExecutorEditorState | null>(null);
 
-  const open = useCallback((node: WorkflowNodeProps) => {
+  const open = useCallback((node: ExecutorEditorNodeProps) => {
     const config = node?.data?.execution?.config;
 
     // Extract internalNodes for group nodes

@@ -1,4 +1,4 @@
-import { Port } from "react-cosmos-diagram";
+import { NodeProps, Port } from "react-cosmos-diagram";
 import {
   Circle,
   Loader2,
@@ -12,16 +12,15 @@ import {
   FileText,
 } from "lucide-react";
 import type {
-  ServiceNodeProps,
   NodeStatus,
   ServiceType,
   HttpMethod,
-  WorkflowNodeProps,
+  ServiceNode,
 } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import PRDTooltip from "./PRDTooltip";
-import  Tooltip  from "@/components/ui/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 
 const statusConfig: Record<
   NodeStatus,
@@ -66,7 +65,7 @@ const methodColors: Record<HttpMethod, string> = {
   DELETE: "bg-red-100 text-red-700",
 };
 
-export function ServiceNode(nodeProps: ServiceNodeProps) {
+export function ServiceNode(nodeProps: NodeProps<ServiceNode>) {
   const { data, selected } = nodeProps;
   const { open } = useExecutorEditor();
 
@@ -82,7 +81,7 @@ export function ServiceNode(nodeProps: ServiceNodeProps) {
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(nodeProps as WorkflowNodeProps);
+    open(nodeProps);
   };
 
   // 실행 상태에 따른 스타일

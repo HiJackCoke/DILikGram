@@ -1,8 +1,8 @@
-import { Port } from "react-cosmos-diagram";
+import { NodeProps, Port } from "react-cosmos-diagram";
 import { Square } from "lucide-react";
-import Tooltip  from "@/components/ui/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 
-import type { ExecutionSummary, EndNodeProps } from "@/types";
+import type { ExecutionSummary, EndNode } from "@/types";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 
 // success: {
@@ -58,7 +58,7 @@ function TooltipContent({ summary }: ExecutionSummaryTooltipProps) {
   );
 }
 
-export function EndNode({ data, selected }: EndNodeProps) {
+export function EndNode({ data, selected }: NodeProps<EndNode>) {
   const summary = data.execution?.summary;
   const hasSummary = !!summary;
 

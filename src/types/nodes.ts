@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { NodeProps, Position, Node } from "react-cosmos-diagram";
+import type { Position, Node } from "react-cosmos-diagram";
 import type { ExecutionData } from "./workflow";
 import type { PRDReference, TestCase } from "./prd";
 
@@ -52,9 +52,10 @@ type WorkflowNodeData<T> = T & {
   testCases?: TestCase[];
 };
 
-export type WorkflowNodeProps<T = unknown> = NodeProps<WorkflowNodeData<T>> & {
-  type: WorkflowNodeType;
-};
+export type CoreWorkflowNode<
+  D extends Record<string, unknown>,
+  T extends WorkflowNodeType = "task",
+> = Node<WorkflowNodeData<D>, T>;
 // ============================================
 // StartNode
 // ============================================
@@ -62,7 +63,7 @@ export type StartNodeData = {
   title?: string;
 };
 
-export type StartNodeProps = WorkflowNodeProps<StartNodeData>;
+export type StartNode = CoreWorkflowNode<StartNodeData, "start">;
 
 // ============================================
 // EndNode
@@ -72,7 +73,7 @@ export type EndNodeData = {
   title?: string;
 };
 
-export type EndNodeProps = WorkflowNodeProps<EndNodeData>;
+export type EndNode = CoreWorkflowNode<EndNodeData, "end">;
 
 // ============================================
 // TaskNode
@@ -88,7 +89,7 @@ export type TaskNodeData = {
   metadata?: Record<string, string>;
 };
 
-export type TaskNodeProps = WorkflowNodeProps<TaskNodeData>;
+export type TaskNode = CoreWorkflowNode<TaskNodeData, "task">;
 
 // ============================================
 // DecisionNode
@@ -99,7 +100,7 @@ export type DecisionNodeData = {
   mode?: EditMode;
 };
 
-export type DecisionNodeProps = WorkflowNodeProps<DecisionNodeData>;
+export type DecisionNode = CoreWorkflowNode<DecisionNodeData, "decision">;
 
 // ============================================
 // ServiceNode
@@ -135,7 +136,7 @@ export type ServiceNodeData = {
   };
 };
 
-export type ServiceNodeProps = WorkflowNodeProps<ServiceNodeData>;
+export type ServiceNode = CoreWorkflowNode<ServiceNodeData, "service">;
 
 // ============================================
 // GroupNode
@@ -168,7 +169,7 @@ export type GroupNodeData = {
   collapsed?: boolean;
 };
 
-export type GroupNodeProps = WorkflowNodeProps<GroupNodeData>;
+export type GroupNode = CoreWorkflowNode<GroupNodeData, "group">;
 
 export type WorkflowNodeMap = {
   start: StartNodeData;
@@ -182,16 +183,14 @@ export type WorkflowNodeMap = {
 // ============================================
 // 워크플로우 노드 타입 (ReactDiagram용)
 // ============================================
-export type WorkflowNode = Node<
-  WorkflowNodeData<
-    | StartNodeData
-    | EndNodeData
-    | TaskNodeData
-    | DecisionNodeData
-    | ServiceNodeData
-    | GroupNodeData
-  >,
-  WorkflowNodeType //react-cosmos-diagram 에서 type 엄격화가 안되어서 우선 string 추가
+export type WorkflowNode = CoreWorkflowNode<
+  | StartNodeData
+  | EndNodeData
+  | TaskNodeData
+  | DecisionNodeData
+  | ServiceNodeData
+  | GroupNodeData,
+  WorkflowNodeType
 >;
 
 // ============================================

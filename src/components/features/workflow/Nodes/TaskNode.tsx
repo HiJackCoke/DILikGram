@@ -1,4 +1,4 @@
-import { Port } from "react-cosmos-diagram";
+import { NodeProps, Port } from "react-cosmos-diagram";
 import {
   Circle,
   Loader2,
@@ -8,15 +8,11 @@ import {
   Settings,
   FileText,
 } from "lucide-react";
-import type {
-  TaskNodeProps,
-  NodeStatus,
-  WorkflowNodeProps,
-} from "@/types/nodes";
+import type { NodeStatus, TaskNode } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import PRDTooltip from "./PRDTooltip";
-import  Tooltip  from "@/components/ui/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 
 const statusConfig: Record<
   NodeStatus,
@@ -46,7 +42,7 @@ const statusConfig: Record<
   },
 };
 
-export function TaskNode(nodeProps: TaskNodeProps) {
+export function TaskNode(nodeProps: NodeProps<TaskNode>) {
   const { data, selected } = nodeProps;
   const { open } = useExecutorEditor();
 
@@ -61,7 +57,7 @@ export function TaskNode(nodeProps: TaskNodeProps) {
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(nodeProps as WorkflowNodeProps);
+    open(nodeProps);
   };
 
   // 실행 상태에 따른 스타일

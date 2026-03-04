@@ -5,7 +5,6 @@ import { DecisionNode } from "./DecisionNode";
 import { ServiceNode } from "./ServiceNode";
 import { GroupNode } from "./GroupNode";
 
-
 // Node Types for ReactDiagram
 export const nodeTypes = {
   start: StartNode,

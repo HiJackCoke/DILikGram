@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  MouseEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
   type MouseEventHandler,
-  type TouchEvent,
   type TouchEventHandler,
+  type TouchEvent as ReactTouchEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import ReactDiagram, {
   useNodesState,
@@ -16,9 +16,8 @@ import ReactDiagram, {
   useStore,
   addEdge,
   updateEdge,
-  type Connection,
-  type Node,
   MarkerType,
+  type Connection,
   type XYPosition,
 } from "react-cosmos-diagram";
 
@@ -92,11 +91,8 @@ export default function WorkflowPage() {
   const { onTouchStart, onTouchMove, onTouchEnd } = useLongPress({
     onLongPress: handleLongPress,
   });
-  const [nodes, setNodes, onNodesChange] = useNodesState<
-    WorkflowNode["data"],
-    WorkflowNodeType
-  >([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<WorkflowEdge>([]);
 
   // Clipboard state for copy/paste
   const [clipboard, setClipboard] = useState<WorkflowNode[]>([]);
@@ -217,13 +213,13 @@ export default function WorkflowPage() {
   };
 
   const handleOpenPropertiesPanel = useCallback(
-    (_: unknown, node: Node) => {
+    (_: unknown, node: WorkflowNode) => {
       openPropertiesPanel(node as WorkflowNode);
     },
     [openPropertiesPanel],
   );
 
-  const handleNodeClick = (_: unknown, node: Node) => {
+  const handleNodeClick = (_: unknown, node: WorkflowNode) => {
     // Handle START node - execute workflow
     if (node.type === "start") {
       if (isExecuting) return;
@@ -244,7 +240,7 @@ export default function WorkflowPage() {
   };
 
   const handleNodeContextMenu = useCallback(
-    (event: React.MouseEvent, node: Node) => {
+    (event: ReactMouseEvent, node: WorkflowNode) => {
       event.preventDefault();
 
       // Don't allow editing START and END nodes
@@ -611,7 +607,7 @@ export default function WorkflowPage() {
     );
   }
 
-  function handleLongPress(event: React.TouchEvent, node: Node) {
+  function handleLongPress(event: ReactTouchEvent, node: WorkflowNode) {
     const touch = event.touches?.[0];
     if (touch && node.id) {
       openAIEdit(node.id, { x: touch.clientX, y: touch.clientY });
@@ -665,28 +661,31 @@ export default function WorkflowPage() {
     setActiveNodeType(null);
   };
 
-  const handleOnNodeDragStart = (event: MouseEvent, node: Node) => {
-    const toucheEvent = event as unknown as TouchEvent;
+  const handleOnNodeDragStart = (
+    event: MouseEvent | TouchEvent,
+    node: WorkflowNode,
+  ) => {
+    const toucheEvent = event as unknown as ReactTouchEvent;
     if (toucheEvent.touches?.[0]) {
       onTouchStart(toucheEvent, node);
     }
   };
 
   const handleOnNodeDrag = (
-    event: MouseEvent,
-    _draggingNode: Node,
-    _draggingNodes: Node[],
+    event: MouseEvent | TouchEvent,
+    _draggingNode: WorkflowNode,
+    _draggingNodes: WorkflowNode[],
   ) => {
-    const toucheEvent = event as unknown as TouchEvent;
+    const toucheEvent = event as unknown as ReactTouchEvent;
     if (toucheEvent.touches?.[0]) {
       onTouchMove(toucheEvent);
     }
   };
 
   const handleOnNodeDragEnd = (
-    _event: MouseEvent,
-    _draggingNode: Node,
-    draggingNodes: Node[],
+    _event: MouseEvent | TouchEvent,
+    _draggingNode: WorkflowNode,
+    draggingNodes: WorkflowNode[],
   ) => {
     onTouchEnd();
 
@@ -734,6 +733,7 @@ export default function WorkflowPage() {
       <NodeTemplatePanel onDragStart={handleDragStart} />
 
       <ReactDiagram
+        deleteKeyCode={null}
         dragSelectionKeyCode={null}
         nodes={enhancedNodes}
         edges={enhancedEdges}

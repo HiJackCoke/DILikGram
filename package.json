@@ -22,7 +22,7 @@
     "openai": "^6.17.0",
     "pdf-parse": "^1.1.1",
     "react": "^19.2.0",
-    "react-cosmos-diagram": "^0.9.0",
+    "react-cosmos-diagram": "^0.11.0",
     "react-dom": "^19.2.0",
     "uuid": "^13.0.0",
     "zustand": "^5.0.8"

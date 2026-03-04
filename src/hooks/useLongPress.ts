@@ -5,11 +5,11 @@
  * Automatically cancels if touch moves beyond threshold (to distinguish from drag)
  */
 
-import { useRef, useCallback } from "react";
-import type { Node } from "react-cosmos-diagram";
+import { WorkflowNode } from "@/types";
+import { TouchEvent, useRef, useCallback } from "react";
 
 interface UseLongPressOptions {
-  onLongPress: (event: React.TouchEvent, node: Node) => void;
+  onLongPress: (event: TouchEvent, node: WorkflowNode) => void;
   delay?: number; // Default: 500ms
   moveThreshold?: number; // Default: 10px (movement allowed before cancellation)
 }
@@ -23,7 +23,7 @@ export function useLongPress({
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleTouchStart = useCallback(
-    (event: React.TouchEvent, node: Node) => {
+    (event: TouchEvent, node: WorkflowNode) => {
       // Store initial touch position
       const touch = event.touches?.[0];
 
@@ -38,11 +38,11 @@ export function useLongPress({
         onLongPress(event, node);
       }, delay);
     },
-    [onLongPress, delay]
+    [onLongPress, delay],
   );
 
   const handleTouchMove = useCallback(
-    (event: React.TouchEvent) => {
+    (event: TouchEvent) => {
       if (!startPosRef.current || !timerRef.current) return;
 
       const touch = event.touches[0];
@@ -59,7 +59,7 @@ export function useLongPress({
         startPosRef.current = null;
       }
     },
-    [moveThreshold]
+    [moveThreshold],
   );
 
   const handleTouchEnd = useCallback(() => {

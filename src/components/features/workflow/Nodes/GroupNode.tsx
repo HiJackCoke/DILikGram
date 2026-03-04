@@ -1,4 +1,4 @@
-import { Port } from "react-cosmos-diagram";
+import { NodeProps, Port } from "react-cosmos-diagram";
 import {
   Folder,
   FolderOpen,
@@ -9,13 +9,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import type { GroupNodeProps, WorkflowNodeProps } from "@/types/nodes";
+import type { GroupNode } from "@/types/nodes";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import PRDTooltip from "./PRDTooltip";
-import  Tooltip  from "@/components/ui/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 
-export function GroupNode(nodeProps: GroupNodeProps) {
+export function GroupNode(nodeProps: NodeProps<GroupNode>) {
   const { data, selected } = nodeProps;
   const [collapsed, setCollapsed] = useState(data.collapsed ?? true);
 
@@ -32,7 +32,7 @@ export function GroupNode(nodeProps: GroupNodeProps) {
 
   const handleOpenEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(nodeProps as WorkflowNodeProps);
+    open(nodeProps);
   };
 
   const hasExecutor = !!data.execution?.config?.functionCode;

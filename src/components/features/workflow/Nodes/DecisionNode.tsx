@@ -1,12 +1,12 @@
-import { Port, Position } from "react-cosmos-diagram";
+import { NodeProps, Port, Position } from "react-cosmos-diagram";
 import { GitBranch, Settings, FileText } from "lucide-react";
-import type { DecisionNodeProps, WorkflowNodeProps } from "@/types/nodes";
+import type { DecisionNode } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import PRDTooltip from "./PRDTooltip";
-import Tooltip  from "@/components/ui/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 
-export function DecisionNode(nodeProps: DecisionNodeProps) {
+export function DecisionNode(nodeProps: NodeProps<DecisionNode>) {
   const { data, selected } = nodeProps;
   const { open } = useExecutorEditor();
 
@@ -18,7 +18,7 @@ export function DecisionNode(nodeProps: DecisionNodeProps) {
   // Handle settings button click
   const handleOpenExecutorEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
-    open(nodeProps as WorkflowNodeProps);
+    open(nodeProps);
   };
 
   // 실행 상태에 따른 스타일
