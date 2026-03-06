@@ -734,7 +734,6 @@ export default function WorkflowPage() {
 
       <ReactDiagram
         deleteKeyCode={null}
-        dragSelectionKeyCode={null}
         nodes={enhancedNodes}
         edges={enhancedEdges}
         nodeTypes={nodeTypes}
