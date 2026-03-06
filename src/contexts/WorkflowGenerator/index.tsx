@@ -4,7 +4,9 @@
  * WorkflowGenerator context provider
  *
  * Manages state for AI-powered workflow generation modal
- * and orchestrates the generation pipeline.
+ * and orchestrates the 2-step generation pipeline:
+ *   Step 1: analyzePRDAction → show analysis review
+ *   Step 2: generateWorkflowAction (with analysis result) → add to canvas
  */
 
 import {
@@ -23,7 +25,12 @@ import type {
   RegisterOnWorkflowGenerated,
 } from "./type";
 import type { ValidationProgress } from "../../types/ai/validators";
-import { generateWorkflowAction, updateWorkflowAction } from "@/app/actions/ai";
+import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import {
+  analyzePRDAction,
+  generateWorkflowAction,
+  updateWorkflowAction,
+} from "@/app/actions/ai";
 import {
   createWorkflow,
   sanitizeNewNodeIds,
@@ -53,20 +60,31 @@ export function WorkflowGeneratorProvider({
   const listeners = useRef<RegisterOnWorkflowGenerated[]>([]);
   const existingNodesRef = useRef<WorkflowNode[]>([]);
 
+  // Persisted across both steps so handleGenerate can use them
+  const pendingPromptRef = useRef<string>("");
+  const pendingPrdContentRef = useRef<string | undefined>(undefined);
+
   const [show, setShow] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationProgress, setValidationProgress] =
     useState<ValidationProgress | null>(null);
+  const [analysisResult, setAnalysisResult] =
+    useState<PRDAnalysisResult | null>(null);
 
   const open = useCallback(() => {
     setShow(true);
     setError(null);
+    setAnalysisResult(null);
   }, []);
 
   const close = useCallback(() => {
     setShow(false);
     setError(null);
+    setAnalysisResult(null);
+    pendingPromptRef.current = "";
+    pendingPrdContentRef.current = undefined;
   }, []);
 
   const registerOnGenerate = useCallback(
@@ -86,89 +104,105 @@ export function WorkflowGeneratorProvider({
     existingNodesRef.current = nodes;
   }, []);
 
-  const handleGenerate = useCallback(
-    async (prompt: string, prdContent?: string) => {
-      setIsGenerating(true);
+  /**
+   * Step 1: Analyze PRD → extract pages & features
+   */
+  const handleAnalyze = useCallback(
+    async (prompt: string, prdContent: string) => {
+      setIsAnalyzing(true);
       setError(null);
+      setAnalysisResult(null);
 
-      // NEW: Report AI generation start (Step 1 of 8)
-      setValidationProgress({
-        currentValidator: "AI Generation",
-        totalValidators: 7,
-        completedValidators: 0,
-        status: "validating",
-        message: "Generating workflow with AI...",
-        currentStep: 1,
-        totalSteps: 8,
-      });
+      // Persist for use in step 2
+      pendingPromptRef.current = prompt;
+      pendingPrdContentRef.current = prdContent;
 
       try {
-        // 1. Load node library
-        const nodeLibrary = loadNodeLibrary();
-
-        // 2. Call OpenAI API with PRD content and node library
-        const generated = await generateWorkflowAction(
-          prompt,
-          prdContent,
-          nodeLibrary,
-        );
-
-        // 3. Process workflow (validate, layout, and map to WorkflowNode/Edge)
-        const sanitized = sanitizeNewNodeIds(generated.nodes);
-        let workingNodes = [...sanitized];
-
-        // 3. Run validation pipeline (Steps 2-8)
-        workingNodes = await runValidationPipeline(
-          {
-            nodes: workingNodes,
-            dialog: dialog,
-            updateWorkflowAction,
-          },
-          (progress) => {
-            // Map validation progress to Steps 2-8
-            setValidationProgress({
-              ...progress,
-              currentStep: progress.completedValidators + 2, // Steps 2-8
-              totalSteps: 8,
-            });
-          },
-        );
-
-        // Rebuild data.groups from final flat workingNodes (fixes stale groups[] from ai.ts)
-        workingNodes = rebuildGroupChildren(workingNodes);
-        workingNodes = deduplicateNodesById(workingNodes);
-
-        const { nodes, edges } = createWorkflow(
-          workingNodes,
-          existingNodesRef.current,
-        );
-
-        // 4. Extract and save reusable nodes to library
-        const reusableNodes = extractReusableNodes(nodes);
-        if (reusableNodes.length > 0) {
-          saveToNodeLibrary(reusableNodes);
-          console.log(
-            `Saved ${reusableNodes.length} reusable nodes to library`,
-          );
-        }
-
-        // 5. Notify listeners
-        listeners.current.forEach((listener) => listener(nodes, edges));
-
-        // 6. Close modal
-        close();
+        const result = await analyzePRDAction(prdContent, prompt);
+        setAnalysisResult(result);
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to generate workflow";
+          err instanceof Error ? err.message : "PRD 분석에 실패했습니다";
         setError(errorMessage);
-        console.error("Workflow generation error:", err);
+        console.error("PRD analysis error:", err);
       } finally {
-        setIsGenerating(false);
-        setValidationProgress(null);
+        setIsAnalyzing(false);
       }
     },
-    [close],
+    [],
   );
+
+  /**
+   * Step 2: Generate workflow using analysis result + original PRD
+   */
+  const handleGenerate = useCallback(async () => {
+    setIsGenerating(true);
+    setError(null);
+
+    setValidationProgress({
+      currentValidator: "AI Generation",
+      totalValidators: 7,
+      completedValidators: 0,
+      status: "validating",
+      message: "Generating workflow with AI...",
+      currentStep: 1,
+      totalSteps: 8,
+    });
+
+    try {
+      const nodeLibrary = loadNodeLibrary();
+
+      const generated = await generateWorkflowAction(
+        pendingPromptRef.current,
+        pendingPrdContentRef.current,
+        nodeLibrary,
+        analysisResult ?? undefined,
+      );
+
+      const sanitized = sanitizeNewNodeIds(generated.nodes);
+      let workingNodes = [...sanitized];
+
+      workingNodes = await runValidationPipeline(
+        {
+          nodes: workingNodes,
+          dialog: dialog,
+          updateWorkflowAction,
+        },
+        (progress) => {
+          setValidationProgress({
+            ...progress,
+            currentStep: progress.completedValidators + 2,
+            totalSteps: 8,
+          });
+        },
+      );
+
+      workingNodes = rebuildGroupChildren(workingNodes);
+      workingNodes = deduplicateNodesById(workingNodes);
+
+      const { nodes, edges } = createWorkflow(
+        workingNodes,
+        existingNodesRef.current,
+      );
+
+      const reusableNodes = extractReusableNodes(nodes);
+      if (reusableNodes.length > 0) {
+        saveToNodeLibrary(reusableNodes);
+        console.log(`Saved ${reusableNodes.length} reusable nodes to library`);
+      }
+
+      listeners.current.forEach((listener) => listener(nodes, edges));
+      close();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to generate workflow";
+      setError(errorMessage);
+      console.error("Workflow generation error:", err);
+    } finally {
+      setIsGenerating(false);
+      setValidationProgress(null);
+    }
+  }, [close, analysisResult]);
 
   return (
     <WorkflowGeneratorContext
@@ -186,9 +220,12 @@ export function WorkflowGeneratorProvider({
 
       <WorkflowGeneratorModal
         show={show}
+        isAnalyzing={isAnalyzing}
         isGenerating={isGenerating}
         error={error}
         validationProgress={validationProgress}
+        analysisResult={analysisResult}
+        onAnalyze={handleAnalyze}
         onGenerate={handleGenerate}
         onClose={close}
       />

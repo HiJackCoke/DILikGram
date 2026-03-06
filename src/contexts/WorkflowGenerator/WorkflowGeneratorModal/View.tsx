@@ -1,48 +1,46 @@
 /**
  * WorkflowGenerator View Component
  *
- * Main UI layout for AI workflow generation modal
+ * Step 1 UI: PRD upload + prompt input → "분석하기"
  */
 
-import { Sparkles, AlertCircle } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import FileUploader from "@/components/ui/FileUploader";
 import PromptInput from "./PromptInput";
 import InteractiveLoader from "./InteractiveLoader";
-import type { ValidationProgress } from "../../../types/ai/validators";
 
 interface WorkflowGeneratorViewProps {
   prompt: string;
   prdMode: "pdf" | "text";
   prdText: string;
-  canGenerate: boolean;
-  // hasSavedKey: boolean;
-  isGenerating: boolean;
+  canAnalyze: boolean;
+  isAnalyzing: boolean;
   error: string | null;
-  validationProgress: ValidationProgress | null;
   onPromptChange: (value: string) => void;
   onPRDFileChange: (files: File[]) => void;
   onPrdModeChange: (mode: "pdf" | "text") => void;
   onPrdTextChange: (text: string) => void;
-  // onSaveApiKey: (key: string) => void;
-  // onRemoveApiKey: () => void;
-  onGenerate: () => void;
+  onAnalyze: () => void;
   onClose?: () => void;
 }
 
-function Header() {
+function Header({ step }: { step?: "input" | "review" }) {
   return (
     <div className="flex items-start gap-3">
       <div className="p-2 bg-palette-primary-bg rounded-lg">
-        <Sparkles className="w-5 h-5 text-white" />
+        <Search className="w-5 h-5 text-white" />
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          Generate Workflow with AI
+          {step === "review"
+            ? "Review PRD analysis results"
+            : "Generate Workflow with AI"}
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          Describe your workflow in natural language and let AI create nodes and
-          connections for you.
+          {step === "review"
+            ? "Check the analysis results below and create a workflow."
+            : "Upload your PRD, enter the prompt, and click Analyze."}
         </p>
       </div>
     </div>
@@ -53,25 +51,19 @@ function WorkflowGeneratorView({
   prompt,
   prdMode,
   prdText,
-  canGenerate,
-  // hasSavedKey,
-  isGenerating,
+  canAnalyze,
+  isAnalyzing,
   error,
-  validationProgress,
   onPromptChange,
   onPRDFileChange,
   onPrdModeChange,
   onPrdTextChange,
-  // onSaveApiKey,
-  // onRemoveApiKey,
-  onGenerate,
+  onAnalyze,
   onClose,
 }: WorkflowGeneratorViewProps) {
   return (
     <>
       <div className="p-6 space-y-6 overflow-scroll">
-        {/* Header */}
-
         {/* PRD Document */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
@@ -114,15 +106,14 @@ function WorkflowGeneratorView({
                 value={prdText}
                 onChange={(e) => onPrdTextChange(e.target.value)}
                 placeholder="PRD 내용을 붙여넣기 하세요..."
-                disabled={isGenerating}
+                disabled={isAnalyzing}
                 className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-palette-primary-bg focus:bg-white focus:outline-none focus:ring-1 focus:ring-palette-primary-bg resize-none disabled:opacity-50"
               />
             )}
           </div>
 
           <p className="text-xs text-gray-500">
-            PRD를 입력하면 AI가 PRD 참조와 테스트 케이스를 포함한 노드를
-            생성합니다
+            PRD를 입력하면 AI가 페이지 구조를 분석합니다
           </p>
         </div>
 
@@ -130,7 +121,7 @@ function WorkflowGeneratorView({
         <PromptInput
           value={prompt}
           onChange={onPromptChange}
-          disabled={isGenerating}
+          disabled={isAnalyzing}
         />
 
         {/* Error Display */}
@@ -147,23 +138,23 @@ function WorkflowGeneratorView({
             palette="secondary"
             variant="outline"
             onClick={onClose}
-            disabled={isGenerating}
+            disabled={isAnalyzing}
           >
             Cancel
           </Button>
           <Button
             palette="primary"
-            icon={<Sparkles className="w-4 h-4" />}
+            icon={<Search className="w-4 h-4" />}
             iconPosition="left"
-            onClick={onGenerate}
-            disabled={!canGenerate || isGenerating}
-            loading={isGenerating}
+            onClick={onAnalyze}
+            disabled={!canAnalyze || isAnalyzing}
+            loading={isAnalyzing}
           >
-            {isGenerating ? "Generating..." : "Generate Workflow"}
+            {isAnalyzing ? "Analyzing..." : "Analyze"}
           </Button>
         </div>
       </div>
-      {<InteractiveLoader progress={validationProgress} />}
+      {<InteractiveLoader progress={null} />}
     </>
   );
 }

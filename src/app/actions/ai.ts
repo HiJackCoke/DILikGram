@@ -23,6 +23,7 @@ import type {
   DecisionNodeData,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
+import type { PRDAnalysisResult, AnalyzePRDAction } from "@/types/ai/prdAnalysis";
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -32,6 +33,11 @@ import {
   getModificationContent,
   MODIFICATION_SYSTEM_PROMPT,
 } from "@/fixtures/prompts/modification";
+import {
+  ANALYSIS_SYSTEM_PROMPT,
+  getAnalysisContent,
+} from "@/fixtures/prompts/analysis";
+import { buildAnalysisContext } from "@/utils/prd/contextBuilder";
 
 // ============================================================================
 // OPENAI CLIENT INITIALIZATION
@@ -92,6 +98,61 @@ function handleOpenAIError(error: unknown): never {
 // ============================================================================
 
 /**
+ * Analyze PRD and extract page/feature structure (Step 1 of 2-step pipeline)
+ *
+ * @param prdContent - Base64 PDF data URL or plain text PRD
+ * @param prompt - User's additional context/instructions
+ * @returns Structured PRD analysis with pages and features
+ */
+export const analyzePRDAction: AnalyzePRDAction = async (
+  prdContent,
+  prompt,
+) => {
+  if (!prdContent || !prdContent.trim()) {
+    throw new Error("PRD content is required for analysis");
+  }
+
+  try {
+    const openai = getOpenAIClient();
+
+    let prdText: string;
+    if (prdContent.startsWith("data:application/pdf;base64,")) {
+      const base64Data = prdContent.replace(/^data:application\/pdf;base64,/, "");
+      const pdfBuffer = Buffer.from(base64Data, "base64");
+      const pdfData = await pdfParse(pdfBuffer);
+      prdText = pdfData.text;
+    } else {
+      prdText = prdContent;
+    }
+
+    const response = await openai.responses.create({
+      model: "gpt-4o-mini",
+      temperature: 0.3,
+      instructions: ANALYSIS_SYSTEM_PROMPT,
+      input: getAnalysisContent(prdText, prompt),
+      text: {
+        format: { type: "json_object" },
+      },
+    });
+
+    const content = response.output_text;
+    if (!content) {
+      throw new Error("No response from OpenAI");
+    }
+
+    const result = JSON.parse(content) as PRDAnalysisResult;
+
+    if (!result.goal || !Array.isArray(result.pages)) {
+      throw new Error("Invalid analysis response structure from OpenAI");
+    }
+
+    return result;
+  } catch (error) {
+    handleOpenAIError(error);
+  }
+};
+
+/**
  * Generate workflow from prompt using GPT-4o-mini
  *
  * @param prompt - User's workflow description
@@ -103,6 +164,7 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
   prompt,
   prdContent,
   nodeLibrary,
+  analysisResult?: PRDAnalysisResult,
 ) => {
   if (!prompt || !prompt.trim()) {
     throw new Error("Workflow description is required");
@@ -123,11 +185,16 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
       }
     }
 
+    // If analysis result is provided, append it to the prd text for richer context
+    const enrichedPrdText = analysisResult
+      ? `${prdText ?? ""}\n\n${buildAnalysisContext(analysisResult)}`
+      : prdText;
+
     const response = await openai.responses.create({
       model: "gpt-4o-mini",
       temperature: 0.3,
       instructions: GENERATION_SYSTEM_PROMPT,
-      input: getGenerationContent(prompt, prdText, nodeLibrary),
+      input: getGenerationContent(prompt, enrichedPrdText, nodeLibrary),
       text: {
         format: { type: "json_object" },
       },

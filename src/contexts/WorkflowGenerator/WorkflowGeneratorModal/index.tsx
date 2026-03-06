@@ -1,51 +1,57 @@
 /**
  * WorkflowGeneratorModal - Main modal component for AI workflow generation
  *
- * Manages local state for API key and prompt, and orchestrates
- * the generation process through the context provider.
+ * Step 1 (input): User uploads PRD and enters prompt → "분석하기"
+ * Step 2 (review): Show analysis result → "워크플로우 생성"
  */
 
 import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import WorkflowGeneratorView from "./View";
+import AnalysisReview from "./AnalysisReview";
+import InteractiveLoader from "./InteractiveLoader";
 import { ModalProps } from "@/types";
 import type { ValidationProgress } from "../../../types/ai/validators";
-// import {
-//   loadApiKey,
-//   saveApiKey,
-//   removeApiKey,
-//   hasApiKey,
-// } from "@/utils/localStorage";
+import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+
+type Step = "input" | "review";
 
 interface WorkflowGeneratorModalProps
   extends Pick<ModalProps, "show" | "onClose"> {
+  isAnalyzing: boolean;
   isGenerating: boolean;
   error: string | null;
   validationProgress: ValidationProgress | null;
-  onGenerate: (prompt: string, prdContent?: string) => void;
+  analysisResult: PRDAnalysisResult | null;
+  onAnalyze: (prompt: string, prdContent: string) => void;
+  onGenerate: () => void;
 }
 
 export default function WorkflowGeneratorModal({
   show,
+  isAnalyzing,
   isGenerating,
   error,
   validationProgress,
+  analysisResult,
+  onAnalyze,
   onGenerate,
   onClose,
 }: WorkflowGeneratorModalProps) {
+  const [step, setStep] = useState<Step>("input");
   const [prompt, setPrompt] = useState("");
   const [prdFiles, setPRDFiles] = useState<File[]>([]);
   const [prdMode, setPrdMode] = useState<"pdf" | "text">("pdf");
   const [prdText, setPrdText] = useState("");
 
-  const canGenerate =
+  const canAnalyze =
     prompt.trim().length > 0 &&
     (prdMode === "pdf" ? prdFiles.length > 0 : prdText.trim().length > 0);
 
-  const handleGenerate = async () => {
-    if (!canGenerate) return;
+  const handleAnalyze = async () => {
+    if (!canAnalyze) return;
 
-    let prdContent: string | undefined;
+    let prdContent: string;
 
     if (prdMode === "pdf" && prdFiles.length > 0) {
       const arrayBuffer = await prdFiles[0].arrayBuffer();
@@ -56,38 +62,60 @@ export default function WorkflowGeneratorModal({
         ),
       );
       prdContent = `data:application/pdf;base64,${base64}`;
-    } else if (prdMode === "text" && prdText.trim()) {
+    } else {
       prdContent = prdText.trim();
     }
 
-    onGenerate(prompt.trim(), prdContent);
+    await onAnalyze(prompt.trim(), prdContent);
+    setStep("review");
+  };
+
+  const handleCancelReview = () => {
+    setStep("input");
+  };
+
+  const handleClose = () => {
+    setStep("input");
+    onClose?.();
   };
 
   return (
     <Modal
-      // selector="#workflow-generator-modal"
       show={show}
-      title={<WorkflowGeneratorView.Header />}
-      onClose={onClose}
+      title={<WorkflowGeneratorView.Header step={step} />}
+      onClose={handleClose}
     >
-      <WorkflowGeneratorView
-        prompt={prompt}
-        prdMode={prdMode}
-        prdText={prdText}
-        canGenerate={canGenerate}
-        // hasSavedKey={hasSavedKey}
-        isGenerating={isGenerating}
-        error={error}
-        validationProgress={validationProgress}
-        onPromptChange={setPrompt}
-        onPRDFileChange={setPRDFiles}
-        onPrdModeChange={setPrdMode}
-        onPrdTextChange={setPrdText}
-        // onSaveApiKey={handleSaveApiKey}
-        // onRemoveApiKey={handleRemoveApiKey}
-        onGenerate={handleGenerate}
-        onClose={onClose}
-      />
+      {step === "input" && (
+        <WorkflowGeneratorView
+          prompt={prompt}
+          prdMode={prdMode}
+          prdText={prdText}
+          canAnalyze={canAnalyze}
+          isAnalyzing={isAnalyzing}
+          error={error}
+          onPromptChange={setPrompt}
+          onPRDFileChange={setPRDFiles}
+          onPrdModeChange={setPrdMode}
+          onPrdTextChange={setPrdText}
+          onAnalyze={handleAnalyze}
+          onClose={handleClose}
+        />
+      )}
+
+      {step === "review" && analysisResult && (
+        <>
+          <AnalysisReview
+            analysis={analysisResult}
+            isGenerating={isGenerating}
+            error={error}
+            onGenerate={onGenerate}
+            onCancel={handleCancelReview}
+          />
+          {validationProgress && (
+            <InteractiveLoader progress={validationProgress} />
+          )}
+        </>
+      )}
     </Modal>
   );
 }

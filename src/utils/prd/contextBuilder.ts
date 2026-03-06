@@ -4,6 +4,46 @@
  * Builds context string from PRD text for OpenAI prompt
  */
 
+import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+
+/**
+ * Build structured context from PRD analysis result for workflow generation.
+ * Injected alongside the raw PRD to give AI a pre-structured reference,
+ * reducing hallucination and improving coverage.
+ *
+ * @param analysis - Structured analysis result from analyzePRDAction
+ * @returns Formatted context string to append to the generation prompt
+ */
+export function buildAnalysisContext(analysis: PRDAnalysisResult): string {
+  const pageLines = analysis.pages
+    .map((page) => {
+      const featureLines = page.features
+        .map(
+          (f) =>
+            `    - [${f.priority.toUpperCase()}] ${f.name}: ${f.description}`,
+        )
+        .join("\n");
+      return `  • ${page.name}${page.path ? ` (${page.path})` : ""}\n${featureLines}`;
+    })
+    .join("\n\n");
+
+  return `
+═══════════════════════════════════════════════════════════════
+PRD ANALYSIS SUMMARY (Pre-extracted Structure)
+═══════════════════════════════════════════════════════════════
+
+Product Goal: ${analysis.goal}
+
+Pages & Features to cover:
+${pageLines}
+
+═══════════════════════════════════════════════════════════════
+IMPORTANT: You MUST create nodes for every page and feature listed above.
+Use GroupNodes for pages and child nodes for each feature within them.
+═══════════════════════════════════════════════════════════════
+`;
+}
+
 /**
  * Build PRD context for AI workflow generation
  *
