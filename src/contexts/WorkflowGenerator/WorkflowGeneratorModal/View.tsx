@@ -6,7 +6,7 @@
 
 import { Sparkles, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
-import PDFUploader from "@/components/ui/PDFUploader";
+import FileUploader from "@/components/ui/FileUploader";
 import PromptInput from "./PromptInput";
 import InteractiveLoader from "./InteractiveLoader";
 import type { ValidationProgress } from "../../../types/ai/validators";
@@ -21,7 +21,7 @@ interface WorkflowGeneratorViewProps {
   error: string | null;
   validationProgress: ValidationProgress | null;
   onPromptChange: (value: string) => void;
-  onPRDFileChange: (file: File | null) => void;
+  onPRDFileChange: (files: File[]) => void;
   onPrdModeChange: (mode: "pdf" | "text") => void;
   onPrdTextChange: (text: string) => void;
   // onSaveApiKey: (key: string) => void;
@@ -104,7 +104,11 @@ function WorkflowGeneratorView({
 
           <div className="h-full content-center aspect-video md:aspect-[2/1]">
             {prdMode === "pdf" ? (
-              <PDFUploader onFileSelect={onPRDFileChange} />
+              <FileUploader
+                maxFiles={2}
+                accept=".pdf"
+                onFileChange={onPRDFileChange}
+              />
             ) : (
               <textarea
                 value={prdText}

@@ -34,21 +34,21 @@ export default function WorkflowGeneratorModal({
   onClose,
 }: WorkflowGeneratorModalProps) {
   const [prompt, setPrompt] = useState("");
-  const [prdFile, setPRDFile] = useState<File | null>(null);
+  const [prdFiles, setPRDFiles] = useState<File[]>([]);
   const [prdMode, setPrdMode] = useState<"pdf" | "text">("pdf");
   const [prdText, setPrdText] = useState("");
 
   const canGenerate =
     prompt.trim().length > 0 &&
-    (prdMode === "pdf" ? prdFile !== null : prdText.trim().length > 0);
+    (prdMode === "pdf" ? prdFiles.length > 0 : prdText.trim().length > 0);
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
 
     let prdContent: string | undefined;
 
-    if (prdMode === "pdf" && prdFile) {
-      const arrayBuffer = await prdFile.arrayBuffer();
+    if (prdMode === "pdf" && prdFiles.length > 0) {
+      const arrayBuffer = await prdFiles[0].arrayBuffer();
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce(
           (data, byte) => data + String.fromCharCode(byte),
@@ -80,7 +80,7 @@ export default function WorkflowGeneratorModal({
         error={error}
         validationProgress={validationProgress}
         onPromptChange={setPrompt}
-        onPRDFileChange={setPRDFile}
+        onPRDFileChange={setPRDFiles}
         onPrdModeChange={setPrdMode}
         onPrdTextChange={setPrdText}
         // onSaveApiKey={handleSaveApiKey}

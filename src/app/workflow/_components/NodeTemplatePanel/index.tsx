@@ -156,11 +156,11 @@ export default function NodeTemplatePanel({
     onDragEnd?.(event);
   };
 
-  useEffect(() => {
-    setTimeout(() => {
-      setShow(true);
-    }, 1000);
-  }, []);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     setShow(true);
+  //   }, 1000);
+  // }, []);
 
   return (
     <>
