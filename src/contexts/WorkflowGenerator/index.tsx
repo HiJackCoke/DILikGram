@@ -89,6 +89,11 @@ export function WorkflowGeneratorProvider({
     pendingPrdContentRef.current = undefined;
   }, []);
 
+  const clearAnalysis = useCallback(() => {
+    setAnalysisResult(null);
+    setError(null);
+  }, []);
+
   const registerOnGenerate = useCallback(
     (callback: RegisterOnWorkflowGenerated) => {
       listeners.current.push(callback);
@@ -250,6 +255,7 @@ export function WorkflowGeneratorProvider({
         validationProgress={validationProgress}
         analysisResult={analysisResult}
         onAnalyze={handleAnalyze}
+        onCancelAnalysis={clearAnalysis}
         onGenerate={handleGenerate}
         onClose={close}
       />

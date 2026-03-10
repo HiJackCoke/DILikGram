@@ -25,6 +25,7 @@ interface WorkflowGeneratorModalProps
   analysisResult: PRDAnalysisResult | null;
   onAnalyze: (prompt: string, prdContent: string) => void;
   onGenerate: () => void;
+  onCancelAnalysis: () => void;
 }
 
 export default function WorkflowGeneratorModal({
@@ -36,9 +37,11 @@ export default function WorkflowGeneratorModal({
   analysisResult,
   onAnalyze,
   onGenerate,
+  onCancelAnalysis,
   onClose,
 }: WorkflowGeneratorModalProps) {
-  const [step, setStep] = useState<Step>("input");
+  const step: Step = analysisResult ? "review" : "input";
+
   const [prompt, setPrompt] = useState("");
   const [prdFiles, setPRDFiles] = useState<File[]>([]);
   const [prdMode, setPrdMode] = useState<"pdf" | "text">("pdf");
@@ -67,15 +70,10 @@ export default function WorkflowGeneratorModal({
     }
 
     await onAnalyze(prompt.trim(), prdContent);
-    setStep("review");
   };
 
-  const handleCancelReview = () => {
-    setStep("input");
-  };
 
   const handleClose = () => {
-    setStep("input");
     onClose?.();
   };
 
@@ -109,7 +107,7 @@ export default function WorkflowGeneratorModal({
             isGenerating={isGenerating}
             error={error}
             onGenerate={onGenerate}
-            onCancel={handleCancelReview}
+            onCancel={onCancelAnalysis}
           />
           {validationProgress && (
             <InteractiveLoader progress={validationProgress} />
