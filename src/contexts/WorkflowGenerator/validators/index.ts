@@ -25,6 +25,10 @@ import {
   validateStartNodeChildren,
   repairStartNodeChildren,
 } from "./startNodeChild";
+import {
+  validateSyncOnlyNodes,
+  repairSyncOnlyNodes,
+} from "./syncOnlyNodes";
 
 /**
  * Run validation pipeline
@@ -58,6 +62,11 @@ export async function runValidationPipeline(
       name: "Start Node Children",
       validate: validateStartNodeChildren,
       repair: repairStartNodeChildren,
+    },
+    {
+      name: "Sync-Only Nodes",
+      validate: validateSyncOnlyNodes,
+      repair: repairSyncOnlyNodes,
     },
     {
       name: "Decision Nodes",

@@ -25,16 +25,29 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
      - \`metadata\`: object (Default: {})
      - \`execution\`: object (**REQUIRED**)
        - \`config.functionCode\`: business logic implementation (function body only, no "function" wrapper)
-         - **CRITICAL**: Receives \`inputData\` (output from parent node) and \`fetch\` as parameters
+         - **CRITICAL**: Receives \`inputData\` (output from parent node) as parameter
          - **EXCEPTION**: If parent is a START NODE, inputData will be NULL
            - ❌ Wrong (start child): \`return inputData.tasks.length;\`
            - ✅ Correct (start child): \`return [];\` // initialize data from scratch
          - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
          - ❌ Wrong: \`return tasks.length <= maxTasks\`
          - ✅ Correct: \`return inputData.tasks.length <= maxTasks\`
-         - **CRITICAL SCOPE RULE**: functionCode has ONLY 2 variables available:
+         - **CRITICAL SCOPE RULE**: functionCode has ONLY 1 variable available:
            1. \`inputData\` - Data from parent node's output
-           2. \`fetch\` - Global fetch API for external calls
+
+         - **⚠️ SYNC-ONLY — ABSOLUTE RULE**:
+           Task nodes MUST be synchronous. NEVER write the following in a task node's functionCode:
+           - ❌ \`await\` anything
+           - ❌ \`async function\` or \`async () =>\`
+           - ❌ \`.then()\` / \`.catch()\` chaining
+           - ❌ \`new Promise(...)\`
+           - ❌ \`fetch(...)\` — HTTP/API calls are for ServiceNodes ONLY
+           If your logic requires an HTTP request or any async operation:
+           → You MUST create a **ServiceNode** (type: "service") for that step, NOT a TaskNode.
+           ❌ BAD (task node with API call):
+             functionCode: "const res = await fetch('/api/tasks/' + inputData.id); return res.json();"
+           ✅ CORRECT: create a ServiceNode with serviceType:"api", http config, isAsync:true
+
          - **FORBIDDEN REFERENCES**:
            - ❌ NEVER reference \`metadata\`, \`node\`, \`config\`, \`this\`, or any external variables
            - ❌ Wrong: \`metadata.maxTasks\`, \`node.data.title\`, \`config.timeout\`

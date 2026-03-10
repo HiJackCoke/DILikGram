@@ -135,10 +135,11 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
 
   const isAsync = detectAsync(functionCode);
 
-  // TaskNode must be sync-only
-  if (nodeType === "task" && isAsync) {
+  // TaskNode and DecisionNode must be sync-only
+  if ((nodeType === "task" || nodeType === "decision") && isAsync) {
+    const label = nodeType === "task" ? "TaskNode" : "DecisionNode";
     throw new Error(
-      "TaskNode executors must be synchronous. " +
+      `${label} executors must be synchronous. ` +
         "Async code detected (await, .then, Promise, async). " +
         "Please use a ServiceNode for asynchronous operations instead.",
     );
