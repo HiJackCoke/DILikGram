@@ -29,8 +29,8 @@ const LAYOUT_CONSTANTS = {
   /** Starting X position for root nodes */
   START_X: 300,
 
-  /** Horizontal gap between independent page subtrees */
-  SUBTREE_COLUMN_WIDTH: 500,
+  /** Vertical gap between independent page subtrees */
+  SUBTREE_ROW_GAP: 300,
 
   /** Approximate node dimensions for collision detection */
   NODE_WIDTH: 200,
@@ -170,9 +170,54 @@ function topologicalSortNodes(nodes: LayoutNode[]): LayoutNode[] {
 }
 
 /**
+ * Get the maximum depth of a subtree rooted at the given node ID
+ *
+ * @param nodes - All layout nodes
+ * @param rootId - Root node ID to start from
+ * @returns Maximum depth in the subtree
+ */
+function getSubtreeMaxDepth(nodes: LayoutNode[], rootId: string): number {
+  const queue: Array<{ id: string; depth: number }> = [{ id: rootId, depth: 0 }];
+  let maxDepth = 0;
+
+  while (queue.length > 0) {
+    const { id, depth } = queue.shift()!;
+    maxDepth = Math.max(maxDepth, depth);
+
+    const children = nodes.filter((n) => n.parentNode === id);
+    children.forEach((child) => {
+      queue.push({ id: child.id, depth: depth + 1 });
+    });
+  }
+
+  return maxDepth;
+}
+
+/**
+ * Calculate absolute Y start positions for each root node (vertical stacking)
+ *
+ * @param nodes - All layout nodes
+ * @param rootNodes - Root nodes in order
+ * @returns Map from root node ID to absolute Y position
+ */
+function calculateRootYOffsets(nodes: LayoutNode[], rootNodes: LayoutNode[]): Map<string, number> {
+  const offsets = new Map<string, number>();
+  const nodeHeight = LAYOUT_CONSTANTS.VERTICAL_SPACING + LAYOUT_CONSTANTS.NODE_WIDTH;
+  let currentY = LAYOUT_CONSTANTS.START_Y;
+
+  for (const root of rootNodes) {
+    offsets.set(root.id, currentY);
+    const maxDepth = getSubtreeMaxDepth(nodes, root.id);
+    currentY += (maxDepth + 1) * nodeHeight + LAYOUT_CONSTANTS.SUBTREE_ROW_GAP;
+  }
+
+  return offsets;
+}
+
+/**
  * Apply positioning rules based on hierarchy and branch type.
  * Uses topological sort so parent positions are computed before children reference them.
- * Root nodes (no parentNode) are spread horizontally with SUBTREE_COLUMN_WIDTH spacing.
+ * Root nodes (no parentNode) are stacked vertically in order.
  *
  * @param nodes - Nodes with depth and sibling metadata
  * @returns Nodes with calculated positions
@@ -182,6 +227,7 @@ function applyPositioning(nodes: LayoutNode[]): WorkflowNode[] {
   const computedPositions = new Map<string, { x: number; y: number }>();
   const sorted = topologicalSortNodes(nodes);
   const rootNodes = sorted.filter((n) => !n.parentNode);
+  const rootYOffsets = calculateRootYOffsets(nodes, rootNodes);
   const resultMap = new Map<string, WorkflowNode>();
 
   for (const node of sorted) {
@@ -196,11 +242,12 @@ function applyPositioning(nodes: LayoutNode[]): WorkflowNode[] {
     let x: number;
 
     if (!parentPos) {
-      // Root node: spread horizontally, one column per subtree
-      const rootIndex = rootNodes.findIndex((r) => r.id === node.id);
-      x =
-        LAYOUT_CONSTANTS.START_X +
-        rootIndex * LAYOUT_CONSTANTS.SUBTREE_COLUMN_WIDTH;
+      // Root node: stack vertically, all at the same X
+      x = LAYOUT_CONSTANTS.START_X;
+      const rootY = rootYOffsets.get(node.id) ?? LAYOUT_CONSTANTS.START_Y;
+      computedPositions.set(node.id, { x, y: rootY });
+      resultMap.set(node.id, { ...node, position: { x, y: rootY } });
+      continue;
     } else if (parent?.type === "decision") {
       // Decision branch: special handling
       const branchLabel = node.data.branchLabel as "yes" | "no" | undefined;
