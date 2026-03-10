@@ -80,7 +80,6 @@ export default function InteractiveLoader({
 }: InteractiveLoaderProps) {
   const [currentTip, setCurrentTip] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [previousStep, setPreviousStep] = useState(1);
 
   // Rotate tips every 3 seconds
   useEffect(() => {
@@ -93,46 +92,52 @@ export default function InteractiveLoader({
     return () => clearInterval(interval);
   }, [progress]);
 
-  // Trigger celebration on completion
+  // Trigger celebration on last page completion
   useEffect(() => {
-    if (progress?.status === "completed" && progress.currentStep === 8) {
+    if (
+      progress?.status === "completed" &&
+      progress.currentPageIndex !== undefined &&
+      progress.totalPages !== undefined &&
+      progress.currentPageIndex === progress.totalPages - 1
+    ) {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2000);
     }
-  }, [progress?.status, progress?.currentStep]);
-
-  // Track step changes for transition animation
-  useEffect(() => {
-    const currentStep = progress?.currentStep || 1;
-    if (currentStep !== previousStep) {
-      setPreviousStep(currentStep);
-    }
-  }, [progress?.currentStep, previousStep]);
+  }, [progress?.status, progress?.currentPageIndex, progress?.totalPages]);
 
   if (!progress) return null;
 
-  const currentStep = progress.currentStep || 1;
-  const totalSteps = progress.totalSteps || 8;
-  const stepIndex = currentStep - 1;
-  const stepConfig = STEP_CONFIG[stepIndex];
-  const StepIcon = stepConfig?.icon || Sparkles;
+  const isGeneratePhase = progress.currentPageIndex === undefined;
+  const isFinalizePhase = progress.status === "finalizing";
+
+  const step = isFinalizePhase ? 3 : isGeneratePhase ? 1 : 2;
+
+  // STEP_CONFIG[0] = Sparkles (Generate), [1-7] = validators, [7] reused for Finalize
+  const stepIndex = isGeneratePhase
+    ? 0
+    : isFinalizePhase
+      ? 7
+      : progress.completedValidators + 1;
+  const stepConfig = STEP_CONFIG[stepIndex] ?? STEP_CONFIG[0];
+  const StepIcon = stepConfig.icon;
+
+  const situationText = isFinalizePhase
+    ? "Finalizing workflow layout"
+    : stepConfig.label;
 
   return (
     <div className="top-0 left-0 absolute w-full h-full content-center space-y-6 p-6 bg-[rgba(0,0,0,0.15)] rounded-2xl overflow-hidden">
-      {/* Large Animated Icon */}
       <div className="flex flex-col items-center gap-4">
         {/* Animated Icon Container */}
         <div
-          className={`relative w-32 h-32 rounded-full ${stepConfig?.bgColor} flex items-center justify-center animate-pulse transition-all duration-500 ease-out ${
-            currentStep !== previousStep ? "scale-110" : "scale-100"
-          }`}
+          className={`relative w-32 h-32 rounded-full ${stepConfig.bgColor} flex items-center justify-center animate-pulse transition-all duration-500 ease-out`}
         >
           <StepIcon
-            className={`w-16 h-16 ${stepConfig?.color} animate-bounce`}
+            className={`w-16 h-16 ${stepConfig.color} animate-bounce`}
           />
 
           {/* Orbiting Particles (only for AI generation step) */}
-          {currentStep === 1 && (
+          {isGeneratePhase && (
             <>
               <div className="absolute w-3 h-3 bg-purple-400 rounded-full animate-orbit-1" />
               <div className="absolute w-2 h-2 bg-blue-400 rounded-full animate-orbit-2" />
@@ -140,25 +145,28 @@ export default function InteractiveLoader({
             </>
           )}
 
-          <div className="absolute w-full h-full opacity-5"></div>
+          <div className="absolute w-full h-full opacity-5" />
         </div>
 
-        {/* Step Counter */}
+        {/* <div className="text-center">
+          <p className="text-3xl font-bold text-gray-800">Step {step} / 3</p>
+        </div> */}
+
         <div className="text-center">
-          <div className="text-3xl font-bold text-gray-800">
-            Step {currentStep} <span className="text-gray-400">of</span>{" "}
-            {totalSteps}
-          </div>
-          <div className={`text-sm font-medium mt-1 ${stepConfig?.color}`}>
-            {stepConfig?.label}
-          </div>
+          <p className="text-3xl font-bold text-gray-800">
+            Step {step} <span className="text-gray-400">of</span> 3
+          </p>
+        </div>
+
+        <div className={`text-sm font-medium text-center ${stepConfig.color}`}>
+          {situationText}
         </div>
 
         {/* Auto-fixing Badge */}
         {progress.status === "repairing" && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium animate-pulse">
             <Settings className="w-3 h-3 animate-spin" />
-            Auto-fixing issues...
+            Issues found — Auto-fixing with AI
           </div>
         )}
       </div>
@@ -173,7 +181,6 @@ export default function InteractiveLoader({
       {/* Confetti Celebration */}
       {showCelebration && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-50/90 to-blue-50/90 rounded-2xl">
-          {/* Floating confetti */}
           {[...Array(20)].map((_, i) => (
             <div
               key={i}

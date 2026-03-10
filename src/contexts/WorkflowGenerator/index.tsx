@@ -143,16 +143,12 @@ export function WorkflowGeneratorProvider({
     setError(null);
 
     const expectedTreeCount = analysisResult?.pages?.length ?? 1;
-    const expectedTotalSteps = expectedTreeCount * 7 + 1;
 
     setValidationProgress({
-      currentValidator: "AI Generation",
-      totalValidators: 7,
       completedValidators: 0,
       status: "validating",
-      message: "Generating workflow with AI...",
-      currentStep: 1,
-      totalSteps: expectedTotalSteps,
+      totalPages: expectedTreeCount,
+      // currentPageIndex intentionally omitted → AI generation phase
     });
 
     try {
@@ -186,8 +182,8 @@ export function WorkflowGeneratorProvider({
           (progress) => {
             setValidationProgress({
               ...progress,
-              currentStep: treeIdx * 7 + progress.completedValidators + 2,
-              totalSteps: treeCount * 7 + 1,
+              currentPageIndex: treeIdx,
+              totalPages: treeCount,
             });
           },
         );
@@ -199,6 +195,11 @@ export function WorkflowGeneratorProvider({
 
         allValidatedNodes.push(...workingNodes);
       }
+
+      // Signal finalize phase before layout computation
+      setValidationProgress((prev) =>
+        prev ? { ...prev, status: "finalizing" } : null,
+      );
 
       // Layout once with all trees so root nodes get distinct x positions
       const { nodes: allFinalNodes, edges: allFinalEdges } = createWorkflow(

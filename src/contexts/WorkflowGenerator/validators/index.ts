@@ -27,19 +27,6 @@ import {
 } from "./startNodeChild";
 
 /**
- * User-friendly display names for validators
- */
-const VALIDATOR_DISPLAY_NAMES: Record<string, string> = {
-  "Parent Node Structure": "Validating node hierarchy",
-  "Circular References": "Checking for circular dependencies",
-  "Start Node Children": "Validating initial node configuration",
-  "Decision Nodes": "Checking decision node branches",
-  "GroupNode Pipelines": "Verifying data flow between nodes",
-  "Root GroupNodes": "Checking group node structure",
-  "functionCode Mismatch": "Validating node execution logic",
-};
-
-/**
  * Run validation pipeline
  *
  * Executes all validators sequentially and repairs issues as they're found.
@@ -102,11 +89,8 @@ export async function runValidationPipeline(
 
     // Report validation start
     onProgress?.({
-      currentValidator: validator.name,
-      totalValidators,
       completedValidators: i,
       status: "validating",
-      message: VALIDATOR_DISPLAY_NAMES[validator.name] || validator.name,
     });
 
     const result = validator.validate(workingNodes);
@@ -116,11 +100,8 @@ export async function runValidationPipeline(
 
       // Report repair start
       onProgress?.({
-        currentValidator: validator.name,
-        totalValidators,
         completedValidators: i,
         status: "repairing",
-        message: `Auto-fixing ${validator.name.toLowerCase()} issues...`,
       });
 
       // Run repair with updated context
@@ -133,11 +114,8 @@ export async function runValidationPipeline(
 
   // Report completion
   onProgress?.({
-    currentValidator: null,
-    totalValidators,
     completedValidators: totalValidators,
     status: "completed",
-    message: "Finalizing workflow...",
   });
 
   return workingNodes;
