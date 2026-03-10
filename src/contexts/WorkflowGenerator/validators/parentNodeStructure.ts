@@ -8,7 +8,8 @@ import type {
  * Validate parent-child node structure
  *
  * Rules:
- * - Exactly ONE root node (no parentNode) must exist
+ * - At least ONE root node (no parentNode) must exist
+ * - Multiple root nodes are allowed (for multi-page workflows with independent trees)
  * - All non-root nodes must have valid parentNode references
  * - parentNode must point to an existing node in the workflow
  */
@@ -22,22 +23,13 @@ export function validateParentNodeStructure(
   const rootNodes = nodes.filter((n) => !n.parentNode);
   const nodeIds = new Set(nodes.map((n) => n.id));
 
-  // Check 1: Must have exactly one root node
+  // Check 1: Must have at least one root node
   if (rootNodes.length === 0) {
     return {
       valid: false,
       errorType: "NO_ROOT_NODE",
       errorMessage: "No root node found. All nodes have parentNode.",
       affectedNodes: [],
-    };
-  }
-
-  if (rootNodes.length > 1) {
-    return {
-      valid: false,
-      errorType: "MULTIPLE_ROOT_NODES",
-      errorMessage: `Found ${rootNodes.length} root nodes. Expected exactly 1.`,
-      affectedNodes: rootNodes,
     };
   }
 
@@ -66,7 +58,6 @@ export function validateParentNodeStructure(
  * Repair parent-child node structure
  *
  * Strategies:
- * - Multiple root nodes: Connect them sequentially (root1 → root2 → root3)
  * - No root nodes: Make first node the root
  * - Invalid parentNode: Connect to root node
  */
@@ -84,30 +75,7 @@ export async function repairParentNodeStructure(
     `[parentNodeStructure] Repairing: ${result.errorType} - ${result.errorMessage}`,
   );
 
-  // Case 1: Multiple root nodes → connect sequentially
-  if (result.errorType === "MULTIPLE_ROOT_NODES") {
-    const rootNodes = workingNodes.filter((n) => !n.parentNode);
-
-    console.log(
-      `[parentNodeStructure] Connecting ${rootNodes.length} root nodes sequentially`,
-    );
-
-    // Connect root2.parentNode = root1.id, root3.parentNode = root2.id, etc.
-    for (let i = 1; i < rootNodes.length; i++) {
-      const currentRoot = rootNodes[i];
-      const previousRoot = rootNodes[i - 1];
-
-      const nodeIndex = workingNodes.findIndex((n) => n.id === currentRoot.id);
-      if (nodeIndex >= 0) {
-        workingNodes[nodeIndex] = {
-          ...workingNodes[nodeIndex],
-          parentNode: previousRoot.id,
-        };
-      }
-    }
-  }
-
-  // Case 2: No root nodes → make first node root
+  // Case 1: No root nodes → make first node root
   if (result.errorType === "NO_ROOT_NODE") {
     console.log(
       `[parentNodeStructure] Making first node root (removing its parentNode)`,
@@ -124,7 +92,7 @@ export async function repairParentNodeStructure(
   // Case 3: Invalid parentNode references → connect to root
   if (result.errorType === "INVALID_PARENT_REFERENCES") {
     const rootNodes = workingNodes.filter((n) => !n.parentNode);
-    const rootNode = rootNodes[0]; // After previous fixes, should have exactly 1
+    const rootNode = rootNodes[0];
 
     if (!rootNode) {
       console.warn(

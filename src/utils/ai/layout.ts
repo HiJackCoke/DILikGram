@@ -29,6 +29,9 @@ const LAYOUT_CONSTANTS = {
   /** Starting X position for root nodes */
   START_X: 300,
 
+  /** Horizontal gap between independent page subtrees */
+  SUBTREE_COLUMN_WIDTH: 500,
+
   /** Approximate node dimensions for collision detection */
   NODE_WIDTH: 200,
   NODE_HEIGHT: 100,
@@ -143,54 +146,84 @@ function assignSiblingIndices(nodes: WorkflowNode[]): LayoutNode[] {
 }
 
 /**
- * Apply positioning rules based on hierarchy and branch type
+ * Sort nodes topologically so parents are always processed before children
+ *
+ * @param nodes - Nodes to sort
+ * @returns Topologically sorted nodes
+ */
+function topologicalSortNodes(nodes: LayoutNode[]): LayoutNode[] {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const result: LayoutNode[] = [];
+  const visited = new Set<string>();
+
+  function visit(id: string) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    const node = nodeMap.get(id);
+    if (!node) return;
+    if (node.parentNode && nodeMap.has(node.parentNode)) visit(node.parentNode);
+    result.push(node);
+  }
+
+  nodes.forEach((n) => visit(n.id));
+  return result;
+}
+
+/**
+ * Apply positioning rules based on hierarchy and branch type.
+ * Uses topological sort so parent positions are computed before children reference them.
+ * Root nodes (no parentNode) are spread horizontally with SUBTREE_COLUMN_WIDTH spacing.
  *
  * @param nodes - Nodes with depth and sibling metadata
  * @returns Nodes with calculated positions
  */
 function applyPositioning(nodes: LayoutNode[]): WorkflowNode[] {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const computedPositions = new Map<string, { x: number; y: number }>();
+  const sorted = topologicalSortNodes(nodes);
+  const rootNodes = sorted.filter((n) => !n.parentNode);
+  const resultMap = new Map<string, WorkflowNode>();
 
-  return nodes.map((node) => {
+  for (const node of sorted) {
     const parent = node.parentNode ? nodeMap.get(node.parentNode) : null;
-
-    // Calculate Y position (depth-based)
-    // const y =
-    //   LAYOUT_CONSTANTS.START_Y + node.depth * LAYOUT_CONSTANTS.VERTICAL_SPACING;
+    const parentPos = node.parentNode
+      ? computedPositions.get(node.parentNode)
+      : null;
 
     const nodeWidth = node.width ?? LAYOUT_CONSTANTS.NODE_WIDTH;
     const y = LAYOUT_CONSTANTS.VERTICAL_SPACING + nodeWidth;
 
-    // Calculate X position
     let x: number;
 
-    if (!parent) {
-      // Root node: center
-      x = LAYOUT_CONSTANTS.START_X;
-    } else if (parent.type === "decision") {
+    if (!parentPos) {
+      // Root node: spread horizontally, one column per subtree
+      const rootIndex = rootNodes.findIndex((r) => r.id === node.id);
+      x =
+        LAYOUT_CONSTANTS.START_X +
+        rootIndex * LAYOUT_CONSTANTS.SUBTREE_COLUMN_WIDTH;
+    } else if (parent?.type === "decision") {
       // Decision branch: special handling
       const branchLabel = node.data.branchLabel as "yes" | "no" | undefined;
       const offset =
         branchLabel === "yes"
           ? LAYOUT_CONSTANTS.DECISION_BRANCH_OFFSET.yes
           : LAYOUT_CONSTANTS.DECISION_BRANCH_OFFSET.no;
-
-      x = parent.position.x + offset;
+      x = parentPos.x + offset;
     } else {
       // Regular sibling: centered spread around parent
       const siblingCount = getSiblingCount(nodes, node.parentNode!);
       const siblingOffset =
         (node.siblingIndex - (siblingCount - 1) / 2) *
         LAYOUT_CONSTANTS.HORIZONTAL_SPACING;
-
-      x = parent.position.x + siblingOffset;
+      x = parentPos.x + siblingOffset;
     }
 
-    return {
-      ...node,
-      position: { x, y },
-    };
-  });
+    computedPositions.set(node.id, { x, y });
+    resultMap.set(node.id, { ...node, position: { x, y } });
+  }
+
+  // Return in original order
+  return nodes.map((n) => resultMap.get(n.id)!);
 }
 
 /**

@@ -23,7 +23,10 @@ import type {
   DecisionNodeData,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
-import type { PRDAnalysisResult, AnalyzePRDAction } from "@/types/ai/prdAnalysis";
+import type {
+  PRDAnalysisResult,
+  AnalyzePRDAction,
+} from "@/types/ai/prdAnalysis";
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -37,7 +40,10 @@ import {
   ANALYSIS_SYSTEM_PROMPT,
   getAnalysisContent,
 } from "@/fixtures/prompts/analysis";
-import { buildAnalysisContext } from "@/utils/prd/contextBuilder";
+import {
+  buildAnalysisContext,
+  buildSinglePageContext,
+} from "@/utils/prd/contextBuilder";
 
 // ============================================================================
 // OPENAI CLIENT INITIALIZATION
@@ -117,7 +123,10 @@ export const analyzePRDAction: AnalyzePRDAction = async (
 
     let prdText: string;
     if (prdContent.startsWith("data:application/pdf;base64,")) {
-      const base64Data = prdContent.replace(/^data:application\/pdf;base64,/, "");
+      const base64Data = prdContent.replace(
+        /^data:application\/pdf;base64,/,
+        "",
+      );
       const pdfBuffer = Buffer.from(base64Data, "base64");
       const pdfData = await pdfParse(pdfBuffer);
       prdText = pdfData.text;
@@ -176,7 +185,10 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     let prdText: string | undefined;
     if (prdContent) {
       if (prdContent.startsWith("data:application/pdf;base64,")) {
-        const base64Data = prdContent.replace(/^data:application\/pdf;base64,/, "");
+        const base64Data = prdContent.replace(
+          /^data:application\/pdf;base64,/,
+          "",
+        );
         const pdfBuffer = Buffer.from(base64Data, "base64");
         const pdfData = await pdfParse(pdfBuffer);
         prdText = pdfData.text;
@@ -185,300 +197,371 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
       }
     }
 
-    // If analysis result is provided, append it to the prd text for richer context
-    const enrichedPrdText = analysisResult
-      ? `${prdText ?? ""}\n\n${buildAnalysisContext(analysisResult)}`
-      : prdText;
+    const contexts = buildGenerationContexts(prdText, analysisResult);
+    const allNodes: WorkflowNode[] = [];
 
-    const response = await openai.responses.create({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
-      instructions: GENERATION_SYSTEM_PROMPT,
-      input: getGenerationContent(prompt, enrichedPrdText, nodeLibrary),
-      text: {
-        format: { type: "json_object" },
-      },
-    });
-
-    
-    const content = response.output_text;
-
-    console.log(content)
-    if (!content) {
-      throw new Error("No response from OpenAI");
-    }
-
-    const generatedWorkflow = JSON.parse(content) as GenerateWorkflowResponse;
-
-    // Validation
-    if (!generatedWorkflow.nodes || !Array.isArray(generatedWorkflow.nodes)) {
-      throw new Error("Generated workflow missing nodes array");
-    }
-
-    if (generatedWorkflow.nodes.length === 0) {
-      throw new Error(
-        "AI returned an empty workflow. Please try again with a more specific prompt.",
-      );
-    }
-
-    // Build a map of groupId → child nodes (used for GroupNode post-processing)
-    const groupChildren: Record<string, WorkflowNode[]> = {};
-    generatedWorkflow.nodes.forEach((node) => {
-      if (node.parentNode) {
-        if (!groupChildren[node.parentNode])
-          groupChildren[node.parentNode] = [];
-        groupChildren[node.parentNode].push(node);
-      }
-    });
-
-    // Populate GroupNode.data.groups from child nodes — Task/Service only (Decision excluded)
-    // Decision nodes run at workflow level after GroupNode, not inside sequential pipeline
-    generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
-      if (node.type === "group") {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            groups: (groupChildren[node.id] ?? []).filter(
-              (child) => child.type !== "decision",
-            ),
-          },
-        };
-      }
-      return node;
-    });
-
-    // ─────────────────────────────────────────────────────────
-    // 🚨 CIRCULAR REFERENCE CHECK (CRITICAL - PREVENTS INFINITE LOOP)
-    // ─────────────────────────────────────────────────────────
-    generatedWorkflow.nodes.forEach((node) => {
-      if (node.type === "group" && node.parentNode) {
-        // Extract all internal node IDs from groups[]
-        const groupData = node.data as GroupNodeData;
-        const internalNodeIds = new Set(
-          (groupData.groups || []).map((n: WorkflowNode) => n.id),
+    for (let i = 0; i < contexts.length; i++) {
+      if (contexts.length > 1) {
+        console.log(
+          `[generateWorkflowAction] Generating page ${i + 1}/${contexts.length}: ${analysisResult!.pages[i].name}`,
         );
-
-        // Check if GroupNode.parentNode is in groups[]
-        if (internalNodeIds.has(node.parentNode)) {
-          throw new Error(
-            `CIRCULAR REFERENCE DETECTED: GroupNode "${node.data.title}" (id: ${node.id}) ` +
-              `has parentNode "${node.parentNode}" which is also in its groups[] array. ` +
-              `This will cause infinite loop. ` +
-              `Fix: Make "${node.parentNode}" a standalone node OUTSIDE the GroupNode.`,
-          );
-        }
       }
-    });
-    // ─────────────────────────────────────────────────────────
-
-    // Remove GroupNodes with < 2 non-Decision children and re-parent their orphaned children
-    const invalidGroupIds = new Set(
-      generatedWorkflow.nodes
-        .filter((n) => {
-          if (n.type !== "group") return false;
-          const validChildren = (groupChildren[n.id] ?? []).filter(
-            (c) => c.type !== "decision",
-          );
-          return validChildren.length < 2;
-        })
-        .map((n) => n.id),
-    );
-
-    if (invalidGroupIds.size > 0) {
-      const groupParentMap: Record<string, string | undefined> = {};
-      generatedWorkflow.nodes
-        .filter((n) => invalidGroupIds.has(n.id))
-        .forEach((n) => {
-          groupParentMap[n.id] = n.parentNode;
-        });
-
-      generatedWorkflow.nodes = generatedWorkflow.nodes
-        .filter((n) => !invalidGroupIds.has(n.id))
-        .map((n) => {
-          if (n.parentNode && invalidGroupIds.has(n.parentNode)) {
-            return { ...n, parentNode: groupParentMap[n.parentNode] };
-          }
-          return n;
-        });
-    }
-
-    // Apply node type-specific normalization (always, regardless of PRD)
-    const VALID_CONDITION_OPERATORS = new Set([
-      "has",
-      "hasNot",
-      "truthy",
-      "falsy",
-    ]);
-    generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
-      // ServiceNode: ensure required fields have defaults
-      if (node.type === "service") {
-        const serviceData = node.data as ServiceNodeData;
-        const baseData = {
-          mode: "panel" as const,
-          ...node.data,
-          http: {
-            method: "POST" as const,
-            endpoint: "",
-            headers: {},
-            body: {},
-            ...serviceData.http,
-          },
-          retry: serviceData.retry ?? { count: 3, delay: 1000 },
-          timeout: serviceData.timeout ?? 5000,
-        };
-
-        // Enable simulation by default for AI-generated Service nodes (if execution exists)
-        if (node.data.execution?.config) {
-          return {
-            ...node,
-            data: {
-              ...baseData,
-              execution: {
-                ...node.data.execution,
-                config: {
-                  ...node.data.execution.config,
-                  simulation: {
-                    enabled: true,
-                    ...node.data.execution.config.simulation,
-                  },
-                },
-              },
-            },
-          };
-        }
-
-        return {
-          ...node,
-          data: baseData,
-        };
-      }
-
-      // DecisionNode: sanitize condition keys to valid operators only
-      if (node.type === "decision") {
-        const decisionData = node.data as DecisionNodeData;
-        if (decisionData.condition) {
-          const sanitized: Record<string, string> = {};
-          for (const [key, value] of Object.entries(decisionData.condition)) {
-            if (VALID_CONDITION_OPERATORS.has(key)) {
-              sanitized[key] = value as string;
-            }
-          }
-          return {
-            ...node,
-            data: {
-              mode: "panel",
-              ...node.data,
-              condition: sanitized,
-            },
-          };
-        }
-      }
-
-      // NEW: GroupNode - inject default functionCode if missing
-      if (node.type === "group") {
-        const hasExecutionConfig = node.data.execution?.config;
-        const hasFunctionCode = hasExecutionConfig?.functionCode;
-
-        if (!hasFunctionCode) {
-          console.warn(
-            `GroupNode ${node.id} missing functionCode. Injecting default: "return inputData;"`,
-          );
-
-          const groupData = node.data as GroupNodeData;
-          const groups = groupData.groups || [];
-          const lastNode = groups[groups.length - 1];
-          const lastNodeOutputData =
-            lastNode?.data?.execution?.config?.nodeData?.outputData;
-
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              execution: {
-                ...node.data.execution,
-                config: {
-                  ...hasExecutionConfig,
-                  functionCode:
-                    "// inputData: output from last internal node\nreturn inputData;",
-                  nodeData: {
-                    inputData: node.data.execution?.config?.nodeData?.inputData,
-                    outputData: lastNodeOutputData || {},
-                  },
-                  lastModified: Date.now(),
-                },
-              },
-            },
-          };
-        }
-      }
-
-      return node;
-    });
-
-    // Apply fallbacks if PRD content was provided but AI didn't include references/test cases
-    if (prdContent) {
-      generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          // Add placeholder PRD reference if missing
-          prdReference: node.data.prdReference || {
-            section: "Unknown",
-            requirement: "Not specified by AI",
-            rationale: "Generated without explicit PRD reference",
-          },
-          // Add default test cases if missing or insufficient, and assign real UUIDs
-          testCases: (node.data.testCases && node.data.testCases.length >= 3
-            ? node.data.testCases
-            : generateDefaultTestCases(node)
-          ).map((tc) => ({ ...tc, id: `test-${uuid()}` })),
-        },
-      }));
-    }
-
-    // Normalize root nodes AND start node children: Start node produces no output → inputData must be null
-    generatedWorkflow.nodes = generatedWorkflow.nodes.map((node) => {
-      // Check if root node OR start node child
-      const isRootNode = !node.parentNode;
-      const parentNode = generatedWorkflow.nodes.find(
-        (n) => n.id === node.parentNode,
+      const nodes = await generatePageNodes(
+        openai,
+        prompt,
+        contexts[i],
+        nodeLibrary,
       );
-      const isStartNodeChild = parentNode?.type === "start";
+      allNodes.push(...nodes);
+    }
 
-      // Only normalize if root or start child
-      if (!isRootNode && !isStartNodeChild) return node;
+    assertNodesValid(allNodes);
 
-      // Extract to variables - TypeScript narrows types properly
-      const execution = node.data.execution;
-      const config = execution?.config;
-      const nodeData = config?.nodeData;
+    let nodes = populateGroupChildren(allNodes);
+    assertNoCircularGroupReferences(nodes);
+    nodes = removeUndersizedGroups(nodes);
+    nodes = normalizeNodeDefaults(nodes);
+    if (prdContent) nodes = applyPRDFallbacks(nodes, prdContent);
+    nodes = normalizeStartInputData(nodes);
 
-      if (!nodeData) return node;
-
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          execution: {
-            ...execution,
-            config: {
-              ...config,
-              nodeData: {
-                ...nodeData,
-                inputData: null,
-              },
-            },
-          },
-        },
-      };
-    });
-
-    return generatedWorkflow;
+    return {
+      nodes,
+      metadata: {
+        description: "",
+        estimatedComplexity: "simple",
+        prdSummary: undefined,
+        reusedNodes: undefined,
+      },
+    };
   } catch (error) {
     handleOpenAIError(error);
   }
 };
+
+// ============================================================================
+// PRIVATE HELPERS (generateWorkflowAction — post-processing pipeline)
+// ============================================================================
+
+function assertNodesValid(nodes: WorkflowNode[]): void {
+  if (!nodes || !Array.isArray(nodes))
+    throw new Error("Generated workflow missing nodes array");
+  if (nodes.length === 0)
+    throw new Error(
+      "AI returned an empty workflow. Please try again with a more specific prompt.",
+    );
+}
+
+/** Populate GroupNode.data.groups from child nodes (Task/Service only; Decision excluded). */
+function populateGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
+  const groupChildren: Record<string, WorkflowNode[]> = {};
+  nodes.forEach((node) => {
+    if (node.parentNode) {
+      if (!groupChildren[node.parentNode]) groupChildren[node.parentNode] = [];
+      groupChildren[node.parentNode].push(node);
+    }
+  });
+
+  return nodes.map((node) => {
+    if (node.type === "group") {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          groups: (groupChildren[node.id] ?? []).filter(
+            (child) => child.type !== "decision" && child.type !== "group",
+          ),
+        },
+      };
+    }
+    return node;
+  });
+}
+
+/** Throw if any GroupNode.parentNode is also listed in its own groups[] (prevents infinite loop). */
+function assertNoCircularGroupReferences(nodes: WorkflowNode[]): void {
+  nodes.forEach((node) => {
+    if (node.type === "group" && node.parentNode) {
+      const groupData = node.data as GroupNodeData;
+      const internalNodeIds = new Set(
+        (groupData.groups || []).map((n: WorkflowNode) => n.id),
+      );
+      if (internalNodeIds.has(node.parentNode)) {
+        throw new Error(
+          `CIRCULAR REFERENCE DETECTED: GroupNode "${node.data.title}" (id: ${node.id}) ` +
+            `has parentNode "${node.parentNode}" which is also in its groups[] array. ` +
+            `This will cause infinite loop. ` +
+            `Fix: Make "${node.parentNode}" a standalone node OUTSIDE the GroupNode.`,
+        );
+      }
+    }
+  });
+}
+
+/** Remove GroupNodes with < 2 non-Decision children and re-parent their orphaned children. */
+function removeUndersizedGroups(nodes: WorkflowNode[]): WorkflowNode[] {
+  const groupChildren: Record<string, WorkflowNode[]> = {};
+  nodes.forEach((node) => {
+    if (node.parentNode) {
+      if (!groupChildren[node.parentNode]) groupChildren[node.parentNode] = [];
+      groupChildren[node.parentNode].push(node);
+    }
+  });
+
+  const invalidGroupIds = new Set(
+    nodes
+      .filter((n) => {
+        if (n.type !== "group") return false;
+        const validChildren = (groupChildren[n.id] ?? []).filter(
+          (c) => c.type !== "decision",
+        );
+        return validChildren.length < 2;
+      })
+      .map((n) => n.id),
+  );
+
+  if (invalidGroupIds.size === 0) return nodes;
+
+  const groupParentMap: Record<string, string | undefined> = {};
+  nodes
+    .filter((n) => invalidGroupIds.has(n.id))
+    .forEach((n) => {
+      groupParentMap[n.id] = n.parentNode;
+    });
+
+  const resolveParent = (id: string | undefined): string | undefined => {
+    if (!id || !invalidGroupIds.has(id)) return id;
+    return resolveParent(groupParentMap[id]);
+  };
+
+  return nodes
+    .filter((n) => !invalidGroupIds.has(n.id))
+    .map((n) => {
+      if (n.parentNode && invalidGroupIds.has(n.parentNode)) {
+        return { ...n, parentNode: resolveParent(n.parentNode) };
+      }
+      return n;
+    });
+}
+
+/** Apply type-specific defaults: ServiceNode http/retry/timeout, DecisionNode condition, GroupNode functionCode. */
+function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
+  const VALID_CONDITION_OPERATORS = new Set([
+    "has",
+    "hasNot",
+    "truthy",
+    "falsy",
+  ]);
+
+  return nodes.map((node) => {
+    if (node.type === "service") {
+      const serviceData = node.data as ServiceNodeData;
+      const baseData = {
+        mode: "panel" as const,
+        ...node.data,
+        http: {
+          method: "POST" as const,
+          endpoint: "",
+          headers: {},
+          body: {},
+          ...serviceData.http,
+        },
+        retry: serviceData.retry ?? { count: 3, delay: 1000 },
+        timeout: serviceData.timeout ?? 5000,
+      };
+
+      if (node.data.execution?.config) {
+        return {
+          ...node,
+          data: {
+            ...baseData,
+            execution: {
+              ...node.data.execution,
+              config: {
+                ...node.data.execution.config,
+                simulation: {
+                  enabled: true,
+                  ...node.data.execution.config.simulation,
+                },
+              },
+            },
+          },
+        };
+      }
+
+      return { ...node, data: baseData };
+    }
+
+    if (node.type === "decision") {
+      const decisionData = node.data as DecisionNodeData;
+      if (decisionData.condition) {
+        const sanitized: Record<string, string> = {};
+        for (const [key, value] of Object.entries(decisionData.condition)) {
+          if (VALID_CONDITION_OPERATORS.has(key)) {
+            sanitized[key] = value as string;
+          }
+        }
+        return {
+          ...node,
+          data: { mode: "panel", ...node.data, condition: sanitized },
+        };
+      }
+    }
+
+    if (node.type === "group") {
+      const hasExecutionConfig = node.data.execution?.config;
+      const hasFunctionCode = hasExecutionConfig?.functionCode;
+
+      if (!hasFunctionCode) {
+        console.warn(
+          `GroupNode ${node.id} missing functionCode. Injecting default: "return inputData;"`,
+        );
+
+        const groupData = node.data as GroupNodeData;
+        const groups = groupData.groups || [];
+        const lastNode = groups[groups.length - 1];
+        const lastNodeOutputData =
+          lastNode?.data?.execution?.config?.nodeData?.outputData;
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            execution: {
+              ...node.data.execution,
+              config: {
+                ...hasExecutionConfig,
+                functionCode:
+                  "// inputData: output from last internal node\nreturn inputData;",
+                nodeData: {
+                  inputData: node.data.execution?.config?.nodeData?.inputData,
+                  outputData: lastNodeOutputData || {},
+                },
+                lastModified: Date.now(),
+              },
+            },
+          },
+        };
+      }
+    }
+
+    return node;
+  });
+}
+
+/** Add placeholder prdReference and default testCases when PRD content was provided. */
+function applyPRDFallbacks(
+  nodes: WorkflowNode[],
+  prdContent: string,
+): WorkflowNode[] {
+  void prdContent; // prdContent presence was already checked by the caller
+  return nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      prdReference: node.data.prdReference || {
+        section: "Unknown",
+        requirement: "Not specified by AI",
+        rationale: "Generated without explicit PRD reference",
+      },
+      testCases: (node.data.testCases && node.data.testCases.length >= 3
+        ? node.data.testCases
+        : generateDefaultTestCases(node)
+      ).map((tc) => {
+        const nodeDataInput = node.data.execution?.config?.nodeData?.inputData;
+        const isEmptyObj =
+          tc.inputData !== null &&
+          typeof tc.inputData === "object" &&
+          Object.keys(tc.inputData as object).length === 0;
+        return {
+          ...tc,
+          id: `test-${uuid()}`,
+          inputData: isEmptyObj && nodeDataInput ? nodeDataInput : tc.inputData,
+        };
+      }),
+    },
+  }));
+}
+
+/** Force inputData to null for root nodes and direct children of start nodes. */
+function normalizeStartInputData(nodes: WorkflowNode[]): WorkflowNode[] {
+  return nodes.map((node) => {
+    const isRootNode = !node.parentNode;
+    const parentNode = nodes.find((n) => n.id === node.parentNode);
+    const isStartNodeChild = parentNode?.type === "start";
+
+    if (!isRootNode && !isStartNodeChild) return node;
+
+    const execution = node.data.execution;
+    const config = execution?.config;
+    const nodeData = config?.nodeData;
+
+    if (!nodeData) return node;
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        execution: {
+          ...execution,
+          config: {
+            ...config,
+            nodeData: { ...nodeData, inputData: null },
+          },
+        },
+      },
+    };
+  });
+}
+
+// ============================================================================
+// PRIVATE HELPERS (generateWorkflowAction — generation)
+// ============================================================================
+
+/**
+ * Build the list of enriched PRD text strings to generate against.
+ * - No analysisResult → [prdText] (single call, no context)
+ * - Single page       → [prdText + full analysis context] (single call)
+ * - Multiple pages    → one entry per page with per-page context (N calls)
+ */
+function buildGenerationContexts(
+  prdText: string | undefined,
+  analysisResult: PRDAnalysisResult | undefined,
+): Array<string | undefined> {
+  if (!analysisResult) return [prdText];
+
+  if (analysisResult.pages.length > 1) {
+    return analysisResult.pages.map(
+      (_, i) =>
+        `${prdText ?? ""}\n\n${buildSinglePageContext(analysisResult, i)}`,
+    );
+  }
+
+  return [`${prdText ?? ""}\n\n${buildAnalysisContext(analysisResult)}`];
+}
+
+/**
+ * Call OpenAI once for the given context and return the parsed nodes array.
+ */
+async function generatePageNodes(
+  openai: OpenAI,
+  prompt: string,
+  enrichedPrdText: string | undefined,
+  nodeLibrary: Parameters<GenerateWorkflowAction>[2],
+): Promise<WorkflowNode[]> {
+  const response = await openai.responses.create({
+    model: "gpt-4o-mini",
+    temperature: 0.3,
+    instructions: GENERATION_SYSTEM_PROMPT,
+    input: getGenerationContent(prompt, enrichedPrdText, nodeLibrary),
+    text: { format: { type: "json_object" } },
+  });
+
+  const content = response.output_text;
+  if (!content) throw new Error("No response from OpenAI");
+
+  const workflow = JSON.parse(content) as GenerateWorkflowResponse;
+  return workflow.nodes ?? [];
+}
 
 /**
  * Generate default test cases for a node when AI doesn't provide them

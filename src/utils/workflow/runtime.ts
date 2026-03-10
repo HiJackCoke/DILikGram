@@ -50,11 +50,36 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
     return (async (inputData: unknown, fetch: typeof globalThis.fetch) => {
       let currentData = inputData;
 
+      // PRE-PROCESSOR: Transform incoming data to shape internal nodes expect
+      if (config.initFunctionCode && config.initFunctionCode.trim()) {
+        try {
+          const isInitAsync = detectAsync(config.initFunctionCode);
+          if (isInitAsync) {
+            const AsyncFn = Object.getPrototypeOf(async function () {}).constructor;
+            const initFn = new AsyncFn("inputData", "fetch", config.initFunctionCode);
+            currentData = await initFn(inputData, fetch);
+          } else {
+            const initFn = new Function("inputData", "fetch", config.initFunctionCode);
+            currentData = initFn(inputData, fetch);
+          }
+        } catch (error) {
+          throw new Error(`GroupNode init failed: ${(error as Error).message}`);
+        }
+      }
+
       // Internal nodes 순차 실행
       for (const node of internalNodes) {
         const nodeConfig = node.data.execution?.config;
         if (nodeConfig) {
           try {
+            // No functionCode: use simulated output or passthrough (never crash)
+            if (!nodeConfig.functionCode) {
+              if (nodeConfig.simulation?.enabled && nodeConfig.nodeData?.outputData !== undefined) {
+                currentData = nodeConfig.nodeData.outputData;
+              }
+              // else: passthrough (currentData unchanged)
+              continue;
+            }
             const nodeFn = compileExecutor(nodeConfig, node.type);
             currentData = await Promise.resolve(nodeFn(currentData, fetch));
           } catch (error) {

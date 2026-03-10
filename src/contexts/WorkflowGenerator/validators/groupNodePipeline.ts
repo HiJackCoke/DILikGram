@@ -107,7 +107,8 @@ function detectBrokenGroups(nodes: WorkflowNode[]): BrokenGroupInfo[] {
     if (
       n.parentNode &&
       groupNodeIds.has(n.parentNode) &&
-      n.type !== "decision"
+      n.type !== "decision" &&
+      n.type !== "group"
     ) {
       if (!groupChildrenSorted[n.parentNode]) {
         groupChildrenSorted[n.parentNode] = [];

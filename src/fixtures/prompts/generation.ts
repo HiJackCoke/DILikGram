@@ -17,12 +17,15 @@ const PRD_GENERATION_RULES = `
 PRD-BASED WORKFLOW GENERATION RULES
 ═══════════════════════════════════════════════════════════════
 
-1. WHEN TO USE GROUP NODE
-   - Use GroupNode ONLY when a single feature requires multiple nodes working together
-   - DO NOT use GroupNode for a simple single-purpose step that one task/service/decision node can handle alone
-   - ✅ Use GroupNode: "User Login" → TaskNode(validate) + ServiceNode(API call) + DecisionNode(success/failure branch)
-   - ❌ Do NOT use GroupNode: "Send Email Notification" → a single ServiceNode is sufficient
-   - Rule: if the feature can be expressed as one node, use that node directly without a GroupNode wrapper
+1. GROUP NODES ARE MANDATORY — ONE PER FEATURE (1:1 MAPPING)
+   - EVERY feature from the PRD analysis MUST become a GroupNode — no exceptions
+   - GroupNode.title = exact feature name, GroupNode.description = feature description
+   - EVERY GroupNode MUST contain at least 2 internal child nodes (Task/Service/Decision)
+   - Even "simple" features need a GroupNode: TaskNode(validate/prepare) + ServiceNode(execute) at minimum
+   - Complex features: TaskNode + ServiceNode + DecisionNode(success/failure branch)
+   - ✅ Correct: "Send Email Notification" → GroupNode { TaskNode(prepare payload) + ServiceNode(POST /email) }
+   - ❌ Wrong: skipping GroupNode and using a bare ServiceNode or TaskNode directly
+   - Feature count in analysis = GroupNode count you generate (4 features → 4 GroupNodes, mandatory)
 
 2. START NODE CHILDREN (CRITICAL)
    - Start nodes produce NO OUTPUT
@@ -95,6 +98,15 @@ PRD-BASED WORKFLOW GENERATION RULES
        }
      }
      \`\`\`
+   - **INPUT DATA TYPE DEFAULTS (CRITICAL)**:
+     - nodeData.inputData sample values MUST use proper type defaults, NOT null as placeholders:
+       - Arrays → use \`[]\` (not null)
+       - Objects → use \`{}\` (not null)
+       - Strings → use \`""\` (not null)
+       - Numbers → use \`0\` (not null)
+     - \`null\` is ONLY valid for \`nodeData.inputData\` itself (start node children)
+     - ❌ Wrong: \`"nodeData": { "inputData": { "tasks": null } }\`
+     - ✅ Correct: \`"nodeData": { "inputData": { "tasks": [] } }\`
 
 4. PRD REFERENCES (REQUIRED FOR EVERY NODE)
    - Every node MUST include prdReference field with:
@@ -152,6 +164,93 @@ PRD-BASED WORKFLOW GENERATION RULES
    - Data flows sequentially through internal nodes
    - Each node should have single responsibility
    - Avoid side effects in TaskNodes (use ServiceNodes for external calls)
+   - **EVERY internal node (task/service) inside a GroupNode MUST have execution.config.functionCode**
+   - A task that just forwards data: \`functionCode = "return inputData;"\`
+   - ❌ Wrong internal task: \`{ "execution": { "config": { "nodeData": {...} } } }\`  // no functionCode!
+   - ❌ Wrong: nodeData.inputData sample uses template syntax \`"{{inputData.key}}"\`
+   - ✅ Correct: nodeData.inputData uses actual sample values: \`{ "taskId": "mock-task-id" }\`
+
+   **GroupNode initFunctionCode (MANDATORY)**:
+   - EVERY GroupNode MUST have execution.config with initFunctionCode
+   - It transforms the parent's output into the shape expected by the first internal node
+   - DATA CONTRACT:
+       GroupNode receives from parent → initFunctionCode → first internal node's inputData
+       parent.nodeData.outputData shape → initFunctionCode maps keys → groups[0].nodeData.inputData shape
+   - ❌ Wrong: first internal node expects { tasks } but parent outputs { currentDate } with no initFunctionCode → runtime crash
+   - ✅ Correct:
+       \`"initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };"\`
+   - If parent output already has the right shape: \`"return inputData;"\`
+   - Always use optional chaining (inputData?.field ?? default) to be null-safe
+   - Example GroupNode execution.config:
+     \`\`\`json
+     {
+       "execution": {
+         "config": {
+           "initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };",
+           "functionCode": "return { tasks: Array.isArray(inputData?.tasks) ? inputData.tasks : [] };",
+           "nodeData": {
+             "inputData": { "currentDate": "2026-01-01" },
+             "outputData": { "tasks": [] }
+           }
+         }
+       }
+     }
+     \`\`\`
+
+8. ROOT/PARENT TASK NODE EXECUTION CONFIG (MANDATORY)
+   - ALL task nodes — including root nodes and parent-of-group nodes — MUST have execution.config
+   - Root task nodes (no parentNode or parentNode is start node):
+     * functionCode that initializes state (does NOT reference inputData fields)
+     * nodeData.inputData: null
+     * nodeData.outputData: the exact data structure that child nodes expect as inputData
+   - Parent task nodes (whose children are GroupNodes):
+     * nodeData.outputData MUST be semantically compatible with the GroupNode's expected inputData
+   - ❌ WRONG: root task node with NO execution field → children receive null inputData → TypeError
+   - ✅ CORRECT:
+     \`\`\`json
+     {
+       "type": "task",
+       "data": {
+         "title": "Initialize Process",
+         "execution": {
+           "config": {
+             "functionCode": "return { userId: 'user-001', items: [] };",
+             "nodeData": {
+               "inputData": null,
+               "outputData": { "userId": "user-001", "items": [] }
+             }
+           }
+         }
+       }
+     }
+     \`\`\`
+
+9. TEST CASE inputData MUST MATCH EXECUTION CONFIG STRUCTURE (MANDATORY)
+   - The success case testCase.inputData MUST match execution.config.nodeData.inputData — NOT just \`{}\`
+   - A testCase with \`"inputData": {}\` while the functionCode references \`inputData.userId\` will fail
+   - ❌ WRONG: \`"inputData": {}\` for a node whose functionCode uses \`inputData.userId\`
+   - ✅ CORRECT: \`"inputData": { "userId": "user-001" }\` matching the actual inputData structure
+
+10. GROUP NODE INTERNAL DATA CHAIN (MANDATORY)
+   - GroupNode internal nodes pass data sequentially: node[0] → node[1] → ... → node[N]
+   - Each internal node's nodeData.inputData MUST match the keys of the preceding node's nodeData.outputData
+   - DATA CONTRACT:
+     node[i].functionCode returns { key1, key2 }
+       → node[i].nodeData.outputData = { key1: ..., key2: ... }
+       → node[i+1].nodeData.inputData = { key1: ..., key2: ... }
+       → node[i+1].functionCode reads inputData.key1, inputData.key2
+
+   - ❌ Wrong (node[0] outputs tasks, but node[1] reads displayedTasks):
+     node[0].functionCode: "return { tasks: [...] };"
+     node[1].functionCode: "return { result: inputData.displayedTasks.length };"
+                                               // ^^^^^^^^^^^^^^^^ key mismatch!
+
+   - ✅ Correct:
+     node[0].functionCode: "return { tasks: [...] };"
+     node[0].nodeData.outputData: { tasks: [] }
+     node[1].nodeData.inputData: { tasks: [] }           // same key as node[0] output
+     node[1].functionCode: "return { displayedTasks: Array.isArray(inputData?.tasks) ? inputData.tasks.slice(0, 3) : [] };"
+     node[1].nodeData.outputData: { displayedTasks: [] }
 `;
 
 /**
@@ -168,7 +267,7 @@ User: "Create a document review process where if approved it goes to shipping, o
   "nodes": [
     // 1. Root Node (No parentNode)
     {
-      "id": "node-\${type}-\${uuid}",
+      "id": "node-task-review-001",
       "type": "task",
       "position": { "x": 0, "y": 0 },
       "data": {
@@ -177,6 +276,15 @@ User: "Create a document review process where if approved it goes to shipping, o
         "assignee": "Manager",
         "estimatedTime": 30,
         "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { documentId: 'DOC-001', status: 'pending_review', isApproved: true };",
+            "nodeData": {
+              "inputData": null,
+              "outputData": { "documentId": "DOC-001", "status": "pending_review", "isApproved": true }
+            }
+          }
+        },
         "ports": [
           {
               "id": "input",
@@ -191,11 +299,11 @@ User: "Create a document review process where if approved it goes to shipping, o
         ]
       }
     },
-    // 2. Decision Node (Parent is Review)
+    // 2. Decision Node (Parent is Review → parentNode matches node 1's id exactly)
     {
-      "id": "node-\${type}-\${uuid}",
+      "id": "node-decision-check-002",
       "type": "decision",
-      "parentNode": "node-review",
+      "parentNode": "node-task-review-001",
       "position": { "x": 0, "y": 150 },
       "data": {
         "title": "Approved?",
@@ -223,11 +331,11 @@ User: "Create a document review process where if approved it goes to shipping, o
         ]
       }
     },
-    // 3. Yes Branch (Parent is Decision)
+    // 3. Yes Branch (Parent is Decision → parentNode matches node 2's id exactly)
     {
-      "id": "node-service-abc123",
+      "id": "node-service-ship-003",
       "type": "service",
-      "parentNode": "node-check",
+      "parentNode": "node-decision-check-002",
       "position": { "x": 200, "y": 300 },
       "data": {
         "branchLabel": "yes",  // REQUIRED
@@ -270,11 +378,11 @@ User: "Create a document review process where if approved it goes to shipping, o
         ]
       }
     },
-    // 4. No Branch (Parent is Decision)
+    // 4. No Branch (Parent is Decision → parentNode matches node 2's id exactly)
     {
-      "id": "node-\${type}-\${uuid}",
+      "id": "node-task-draft-004",
       "type": "task",
-      "parentNode": "node-check",
+      "parentNode": "node-decision-check-002",
       "position": { "x": -200, "y": 300 },
       "data": {
         "branchLabel": "no",   // REQUIRED
@@ -310,10 +418,11 @@ RESPONSE FORMAT:
 
 Return a JSON object with a "nodes" array.
 
-1. **First Node**: This is your entry point. DO NOT specify \`parentNode\` for this node.
+1. **Root Node**: Entry point of the workflow. DO NOT specify \`parentNode\` for the root node.
+   - GroupNodes must always have a parentNode — they cannot be root nodes
 2. **Subsequent Nodes**: MUST specify \`parentNode\` (referencing an ID from your list).
 3. **Fields**:
-   - **task**: id, type="task", parentNode, position, data: { title, description, assignee, estimatedTime, metadata, ports }
+   - **task**: id, type="task", parentNode, position, data: { title, description, assignee, estimatedTime, metadata, execution, ports }
    - **service**: id, type="service", parentNode, position, data: { title, description, serviceType, http?, ports }
    - **decision**: id, type="decision", parentNode, position, data: { title, description, condition, mode, ports }
    - **group**: id, type="group", parentNode, position, data: { title, description, groups, ports }
@@ -323,6 +432,13 @@ Return a JSON object with a "nodes" array.
    - This applies to ALL node types without exception: task, service, decision, group.
    - ❌ Wrong: child of decision node with no branchLabel field
    - ✅ Correct: \`"data": { "branchLabel": "yes", "title": "..." }\`
+
+⛔ **parentNode INTEGRITY RULE (FATAL)**:
+   - Before writing any \`parentNode\` value, verify that exact ID exists in your current node list.
+   - ❌ NEVER invent or guess a parentNode ID — if you cannot find the parent node's ID in your list, you have a bug.
+   - ✅ Strategy: Write nodes top-down. Assign an \`id\` first, then reference it as \`parentNode\` in children.
+   - ❌ Wrong: node B has \`"parentNode": "node-task-abc"\` but no node with that exact id exists
+   - ✅ Correct: node A has \`"id": "node-task-abc"\`, then node B has \`"parentNode": "node-task-abc"\`
 
 DO NOT generate Start ("start") or End ("end") nodes.
 DO NOT generate "edges".

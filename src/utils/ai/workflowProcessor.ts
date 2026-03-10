@@ -154,6 +154,40 @@ export const createWorkflow = (
   return { nodes: positionedNodes, edges: workflowEdges };
 };
 
+/**
+ * Split a flat node array into independent workflow trees.
+ * Each root node (no parentNode) becomes the root of one tree.
+ * Used for multi-page PRD workflows where each page = independent workflow.
+ */
+export function splitIntoWorkflowTrees(
+  nodes: WorkflowNode[],
+): WorkflowNode[][] {
+  const rootNodes = nodes.filter((n) => !n.parentNode);
+  if (rootNodes.length <= 1) return [nodes];
+
+  return rootNodes.map((root) => {
+    const treeNodes: WorkflowNode[] = [];
+    const queue = [root.id];
+    const visited = new Set<string>();
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (visited.has(currentId)) continue;
+      visited.add(currentId);
+
+      const node = nodes.find((n) => n.id === currentId);
+      if (node) {
+        treeNodes.push(node);
+        nodes
+          .filter((n) => n.parentNode === currentId)
+          .forEach((child) => queue.push(child.id));
+      }
+    }
+
+    return treeNodes;
+  });
+}
+
 export function mergeWorkflow(
   currentNodes: WorkflowNode[],
   editResult: UpdateWorkflowResponse,

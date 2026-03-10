@@ -104,7 +104,8 @@ export type ExecutorFunction<TInput = unknown, TOutput = unknown> = (
  */
 export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
   functionCode: string;
-  lastModified: number;
+  initFunctionCode?: string; // GroupNode PRE-processor: runs before internal nodes, transforms parent output → internal nodes' expected input
+  lastModified?: number;
   isAsync?: boolean; // Set during compilation
   nodeData?: {
     inputData?: TInput;

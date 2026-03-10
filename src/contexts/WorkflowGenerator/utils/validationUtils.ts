@@ -1,4 +1,4 @@
-import type { ExecutionConfig, WorkflowNode } from "@/types";
+import type { ExecutionConfig, ExecutionData, WorkflowNode } from "@/types";
 import { isExecutionConfig } from "./typeGuards";
 
 // ============================================
@@ -126,7 +126,7 @@ const transformNode = (
     data: {
       ...node.data,
       groups: children
-        .filter((child) => child.type !== "decision")
+        .filter((child) => child.type !== "decision" && child.type !== "group")
         .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
         .map(({ parentNode: _p, ...rest }) => rest),
     },
@@ -181,4 +181,41 @@ export function buildParentChildMap(
  */
 export function deduplicateNodesById(nodes: WorkflowNode[]): WorkflowNode[] {
   return Array.from(new Map(nodes.map((node) => [node.id, node])).values());
+}
+
+// ============================================
+// SERVICE NODE NORMALIZATION UTILITIES
+// ============================================
+
+/**
+ * Ensure all service nodes have simulation.enabled = true and a valid functionCode.
+ *
+ * Repair-created service nodes can bypass the normalization in ai.ts.
+ * This function enforces the invariant on every service node in the list.
+ *
+ * @param nodes - Flat list of workflow nodes
+ * @returns Updated list with all service nodes normalized
+ */
+export function normalizeServiceNodes(nodes: WorkflowNode[]): WorkflowNode[] {
+  return nodes.map((node) => {
+    if (node.type !== "service") return node;
+    const config = node.data.execution?.config;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        execution: {
+          ...node.data.execution,
+          config: {
+            ...config,
+            functionCode: config?.functionCode || "",
+            simulation: {
+              enabled: true,
+              ...config?.simulation,
+            },
+          },
+        },
+      },
+    } satisfies { data: { execution: ExecutionData } };
+  });
 }

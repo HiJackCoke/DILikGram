@@ -73,7 +73,7 @@ export class WorkflowExecutor {
       if (this.startNodeId) {
         // Find the specific Start node by ID
         startNode = this.nodes.find(
-          (node) => node.id === this.startNodeId && node.type === "start"
+          (node) => node.id === this.startNodeId && node.type === "start",
         );
         if (!startNode) {
           throw new Error(`Start node with ID ${this.startNodeId} not found`);
@@ -131,7 +131,7 @@ export class WorkflowExecutor {
    */
   private async transferDataThroughEdge(
     edgeId: string,
-    data: unknown
+    data: unknown,
   ): Promise<void> {
     if (!this.onEdgeUpdate) return;
 
@@ -176,7 +176,7 @@ export class WorkflowExecutor {
         nodeId,
         "executed",
         undefined, // No output data on error
-        executionError // Pass error
+        executionError, // Pass error
       );
       this.onNodeUpdate(nodeId, executionData);
       this.syncNodeAfterUpdate(nodeId, executionData);
@@ -189,7 +189,7 @@ export class WorkflowExecutor {
    */
   private syncNodeAfterUpdate(
     nodeId: string,
-    executionData: ExecutionData
+    executionData: ExecutionData,
   ): void {
     const nodeIndex = this.nodes.findIndex((n) => n.id === nodeId);
 
@@ -234,7 +234,15 @@ export class WorkflowExecutor {
     try {
       const nodeTypeForValidation = node.type as WorkflowNodeType;
 
-      const execution = compileExecutor(config, nodeTypeForValidation);
+      const internalNodes =
+        node.type === "group"
+          ? (node.data as { groups?: WorkflowNode[] }).groups
+          : undefined;
+      const execution = compileExecutor(
+        config,
+        nodeTypeForValidation,
+        internalNodes,
+      );
       this.executionCache.set(cacheKey, execution);
 
       return execution;
@@ -267,7 +275,7 @@ export class WorkflowExecutor {
 
     // Fallback: Get from executionState.context.outputs
     const parentOutput = this.executionState.context.outputs.get(
-      node.parentNode
+      node.parentNode,
     );
 
     return parentOutput?.data ?? null;
@@ -287,7 +295,7 @@ export class WorkflowExecutor {
     executionState: ExecutionState,
     resultData: unknown,
     error?: ExecutionError,
-    summary?: ExecutionSummary
+    summary?: ExecutionSummary,
   ): ExecutionData {
     // Find existing node to preserve config
     const existingNode = this.nodes.find((n) => n.id === nodeId);
@@ -325,26 +333,26 @@ export class WorkflowExecutor {
    */
   private extractDecisionSuccess(
     node: WorkflowNode,
-    outputData: unknown
+    outputData: unknown,
   ): boolean {
     // Assertion: this method should only be called for decision nodes
     if (node.type !== "decision") {
       throw new Error(
-        `extractDecisionSuccess should only be called for decision nodes, got ${node.type}`
+        `extractDecisionSuccess should only be called for decision nodes, got ${node.type}`,
       );
     }
 
     // Extract from outputData
     if (typeof outputData !== "object" || outputData === null) {
       console.warn(
-        `Decision node ${node.id}: outputData is not an object. Falling back to true.`
+        `Decision node ${node.id}: outputData is not an object. Falling back to true.`,
       );
       return true;
     }
 
     if (!("success" in outputData)) {
       console.warn(
-        `Decision node ${node.id}: outputData has no success field. Falling back to true.`
+        `Decision node ${node.id}: outputData has no success field. Falling back to true.`,
       );
       return true;
     }
@@ -352,7 +360,7 @@ export class WorkflowExecutor {
     const successValue = (outputData as { success: unknown }).success;
     if (typeof successValue !== "boolean") {
       console.warn(
-        `Decision node ${node.id}: success field is not boolean (${typeof successValue}). Falling back to true.`
+        `Decision node ${node.id}: success field is not boolean (${typeof successValue}). Falling back to true.`,
       );
       return true;
     }
@@ -366,7 +374,7 @@ export class WorkflowExecutor {
    */
   private async executeGroupInternals(
     groupNode: WorkflowNode,
-    inputData: unknown
+    inputData: unknown,
   ): Promise<{ outputData: unknown; success: boolean }> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupData = groupNode.data as any; // GroupNodeData
@@ -384,11 +392,21 @@ export class WorkflowExecutor {
     if (executor) {
       try {
         await this.delay(500);
-        const result = await executeFunction(executor, inputData, 30000);
+        const groupConfig = groupNode.data.execution?.config;
+        const mockResponse =
+          groupConfig?.simulation?.mockResponse ??
+          groupConfig?.nodeData?.outputData;
+        const result = await executeFunction(
+          executor,
+          inputData,
+          30000,
+          this.simulationMode,
+          mockResponse,
+        );
 
         if (!result.success) {
           throw new Error(
-            result.error?.message || "GroupNode execution failed"
+            result.error?.message || "GroupNode execution failed",
           );
         }
 
@@ -415,14 +433,14 @@ export class WorkflowExecutor {
       // 유효성 검증
       if (!internalNode || !internalNode.id) {
         throw new Error(
-          `Group node ${groupNode.id}: Invalid internal node at index ${i}`
+          `Group node ${groupNode.id}: Invalid internal node at index ${i}`,
         );
       }
 
       // 중첩 Group 방지 (무한 재귀 방지)
       if (internalNode.type === "group") {
         throw new Error(
-          `Group node ${groupNode.id}: Nested group nodes are not allowed`
+          `Group node ${groupNode.id}: Nested group nodes are not allowed`,
         );
       }
 
@@ -433,7 +451,7 @@ export class WorkflowExecutor {
         // 내부 노드 실행
         const { outputData, success } = await this.computeNodeOutput(
           internalNode,
-          currentData
+          currentData,
         );
 
         // 출력 저장 (내부 노드 상태 추적용)
@@ -468,7 +486,7 @@ export class WorkflowExecutor {
    */
   private async computeNodeOutput(
     node: WorkflowNode,
-    inputData: unknown
+    inputData: unknown,
   ): Promise<{ outputData: unknown; success: boolean }> {
     // Start node doesn't have execution
     if (node.type === "start") {
@@ -501,7 +519,7 @@ export class WorkflowExecutor {
   private async runCustomExecution(
     node: WorkflowNode,
     execution: ExecutorFunction,
-    inputData: unknown
+    inputData: unknown,
   ): Promise<{ outputData: unknown; success: boolean }> {
     await this.delay(500);
 
@@ -522,7 +540,7 @@ export class WorkflowExecutor {
       if (node.type === "decision") {
         console.warn(
           `Decision node ${node.id}: executor threw error. Treating as success: false.`,
-          result.error
+          result.error,
         );
         return { outputData: result.error, success: false };
       }
@@ -548,11 +566,11 @@ export class WorkflowExecutor {
    */
   private runDefaultExecution(
     node: WorkflowNode,
-    inputData: unknown
+    inputData: unknown,
   ): { outputData: unknown; success: boolean } {
     if (node.type === "decision") {
       console.warn(
-        `Decision node ${node.id}: no executor configured. Falling back to success=true.`
+        `Decision node ${node.id}: no executor configured. Falling back to success=true.`,
       );
       return { outputData: inputData, success: true };
     }
@@ -567,7 +585,7 @@ export class WorkflowExecutor {
    */
   private runSimulatedExecution(
     node: WorkflowNode,
-    inputData: unknown
+    inputData: unknown,
   ): { outputData: unknown; success: boolean } {
     const simulation = node.data.execution?.config?.simulation;
 
@@ -594,7 +612,7 @@ export class WorkflowExecutor {
    */
   private extractSuccessFromOutput(
     node: WorkflowNode,
-    outputData: unknown
+    outputData: unknown,
   ): { outputData: unknown; success: boolean } {
     if (node.type === "decision") {
       const success = this.extractDecisionSuccess(node, outputData);
@@ -610,14 +628,14 @@ export class WorkflowExecutor {
    */
   private async notifyNodeExecuting(
     nodeId: string,
-    inputData: unknown
+    inputData: unknown,
   ): Promise<void> {
     if (!this.onNodeUpdate) return;
 
     const executionData = this.buildExecutorData(
       nodeId,
       "executing",
-      inputData
+      inputData,
     );
     this.onNodeUpdate(nodeId, executionData);
     this.syncNodeAfterUpdate(nodeId, executionData);
@@ -628,7 +646,7 @@ export class WorkflowExecutor {
    */
   private async notifyNodeExecuted(
     nodeId: string,
-    outputData: unknown
+    outputData: unknown,
   ): Promise<void> {
     if (!this.onNodeUpdate) return;
 
@@ -643,7 +661,7 @@ export class WorkflowExecutor {
       "executed",
       outputData,
       undefined,
-      summary
+      summary,
     );
     this.onNodeUpdate(nodeId, executionData);
     this.syncNodeAfterUpdate(nodeId, executionData);
@@ -656,7 +674,7 @@ export class WorkflowExecutor {
     nodeId: string,
     outputData: unknown,
     success: boolean,
-    startTime: number
+    startTime: number,
   ): void {
     const executionTime = Date.now() - startTime;
     this.executionState.context.outputs.set(nodeId, {
@@ -693,7 +711,7 @@ export class WorkflowExecutor {
       currentNodeFailed = true;
       const { outputData, success } = await this.computeNodeOutput(
         node,
-        inputData
+        inputData,
       );
       currentNodeFailed = false;
 
@@ -720,7 +738,7 @@ export class WorkflowExecutor {
    */
   private getChildrenToExecute(currentNode: WorkflowNode): WorkflowNode[] {
     const allChildren = this.nodes.filter(
-      (node) => node.parentNode === currentNode.id
+      (node) => node.parentNode === currentNode.id,
     );
 
     if (allChildren.length === 0) return [];
@@ -729,7 +747,7 @@ export class WorkflowExecutor {
     if (currentNode.type === "decision") {
       const selectedChildren = this.selectChildrenByBranch(
         currentNode.id,
-        allChildren
+        allChildren,
       );
       return selectedChildren;
     }
@@ -743,11 +761,11 @@ export class WorkflowExecutor {
    */
   private async executeChildWithEdge(
     currentNodeId: string,
-    child: WorkflowNode
+    child: WorkflowNode,
   ): Promise<void> {
     // Find edge connecting current node to child
     const edge = this.edges.find(
-      (e) => e.source === currentNodeId && e.target === child.id
+      (e) => e.source === currentNodeId && e.target === child.id,
     );
 
     // Transfer data through edge if exists
@@ -761,8 +779,17 @@ export class WorkflowExecutor {
       await this.delay(500);
     }
 
-    // Execute child node
-    await this.executeNode(child.id);
+    // Execute child node — catch per-node errors to allow sibling branches to continue
+    try {
+      await this.executeNode(child.id);
+    } catch (error) {
+      // Node's error is already recorded by handleExecutionError inside executeNode.
+      // Do NOT re-throw: sibling branches must continue executing independently.
+      console.warn(
+        `Node ${child.id} failed (sibling branches continue):`,
+        (error as Error).message,
+      );
+    }
 
     // Deactivate edge animation
     if (edge) {
@@ -793,8 +820,8 @@ export class WorkflowExecutor {
     // Execute all children in parallel (each branch runs independently)
     await Promise.all(
       childrenToExecute.map((child) =>
-        this.executeChildWithEdge(currentNode.id, child)
-      )
+        this.executeChildWithEdge(currentNode.id, child),
+      ),
     );
   }
 
@@ -806,7 +833,7 @@ export class WorkflowExecutor {
    */
   private selectChildrenByBranch(
     decisionNodeId: string,
-    children: WorkflowNode[]
+    children: WorkflowNode[],
   ): WorkflowNode[] {
     if (children.length === 0) return [];
 
@@ -820,14 +847,14 @@ export class WorkflowExecutor {
     const yesEdges = this.edges.filter(
       (e) =>
         e.source === decisionNodeId &&
-        (e.sourcePort === "yes" || e.label === "Yes")
+        (e.sourcePort === "yes" || e.label === "Yes"),
     );
 
     // Find ALL no edges (not just one)
     const noEdges = this.edges.filter(
       (e) =>
         e.source === decisionNodeId &&
-        (e.sourcePort === "no" || e.label === "No")
+        (e.sourcePort === "no" || e.label === "No"),
     );
 
     // Select edges based on success value
@@ -835,7 +862,7 @@ export class WorkflowExecutor {
 
     // Get ALL children connected by selected edges
     const selectedChildren = children.filter((child) =>
-      selectedEdges.some((edge) => edge.target === child.id)
+      selectedEdges.some((edge) => edge.target === child.id),
     );
 
     // Fallback: if no children found, return first child
@@ -907,7 +934,7 @@ export class WorkflowExecutor {
  * 워크플로우 실행 헬퍼 함수
  */
 export function createWorkflowExecutor(
-  config: WorkflowExecutorConfig
+  config: WorkflowExecutorConfig,
 ): WorkflowExecutor {
   return new WorkflowExecutor(config);
 }

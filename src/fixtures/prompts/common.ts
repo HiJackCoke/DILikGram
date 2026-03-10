@@ -47,8 +47,25 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
          - **CRITICAL**: MUST always end with a \`return\` statement that produces the outputData object
          - ❌ Wrong (no return, mutates inputData): \`inputData.tasks.push(inputData.newTask);\`
          - ✅ Correct (compute new state, return as output): \`const updated = [...inputData.tasks, inputData.newTask]; return { tasks: updated };\`
+         - **NULL-SAFE FIELD ACCESS (CRITICAL)**:
+           - \`nodeData.inputData\` shows the EXPECTED SHAPE, but field values may be null at runtime
+           - ALWAYS use type guards before calling array methods or accessing nested objects:
+             - ❌ Wrong: \`inputData ? inputData.tasks.slice(0, 3) : null\`
+               (inputData is truthy as an object, but inputData.tasks may still be null)
+             - ✅ Correct: \`Array.isArray(inputData?.tasks) ? inputData.tasks.slice(0, 3) : []\`
+           - Use optional chaining + nullish coalescing for safe field access:
+             - ❌ Wrong: \`inputData.user.name\`
+             - ✅ Correct: \`inputData?.user?.name ?? ""\`
+           - NEVER rely solely on \`inputData ?\` (object truthy check) before accessing sub-fields as arrays
        - \`config.nodeData.inputData\`: input parameters sample
+          - **CRITICAL CONTRACT**: Keys MUST match the \`inputData.xxx\` accesses in functionCode
+          - nodeData.inputData = sample of what functionCode READS (input schema)
+          - ❌ Wrong: functionCode does \`inputData.tasks.slice(0,3)\` but nodeData.inputData = { displayedTasks: [] }
+          - ✅ Correct: functionCode does \`inputData.tasks.slice(0,3)\` → nodeData.inputData = { tasks: [] }
        - \`config.nodeData.outputData\`: output result sample
+          - Keys MUST match what functionCode RETURNS
+          - nodeData.outputData = sample of what functionCode produces (output schema)
+          - ✅ Correct (above example): return { displayedTasks: ... } → nodeData.outputData = { displayedTasks: [] }
      - \`ports\`: array (Default: [
          {
             "id": "input",
@@ -162,7 +179,11 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
          - ❌ Wrong: \`return status === 'active'\`
          - ✅ Correct: \`return inputData.status === 'active'\`
        - \`config.nodeData.inputData\`: input parameters sample
+          - **CRITICAL CONTRACT**: Keys MUST match the \`inputData.xxx\` accesses in functionCode
+          - nodeData.inputData = sample of what functionCode READS (input schema)
        - \`config.nodeData.outputData\`: output result sample
+          - Keys MUST match what functionCode RETURNS
+          - nodeData.outputData = sample of what functionCode produces (output schema)
      - **CRITICAL**: Must have at least two children nodes (one 'yes', one 'no').
 
 4. **Group Node** ("group")
@@ -196,6 +217,11 @@ export const PARENT_CHILD_RULES = `
    - Every node you create must refer to a \`parentNode\`.
    - The \`parentNode\` must be the \`id\` of another node in the workflow.
    - **Exception**: In a fresh Generation, the very first node (root) may omit \`parentNode\`.
+     - Root node MUST be type "task", "service", or "decision" — NEVER "group"
+   - **SELF-CHECK (MANDATORY)**: Before finalizing output, scan your entire node list.
+     For every node with a \`parentNode\`, confirm that exact ID string appears as an \`id\`
+     in another node in the same response. If not → fix it before outputting.
+   - ❌ FATAL: \`"parentNode": "node-task-xyz"\` when no node has \`"id": "node-task-xyz"\`
 
 2. **Decision Node Logic (BranchLabels)**
    - IF a node's \`parentNode\` is a **Decision Node**:
@@ -223,7 +249,11 @@ VALIDATION CHECKLIST (Self-Correction):
 □ **Correct ID Format?** (node-\${type}-\${uuid}) // uuid format: [8-4-4-4-12 char]
 □ **No "edges" field?** (System handles edges)
 □ **No "start" or "end" nodes?** (System handles them)
-□ **All nodes have valid \`parentNode\`?** (Except the root of a new flow)
+□ **parentNode Cross-Reference Check (CRITICAL)**:
+   - List all node \`id\` values in your response.
+   - For every non-root node, confirm its \`parentNode\` value appears in that list.
+   - ❌ If any \`parentNode\` does NOT match an actual \`id\` → rewrite before outputting.
+   - This is a FATAL error that breaks the entire workflow.
 □ **Data Fields Complete?**
    - Task: title, description, assignee, estimatedTime, execution.config, ports
    - Service: title, description, serviceType, http, execution.config, ports
@@ -235,22 +265,55 @@ VALIDATION CHECKLIST (Self-Correction):
 □ **BranchLabel Check:**
    - Do children of decision nodes have \`branchLabel\` ("yes"/"no")?
    - Do children of non-decision nodes OMIT \`branchLabel\`?
+□ **functionCode MANDATORY CHECK (CRITICAL)**:
+   - EVERY task and service node MUST have functionCode as a non-empty string
+   - ❌ Wrong: \`{ "execution": { "config": { "nodeData": {...} } } }\`  ← functionCode missing!
+   - ✅ Correct: \`{ "execution": { "config": { "functionCode": "return inputData;", "nodeData": {...} } } }\`
+   - If a node just passes data through: use \`"return inputData;"\`
+   - This applies to ALL task/service nodes — including GroupNode internal child nodes
+   - NEVER use template syntax \`{{inputData.key}}\` inside nodeData.inputData/outputData samples
+     (templates are ONLY for data.http.body, not for execution schema samples)
+   - ❌ Wrong: \`"nodeData": { "inputData": { "taskId": "{{inputData.taskId}}" } }\`
+   - ✅ Correct: \`"nodeData": { "inputData": { "taskId": "mock-task-id" } }\`
 □ **Execution Config Check:**
    - Do Task nodes have \`execution.config.functionCode\`?
    - Do Service nodes have \`execution.config.functionCode\`?
    - Are \`inputData\` and \`outputData\` samples provided?
    - Is \`functionCode\` written as function body only (no "function" or "async function" wrapper)?
    - Does \`functionCode\` end with a \`return\` statement? (Task/Service: MUST return outputData object; Decision: MUST return boolean)
+□ **nodeData Schema Contract (CRITICAL)**:
+   - nodeData.inputData keys MUST match the \`inputData.xxx\` accesses in functionCode
+   - nodeData.outputData keys MUST match what functionCode returns
+   - ❌ Wrong: functionCode reads inputData.tasks → but nodeData.inputData has { displayedTasks: [] }
+   - ✅ Correct: functionCode reads inputData.tasks → nodeData.inputData = { tasks: [] }
+              functionCode returns { displayedTasks: ... } → nodeData.outputData = { displayedTasks: [] }
 □ **inputData Reference Check:**
    - Does \`functionCode\` use \`inputData.<field>\` (not bare variable names)?
    - ❌ Wrong: \`tasks.length\`, \`userId\`, \`email\`, \`endpoint\`
    - ✅ Correct: \`inputData.tasks.length\`, \`inputData.userId\`, \`inputData.email\`
+□ **Array Safety Check (CRITICAL — prevents runtime crash)**:
+   - EVERY array method (.slice, .map, .filter, .forEach, .reduce) MUST be guarded with Array.isArray()
+   - ❌ Wrong: \`inputData.tasks.slice(0, 3)\` — crashes if tasks is undefined!
+   - ❌ Wrong: \`inputData ? inputData.tasks.slice(0, 3) : null\` — inputData truthy ≠ inputData.tasks defined!
+   - ✅ Correct: \`Array.isArray(inputData?.tasks) ? inputData.tasks.slice(0, 3) : []\`
+□ **nodeData.inputData Type Defaults:**
+   - Are array fields \`[]\`, object fields \`{}\`, string fields \`""\`, number fields \`0\`?
+   - ❌ Wrong: \`"inputData": { "tasks": null }\`
+   - ✅ Correct: \`"inputData": { "tasks": [] }\`
 □ **Execution Scope Check:**
    - Does functionCode ONLY use \`inputData\` and \`fetch\`?
    - Does functionCode avoid referencing \`metadata\`, \`node\`, \`config\`, or other external variables?
    - ❌ FORBIDDEN: \`metadata.maxTasks\`, \`node.data.title\`, \`config.timeout\`, \`this.value\`
    - ✅ REQUIRED: \`inputData.maxTasks\`, \`inputData.title\`, \`inputData.timeout\`
    - If config values are needed, include them in \`inputData\` schema
+□ **GroupNode initFunctionCode Check (CRITICAL)**:
+   - GroupNode execution.config MUST have initFunctionCode when parent's output shape ≠ first internal node's inputData shape
+   - initFunctionCode maps parent output → internal nodes' expected input shape
+   - Always initialize arrays as [], objects as {}, strings as "" with optional chaining
+   - ❌ Wrong (parent gives { currentDate } but first node needs { tasks }):
+       no initFunctionCode → runtime crash!
+   - ✅ Correct: \`"initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };"\`
+   - If parent output already matches first internal node's input: \`"return inputData;"\`
 □ **Start Node Child Check:**
    - Do children of start nodes have \`inputData: null\`?
    - Does functionCode in start node children avoid referencing inputData?

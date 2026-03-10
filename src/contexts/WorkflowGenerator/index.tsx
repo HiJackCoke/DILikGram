@@ -34,6 +34,7 @@ import {
 import {
   createWorkflow,
   sanitizeNewNodeIds,
+  splitIntoWorkflowTrees,
 } from "@/utils/ai/workflowProcessor";
 import {
   loadNodeLibrary,
@@ -45,6 +46,7 @@ import { runValidationPipeline } from "./validators";
 import {
   rebuildGroupChildren,
   deduplicateNodesById,
+  normalizeServiceNodes,
 } from "./utils/validationUtils";
 
 interface WorkflowGeneratorProviderProps {
@@ -119,6 +121,7 @@ export function WorkflowGeneratorProvider({
 
       try {
         const result = await analyzePRDAction(prdContent, prompt);
+
         setAnalysisResult(result);
       } catch (err) {
         const errorMessage =
@@ -139,6 +142,9 @@ export function WorkflowGeneratorProvider({
     setIsGenerating(true);
     setError(null);
 
+    const expectedTreeCount = analysisResult?.pages?.length ?? 1;
+    const expectedTotalSteps = expectedTreeCount * 7 + 1;
+
     setValidationProgress({
       currentValidator: "AI Generation",
       totalValidators: 7,
@@ -146,7 +152,7 @@ export function WorkflowGeneratorProvider({
       status: "validating",
       message: "Generating workflow with AI...",
       currentStep: 1,
-      totalSteps: 8,
+      totalSteps: expectedTotalSteps,
     });
 
     try {
@@ -160,38 +166,55 @@ export function WorkflowGeneratorProvider({
       );
 
       const sanitized = sanitizeNewNodeIds(generated.nodes);
-      let workingNodes = [...sanitized];
 
-      workingNodes = await runValidationPipeline(
-        {
-          nodes: workingNodes,
-          dialog: dialog,
-          updateWorkflowAction,
-        },
-        (progress) => {
-          setValidationProgress({
-            ...progress,
-            currentStep: progress.completedValidators + 2,
-            totalSteps: 8,
-          });
-        },
-      );
+      // ★ Split BEFORE validation so that per-tree orphan repair
+      //   doesn't connect page2 nodes to page1's root
+      const workflowTrees = splitIntoWorkflowTrees(sanitized);
+      const treeCount = workflowTrees.length;
 
-      workingNodes = rebuildGroupChildren(workingNodes);
-      workingNodes = deduplicateNodesById(workingNodes);
+      const allValidatedNodes: WorkflowNode[] = [];
 
-      const { nodes, edges } = createWorkflow(
-        workingNodes,
+      for (let treeIdx = 0; treeIdx < treeCount; treeIdx++) {
+        let workingNodes = [...workflowTrees[treeIdx]];
+
+        workingNodes = await runValidationPipeline(
+          {
+            nodes: workingNodes,
+            dialog: dialog,
+            updateWorkflowAction,
+          },
+          (progress) => {
+            setValidationProgress({
+              ...progress,
+              currentStep: treeIdx * 7 + progress.completedValidators + 2,
+              totalSteps: treeCount * 7 + 1,
+            });
+          },
+        );
+
+        workingNodes = normalizeServiceNodes(workingNodes);
+
+        workingNodes = rebuildGroupChildren(workingNodes);
+        workingNodes = deduplicateNodesById(workingNodes);
+
+        allValidatedNodes.push(...workingNodes);
+      }
+
+      // Layout once with all trees so root nodes get distinct x positions
+      const { nodes: allFinalNodes, edges: allFinalEdges } = createWorkflow(
+        allValidatedNodes,
         existingNodesRef.current,
       );
 
-      const reusableNodes = extractReusableNodes(nodes);
+      const reusableNodes = extractReusableNodes(allFinalNodes);
       if (reusableNodes.length > 0) {
         saveToNodeLibrary(reusableNodes);
         console.log(`Saved ${reusableNodes.length} reusable nodes to library`);
       }
 
-      listeners.current.forEach((listener) => listener(nodes, edges));
+      listeners.current.forEach((listener) =>
+        listener(allFinalNodes, allFinalEdges),
+      );
       close();
     } catch (err) {
       const errorMessage =

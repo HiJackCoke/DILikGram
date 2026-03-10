@@ -38,8 +38,72 @@ Pages & Features to cover:
 ${pageLines}
 
 ═══════════════════════════════════════════════════════════════
-IMPORTANT: You MUST create nodes for every page and feature listed above.
-Use GroupNodes for pages and child nodes for each feature within them.
+IMPORTANT: Implement every page and feature above with the following MANDATORY structure:
+
+Per page:
+  1. Create ONE root Task node (no parentNode, inputData: null)
+  2. For EACH feature of that page, create ONE GroupNode chained sequentially
+     (feature count = GroupNode count — mandatory 1:1 mapping)
+  3. Every GroupNode MUST contain at least 2 internal child nodes (Task/Service/Decision)
+
+Do NOT replace GroupNodes with bare TaskNodes or ServiceNodes.
+Feature count per page = GroupNode count per page. This is not optional.
+═══════════════════════════════════════════════════════════════
+`;
+}
+
+/**
+ * Build context for a single page in a multi-page PRD.
+ * Used for per-page generation — each API call sees only one page's features.
+ *
+ * @param analysis - Full PRD analysis result
+ * @param pageIndex - Zero-based index of the page to build context for
+ * @returns Formatted context string for a single page
+ */
+export function buildSinglePageContext(
+  analysis: PRDAnalysisResult,
+  pageIndex: number,
+): string {
+  const page = analysis.pages[pageIndex];
+  const featureLines = page.features
+    .map((f) => `    - [${f.priority.toUpperCase()}] ${f.name}: ${f.description}`)
+    .join("\n");
+
+  const groupNodeChain = page.features
+    .map((f, i) => {
+      if (i === 0) return `    GroupNode 1 (${f.name}): parentNode = root Task id`;
+      return `    GroupNode ${i + 1} (${f.name}): parentNode = GroupNode ${i} id`;
+    })
+    .join("\n");
+
+  return `
+═══════════════════════════════════════════════════════════════
+PRD ANALYSIS SUMMARY (Page ${pageIndex + 1} of ${analysis.pages.length})
+═══════════════════════════════════════════════════════════════
+
+Product Goal: ${analysis.goal}
+
+Page to implement: ${page.name}${page.path ? ` (${page.path})` : ""}
+
+Features to cover:
+${featureLines}
+
+═══════════════════════════════════════════════════════════════
+IMPORTANT: Implement every feature above with the following MANDATORY structure:
+
+Step 1 — Root node:
+  Create ONE root Task node for "${page.name}" (no parentNode, inputData: null)
+
+Step 2 — Feature GroupNodes (${page.features.length} features → EXACTLY ${page.features.length} GroupNodes):
+  Chain GroupNodes sequentially from the root:
+${groupNodeChain}
+
+Step 3 — Internal nodes per GroupNode (mandatory):
+  Every GroupNode MUST have at least 2 child nodes (Task/Service/Decision).
+  Internal node parentNode = their parent GroupNode id.
+
+${page.features.length} features listed = ${page.features.length} GroupNodes required. Do NOT skip any.
+This is a single independent workflow tree. Do NOT reference other pages.
 ═══════════════════════════════════════════════════════════════
 `;
 }
