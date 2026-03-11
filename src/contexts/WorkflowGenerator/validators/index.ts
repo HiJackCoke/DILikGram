@@ -29,6 +29,10 @@ import {
   validateSyncOnlyNodes,
   repairSyncOnlyNodes,
 } from "./syncOnlyNodes";
+import {
+  validateOutputDataTypeMismatch,
+  repairOutputDataTypeMismatch,
+} from "./outputDataTypeMismatch";
 
 /**
  * Run validation pipeline
@@ -88,6 +92,11 @@ export async function runValidationPipeline(
       validate: validateFunctionCodeInputData,
       repair: repairFunctionCodeMismatch,
     },
+    {
+      name: "outputData Type Mismatch",
+      validate: validateOutputDataTypeMismatch,
+      repair: repairOutputDataTypeMismatch,
+    },
   ];
 
   // Run validators sequentially
@@ -102,7 +111,7 @@ export async function runValidationPipeline(
       status: "validating",
     });
 
-    const result = validator.validate(workingNodes);
+    const result = await validator.validate(workingNodes);
 
     if (!result.valid) {
       console.log(`Validation failed: ${validator.name}`, result);
