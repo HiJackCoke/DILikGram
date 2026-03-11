@@ -171,15 +171,6 @@ export type GroupNodeData = {
 
 export type GroupNode = CoreWorkflowNode<GroupNodeData, "group">;
 
-export type WorkflowNodeMap = {
-  start: StartNodeData;
-  end: EndNodeData;
-  task: TaskNodeData;
-  decision: DecisionNodeData;
-  service: ServiceNodeData;
-  group: GroupNodeData;
-};
-
 // ============================================
 // 워크플로우 노드 타입 (ReactDiagram용)
 // ============================================

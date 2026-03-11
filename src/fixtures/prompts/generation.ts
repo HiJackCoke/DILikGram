@@ -170,23 +170,26 @@ PRD-BASED WORKFLOW GENERATION RULES
    - ❌ Wrong: nodeData.inputData sample uses template syntax \`"{{inputData.key}}"\`
    - ✅ Correct: nodeData.inputData uses actual sample values: \`{ "taskId": "mock-task-id" }\`
 
-   **GroupNode initFunctionCode (MANDATORY)**:
-   - EVERY GroupNode MUST have execution.config with initFunctionCode
-   - It transforms the parent's output into the shape expected by the first internal node
-   - DATA CONTRACT:
-       GroupNode receives from parent → initFunctionCode → first internal node's inputData
-       parent.nodeData.outputData shape → initFunctionCode maps keys → groups[0].nodeData.inputData shape
-   - ❌ Wrong: first internal node expects { tasks } but parent outputs { currentDate } with no initFunctionCode → runtime crash
-   - ✅ Correct:
-       \`"initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };"\`
-   - If parent output already has the right shape: \`"return inputData;"\`
+   **GroupNode execution.config (MANDATORY)**:
+   - EVERY GroupNode MUST have execution.config with:
+     * \`initFunctionCode\`: ALWAYS \`"return inputData;"\` — no data transformation, just pass-through
+     * \`functionCode\`: output aggregation logic for the whole group
+     * \`nodeData.inputData\`: shape matching the parent node's outputData
+     * \`nodeData.outputData\`: final output of the group (typically from the last internal node)
+   - CHAINING CONTRACT (system auto-enforces — do NOT override):
+     * GroupNode.nodeData.inputData = parent node's outputData
+     * groups[0].nodeData.inputData = GroupNode.nodeData.inputData (= parent outputData)
+     * groups[i].nodeData.inputData = groups[i-1].nodeData.outputData  (i ≥ 1)
+   - If groups[0] needs to reshape parent data, put that logic in groups[0].functionCode, NOT in initFunctionCode
+   - ❌ Wrong: \`"initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };"\` (transformation belongs in groups[0].functionCode)
+   - ✅ Correct: \`"initFunctionCode": "return inputData;"\` (always)
    - Always use optional chaining (inputData?.field ?? default) to be null-safe
    - Example GroupNode execution.config:
      \`\`\`json
      {
        "execution": {
          "config": {
-           "initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };",
+           "initFunctionCode": "return inputData;",
            "functionCode": "return { tasks: Array.isArray(inputData?.tasks) ? inputData.tasks : [] };",
            "nodeData": {
              "inputData": { "currentDate": "2026-01-01" },
@@ -233,12 +236,19 @@ PRD-BASED WORKFLOW GENERATION RULES
 
 10. GROUP NODE INTERNAL DATA CHAIN (MANDATORY)
    - GroupNode internal nodes pass data sequentially: node[0] → node[1] → ... → node[N]
+   - CHAINING CONTRACT (system auto-enforces inputData for all internal nodes):
+     * node[0].nodeData.inputData = GroupNode.nodeData.inputData = parent node's outputData
+     * node[i].nodeData.inputData (i ≥ 1) = node[i-1].nodeData.outputData
    - Each internal node's nodeData.inputData MUST match the keys of the preceding node's nodeData.outputData
    - DATA CONTRACT:
      node[i].functionCode returns { key1, key2 }
        → node[i].nodeData.outputData = { key1: ..., key2: ... }
        → node[i+1].nodeData.inputData = { key1: ..., key2: ... }
        → node[i+1].functionCode reads inputData.key1, inputData.key2
+
+   - node[0] specifically: its nodeData.inputData MUST match the shape of the parent GroupNode's
+     nodeData.inputData (i.e. the parent node's outputData). Use node[0].functionCode to reshape
+     if needed — do NOT rely on initFunctionCode for this.
 
    - ❌ Wrong (node[0] outputs tasks, but node[1] reads displayedTasks):
      node[0].functionCode: "return { tasks: [...] };"

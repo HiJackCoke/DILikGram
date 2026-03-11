@@ -21,6 +21,7 @@ import type {
   GroupNodeData,
   ServiceNodeData,
   DecisionNodeData,
+  GroupNode,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
 import type {
@@ -221,8 +222,9 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     assertNoCircularGroupReferences(nodes);
     nodes = removeUndersizedGroups(nodes);
     nodes = normalizeNodeDefaults(nodes);
-    if (prdContent) nodes = applyPRDFallbacks(nodes, prdContent);
     nodes = normalizeStartInputData(nodes);
+    nodes = normalizeNodeChaining(nodes);
+    if (prdContent) nodes = applyPRDFallbacks(nodes, prdContent);
 
     return {
       nodes,
@@ -510,6 +512,99 @@ function normalizeStartInputData(nodes: WorkflowNode[]): WorkflowNode[] {
         },
       },
     };
+  });
+}
+
+/** Set nodeData.inputData on a node immutably; no-ops if config.nodeData is absent. */
+function setNodeInputData(
+  node: WorkflowNode,
+  inputData: unknown,
+): WorkflowNode {
+  if (!node.data.execution?.config?.nodeData) return node;
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      execution: {
+        ...node.data.execution,
+        config: {
+          ...node.data.execution.config,
+          nodeData: {
+            ...node.data.execution.config.nodeData,
+            inputData,
+          },
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Enforce inputData/outputData chaining rules across all non-start nodes.
+ *
+ * Rules:
+ *   GroupNode.nodeData.inputData        = parent.outputData
+ *   groups[0].nodeData.inputData        = parent.outputData  (same as GroupNode)
+ *   groups[i].nodeData.inputData (i≥1)  = groups[i-1].nodeData.outputData
+ *   task/service/decision.nodeData.inputData = parent.outputData
+ *
+ * Nodes whose parent is start or absent are skipped (handled by normalizeStartInputData).
+ * Internal group nodes in the outer array are also skipped; they are updated inside
+ * the group's own processing.
+ */
+function normalizeNodeChaining(nodes: WorkflowNode[]): WorkflowNode[] {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+  return nodes.map((node) => {
+    const parent = node.parentNode ? nodeMap.get(node.parentNode) : null;
+
+    // Root nodes and start-node children are handled by normalizeStartInputData
+    if (!parent || parent.type === "start") return node;
+
+    // Internal nodes whose parent is a group are handled within the group's own processing
+    if (parent.type === "group") return node;
+
+    const parentOutputData =
+      parent.data.execution?.config?.nodeData?.outputData ?? null;
+
+    if (node.type === "group") {
+      const groupData = node.data as GroupNodeData;
+      const originalGroups = groupData.groups || [];
+      const processedGroups: WorkflowNode[] = [];
+
+      for (let idx = 0; idx < originalGroups.length; idx++) {
+        const inputData =
+          idx === 0
+            ? parentOutputData
+            : (originalGroups[idx - 1]?.data?.execution?.config?.nodeData
+                ?.outputData ?? null);
+        processedGroups.push(setNodeInputData(originalGroups[idx], inputData));
+      }
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          groups: processedGroups,
+          execution: {
+            ...node.data.execution,
+            config: {
+              functionCode: "",
+              ...node.data.execution?.config,
+              nodeData: {
+                ...node.data.execution?.config?.nodeData,
+                inputData: parentOutputData,
+              },
+            },
+          },
+        },
+      } satisfies {
+        data: Partial<GroupNode["data"]>;
+      };
+    }
+
+    // task / service / decision whose parent is task / service / decision
+    return setNodeInputData(node, parentOutputData);
   });
 }
 

@@ -320,13 +320,11 @@ VALIDATION CHECKLIST (Self-Correction):
    - ✅ REQUIRED: \`inputData.maxTasks\`, \`inputData.title\`, \`inputData.timeout\`
    - If config values are needed, include them in \`inputData\` schema
 □ **GroupNode initFunctionCode Check (CRITICAL)**:
-   - GroupNode execution.config MUST have initFunctionCode when parent's output shape ≠ first internal node's inputData shape
-   - initFunctionCode maps parent output → internal nodes' expected input shape
-   - Always initialize arrays as [], objects as {}, strings as "" with optional chaining
-   - ❌ Wrong (parent gives { currentDate } but first node needs { tasks }):
-       no initFunctionCode → runtime crash!
-   - ✅ Correct: \`"initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };"\`
-   - If parent output already matches first internal node's input: \`"return inputData;"\`
+   - GroupNode MUST have \`"initFunctionCode": "return inputData;"\` — ALWAYS, no data transformation
+   - The system auto-chains: groups[0].nodeData.inputData = GroupNode.nodeData.inputData = parent.outputData
+   - If groups[0] needs to reshape parent data, put that logic in groups[0].functionCode, not here
+   - ❌ Wrong: \`"initFunctionCode": "return { date: inputData?.currentDate ?? '', tasks: [] };"\` (transformation!)
+   - ✅ Correct: \`"initFunctionCode": "return inputData;"\` (always pass-through)
 □ **Start Node Child Check:**
    - Do children of start nodes have \`inputData: null\`?
    - Does functionCode in start node children avoid referencing inputData?
