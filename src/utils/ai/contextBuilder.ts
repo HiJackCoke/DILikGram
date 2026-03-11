@@ -4,7 +4,7 @@
  * Builds context string from PRD text for OpenAI prompt
  */
 
-import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
 
 /**
  * Build structured context from PRD analysis result for workflow generation.
@@ -14,7 +14,7 @@ import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
  * @param analysis - Structured analysis result from AnalyzePRD
  * @returns Formatted context string to append to the generation prompt
  */
-export function buildAnalysisContext(analysis: PRDAnalysisResult): string {
+export function buildAnalysisContext(analysis: AnalyzePRDResult): string {
   const pageLines = analysis.pages
     .map((page) => {
       const featureLines = page.features
@@ -61,7 +61,7 @@ Feature count per page = GroupNode count per page. This is not optional.
  * @returns Formatted context string for a single page
  */
 export function buildSinglePageContext(
-  analysis: PRDAnalysisResult,
+  analysis: AnalyzePRDResult,
   pageIndex: number,
 ): string {
   const page = analysis.pages[pageIndex];

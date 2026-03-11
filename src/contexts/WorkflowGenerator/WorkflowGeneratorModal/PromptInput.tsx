@@ -10,6 +10,8 @@ interface PromptInputProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  label?: string;
+  placeholder?: string;
 }
 
 // const EXAMPLE_PROMPTS = [
@@ -23,6 +25,8 @@ export default function PromptInput({
   value,
   onChange,
   disabled,
+  label = "Describe Your Workflow",
+  placeholder = "Describe the workflow you want to create...",
 }: PromptInputProps) {
   // const handleExampleClick = (example: string) => {
   //   onChange(example);
@@ -33,7 +37,7 @@ export default function PromptInput({
       <div className="flex items-center gap-2">
         <MessageSquare className="w-4 h-4 text-palette-primary-color" />
         <label className="text-sm font-medium text-gray-700">
-          Describe Your Workflow
+          {label}
         </label>
       </div>
 
@@ -41,7 +45,7 @@ export default function PromptInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        placeholder="Describe the workflow you want to create..."
+        placeholder={placeholder}
         rows={4}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-palette-primary-color focus:border-transparent resize-none text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
       />

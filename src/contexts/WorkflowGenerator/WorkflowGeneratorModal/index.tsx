@@ -12,7 +12,10 @@ import AnalysisReview from "./AnalysisReview";
 import InteractiveLoader from "./InteractiveLoader";
 import { ModalProps } from "@/types";
 import type { ValidationProgress } from "../../../types/ai/validators";
-import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import type {
+  AnalyzePRDParams,
+  AnalyzePRDResult,
+} from "@/types/ai/prdAnalysis";
 
 type Step = "input" | "review";
 
@@ -22,11 +25,13 @@ interface WorkflowGeneratorModalProps
   isGenerating: boolean;
   error: string | null;
   validationProgress: ValidationProgress | null;
-  analysisResult: PRDAnalysisResult | null;
-  onAnalyze: (prompt: string, prdContent: string) => void;
+  analysisResult: AnalyzePRDResult | null;
+  onAnalyze: (params: AnalyzePRDParams) => void;
   onGenerate: () => void;
   onCancelAnalysis: () => void;
 }
+
+type Mode = Parameters<typeof WorkflowGeneratorView>[0]["prdMode"];
 
 export default function WorkflowGeneratorModal({
   show,
@@ -44,32 +49,24 @@ export default function WorkflowGeneratorModal({
 
   const [prompt, setPrompt] = useState("");
   const [prdFiles, setPRDFiles] = useState<File[]>([]);
-  const [prdMode, setPrdMode] = useState<"pdf" | "text">("pdf");
-  const [prdText, setPrdText] = useState("");
+  const [prdMode, setPrdMode] = useState<Mode>("pdf");
 
   const canAnalyze =
-    prompt.trim().length > 0 &&
-    (prdMode === "pdf" ? prdFiles.length > 0 : prdText.trim().length > 0);
+    prdMode === "pdf" ? prdFiles.length > 0 : prompt.trim().length > 0;
 
   const handleAnalyze = async () => {
     if (!canAnalyze) return;
 
-    let prdContent: string;
-
-    if (prdMode === "pdf" && prdFiles.length > 0) {
-      const arrayBuffer = await prdFiles[0].arrayBuffer();
-      const base64 = btoa(
-        new Uint8Array(arrayBuffer).reduce(
-          (data, byte) => data + String.fromCharCode(byte),
-          "",
-        ),
-      );
-      prdContent = `data:application/pdf;base64,${base64}`;
+    if (prdMode === "pdf") {
+      await onAnalyze({
+        pdfFiles: prdFiles,
+        prompt: prompt.trim(),
+      });
     } else {
-      prdContent = prdText.trim();
+      await onAnalyze({
+        prompt: prompt.trim(),
+      });
     }
-
-    await onAnalyze(prompt.trim(), prdContent);
   };
 
   const handleClose = () => {
@@ -86,14 +83,12 @@ export default function WorkflowGeneratorModal({
         <WorkflowGeneratorView
           prompt={prompt}
           prdMode={prdMode}
-          prdText={prdText}
           canAnalyze={canAnalyze}
           isAnalyzing={isAnalyzing}
           error={error}
           onPromptChange={setPrompt}
-          onPRDFileChange={setPRDFiles}
-          onPrdModeChange={setPrdMode}
-          onPrdTextChange={setPrdText}
+          onFileChange={setPRDFiles}
+          onModeChange={setPrdMode}
           onAnalyze={handleAnalyze}
           onClose={handleClose}
         />

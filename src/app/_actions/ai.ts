@@ -23,7 +23,7 @@ import type {
   GroupNode,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
-import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -53,7 +53,7 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
   prompt,
   prdContent,
   nodeLibrary,
-  analysisResult?: PRDAnalysisResult,
+  analysisResult?: AnalyzePRDResult,
 ) => {
   if (!prompt || !prompt.trim()) {
     throw new Error("Workflow description is required");

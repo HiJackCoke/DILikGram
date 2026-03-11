@@ -10,17 +10,17 @@ import FileUploader from "@/components/ui/FileUploader";
 import PromptInput from "./PromptInput";
 import InteractiveLoader from "./InteractiveLoader";
 
+type Mode = "pdf" | "text";
+
 interface WorkflowGeneratorViewProps {
   prompt: string;
-  prdMode: "pdf" | "text";
-  prdText: string;
+  prdMode: Mode;
   canAnalyze: boolean;
   isAnalyzing: boolean;
   error: string | null;
   onPromptChange: (value: string) => void;
-  onPRDFileChange: (files: File[]) => void;
-  onPrdModeChange: (mode: "pdf" | "text") => void;
-  onPrdTextChange: (text: string) => void;
+  onFileChange: (files: File[]) => void;
+  onModeChange: (mode: Mode) => void;
   onAnalyze: () => void;
   onClose?: () => void;
 }
@@ -50,14 +50,12 @@ function Header({ step }: { step?: "input" | "review" }) {
 function WorkflowGeneratorView({
   prompt,
   prdMode,
-  prdText,
   canAnalyze,
   isAnalyzing,
   error,
   onPromptChange,
-  onPRDFileChange,
-  onPrdModeChange,
-  onPrdTextChange,
+  onFileChange,
+  onModeChange,
   onAnalyze,
   onClose,
 }: WorkflowGeneratorViewProps) {
@@ -73,7 +71,7 @@ function WorkflowGeneratorView({
           {/* Mode toggle */}
           <div className="flex gap-1 rounded-lg bg-palette-neutral-bg p-1">
             <button
-              onClick={() => onPrdModeChange("pdf")}
+              onClick={() => onModeChange("pdf")}
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 prdMode === "pdf"
                   ? "bg-white text-gray-900 shadow-sm"
@@ -83,7 +81,7 @@ function WorkflowGeneratorView({
               PDF 업로드
             </button>
             <button
-              onClick={() => onPrdModeChange("text")}
+              onClick={() => onModeChange("text")}
               className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 prdMode === "text"
                   ? "bg-white text-gray-900 shadow-sm"
@@ -99,30 +97,35 @@ function WorkflowGeneratorView({
               <FileUploader
                 maxFiles={2}
                 accept=".pdf"
-                onFileChange={onPRDFileChange}
+                onFileChange={onFileChange}
               />
             ) : (
               <textarea
-                value={prdText}
-                onChange={(e) => onPrdTextChange(e.target.value)}
+                value={prompt}
+                onChange={(e) => onPromptChange(e.target.value)}
                 placeholder="PRD 내용을 붙여넣기 하세요..."
                 disabled={isAnalyzing}
                 className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-palette-primary-bg focus:bg-white focus:outline-none focus:ring-1 focus:ring-palette-primary-bg resize-none disabled:opacity-50"
               />
             )}
           </div>
-
           <p className="text-xs text-gray-500">
             PRD를 입력하면 AI가 페이지 구조를 분석합니다
           </p>
         </div>
 
+        {prdMode === "pdf" && (
+          <>
+            {prdMode === "pdf" && (
+              <PromptInput
+                value={prompt}
+                onChange={onPromptChange}
+                disabled={isAnalyzing}
+              />
+            )}
+          </>
+        )}
         {/* Prompt Input */}
-        <PromptInput
-          value={prompt}
-          onChange={onPromptChange}
-          disabled={isAnalyzing}
-        />
 
         {/* Error Display */}
         {error && (

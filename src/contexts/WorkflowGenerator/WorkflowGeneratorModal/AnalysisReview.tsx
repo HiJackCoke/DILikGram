@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, FileText, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
-import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
 
 const PRIORITY_STYLES = {
   must: "bg-red-100 text-red-700",
@@ -17,7 +17,7 @@ const PRIORITY_STYLES = {
 };
 
 interface AnalysisReviewProps {
-  analysis: PRDAnalysisResult;
+  analysis: AnalyzePRDResult;
   isGenerating: boolean;
   error: string | null;
   onGenerate: () => void;

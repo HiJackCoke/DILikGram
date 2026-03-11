@@ -1,6 +1,6 @@
 import type { WorkflowNode } from "@/types";
 import { ReusableNodeTemplate } from "../prd";
-import type { PRDAnalysisResult } from "./prdAnalysis";
+import type { AnalyzePRDResult } from "./prdAnalysis";
 
 export interface GenerateWorkflowResponse {
   nodes: WorkflowNode[];
@@ -19,7 +19,7 @@ export type GenerateWorkflowAction = (
   prompt: string,
   prdContent?: string,
   nodeLibrary?: ReusableNodeTemplate[],
-  analysisResult?: PRDAnalysisResult,
+  analysisResult?: AnalyzePRDResult,
 ) => Promise<GenerateWorkflowResponse>;
 
 // export type GenerateWorkflow = (

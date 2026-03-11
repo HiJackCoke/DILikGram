@@ -25,7 +25,10 @@ import type {
   RegisterOnWorkflowGenerated,
 } from "./type";
 import type { ValidationProgress } from "../../types/ai/validators";
-import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import type {
+  AnalyzePRDParams,
+  AnalyzePRDResult,
+} from "@/types/ai/prdAnalysis";
 import {
   generateWorkflowAction,
   updateWorkflowAction,
@@ -64,7 +67,7 @@ export function WorkflowGeneratorProvider({
 
   // Persisted across both steps so handleGenerate can use them
   const pendingPromptRef = useRef<string>("");
-  const pendingPrdContentRef = useRef<string | undefined>(undefined);
+  const pendingPrdContentRef = useRef<string | undefined>(undefined); // text mode: prompt (= PRD), PDF mode: undefined
 
   const [show, setShow] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -72,8 +75,9 @@ export function WorkflowGeneratorProvider({
   const [error, setError] = useState<string | null>(null);
   const [validationProgress, setValidationProgress] =
     useState<ValidationProgress | null>(null);
-  const [analysisResult, setAnalysisResult] =
-    useState<PRDAnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzePRDResult | null>(
+    null,
+  );
 
   const open = useCallback(() => {
     setShow(true);
@@ -115,17 +119,21 @@ export function WorkflowGeneratorProvider({
    * Step 1: Analyze PRD → extract pages & features
    */
   const handleAnalyze = useCallback(
-    async (prompt: string, prdContent: string) => {
+    async ({ pdfFiles, prompt }: AnalyzePRDParams) => {
       setIsAnalyzing(true);
       setError(null);
       setAnalysisResult(null);
 
       // Persist for use in step 2
-      pendingPromptRef.current = prompt;
-      pendingPrdContentRef.current = prdContent;
+      pendingPromptRef.current = prompt ?? "";
+      // Text mode: prompt is the PRD content; PDF mode: raw text not available client-side
+      pendingPrdContentRef.current = pdfFiles?.length ? undefined : prompt;
 
       try {
-        const result = await analyzePRD(prdContent, prompt);
+        const result = await analyzePRD({
+          pdfFiles,
+          prompt,
+        });
 
         setAnalysisResult(result);
       } catch (err) {

@@ -7,7 +7,7 @@ import {
   buildSinglePageContext,
 } from "@/utils/ai/contextBuilder";
 
-import { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
+import { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
 
 // ============================================================================
 // PRIVATE HELPERS (generateWorkflowAction — generation)
@@ -21,7 +21,7 @@ import { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
  */
 export function buildGenerationContexts(
   prdText: string | undefined,
-  analysisResult: PRDAnalysisResult | undefined,
+  analysisResult: AnalyzePRDResult | undefined,
 ): Array<string | undefined> {
   if (!analysisResult) return [prdText];
 

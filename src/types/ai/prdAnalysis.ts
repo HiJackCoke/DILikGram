@@ -12,12 +12,15 @@ export interface PRDPage {
   features: PRDFeature[];
 }
 
-export interface PRDAnalysisResult {
+export interface AnalyzePRDResult {
   goal: string;
   pages: PRDPage[];
 }
 
+export type AnalyzePRDParams = {
+  pdfFiles?: File[];
+  prompt?: string;
+};
 export type AnalyzePRD = (
-  prdContent: string,
-  prompt: string,
-) => Promise<PRDAnalysisResult>;
+  params: AnalyzePRDParams,
+) => Promise<AnalyzePRDResult>;
