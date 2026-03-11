@@ -26,7 +26,7 @@ import type {
   OnWorkflowEditCallback,
 } from "./type";
 
-import { updateWorkflowAction } from "@/app/actions/ai";
+import { updateWorkflowAction } from "@/app/_actions/ai";
 import {
   mergeWorkflow,
   sanitizeNewNodeIds,

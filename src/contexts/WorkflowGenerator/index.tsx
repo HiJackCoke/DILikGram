@@ -30,7 +30,7 @@ import {
   analyzePRDAction,
   generateWorkflowAction,
   updateWorkflowAction,
-} from "@/app/actions/ai";
+} from "@/app/_actions/ai";
 import {
   createWorkflow,
   sanitizeNewNodeIds,
