@@ -15,16 +15,15 @@ export interface GenerateWorkflowResponse {
   };
 }
 
-export type GenerateWorkflowAction = (
-  prompt: string,
-  prdContent?: string,
-  nodeLibrary?: ReusableNodeTemplate[],
-  analysisResult?: AnalyzePRDResult,
-) => Promise<GenerateWorkflowResponse>;
+export type GenerateWorkflowActionParams = {
+  prompt: string;
+  nodeLibrary?: ReusableNodeTemplate[];
+  analysisResult?: AnalyzePRDResult | null;
+};
 
-// export type GenerateWorkflow = (
-//   props: GenerateWorkflowProps,
-// ) => Promise<GenerateWorkflowResponse>;
+export type GenerateWorkflowAction = (
+  params: GenerateWorkflowActionParams,
+) => Promise<GenerateWorkflowResponse>;
 
 export interface UpdateWorkflowResponse {
   nodes: {

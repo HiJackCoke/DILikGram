@@ -11,6 +11,7 @@ import OpenAI from "openai";
 import { v4 as uuid } from "uuid";
 import type {
   GenerateWorkflowAction,
+  GenerateWorkflowActionParams,
   GenerateWorkflowResponse,
   UpdateWorkflowAction,
   UpdateWorkflowResponse,
@@ -23,7 +24,7 @@ import type {
   GroupNode,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
-import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
+
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -39,45 +40,30 @@ import {
   getOpenAIClient,
   handleOpenAIError,
 } from "@/ai";
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
-
 /**
  * Generate workflow from prompt using GPT-4o-mini
  *
  * @param prompt - User's workflow description
- * @param prdContent - Optional PRD content: base64 PDF data URL or plain text
  * @param nodeLibrary - Optional array of reusable node templates
+ * @param analysisResult - Optional PRD analysis result from analyzePRD step
  * @returns Generated workflow with nodes and metadata
  */
-export const generateWorkflowAction: GenerateWorkflowAction = async (
+export const generateWorkflowAction: GenerateWorkflowAction = async ({
   prompt,
-  prdContent,
   nodeLibrary,
-  analysisResult?: AnalyzePRDResult,
-) => {
-  if (!prompt || !prompt.trim()) {
-    throw new Error("Workflow description is required");
-  }
+  analysisResult,
+}) => {
+  // if (!prompt || !prompt.trim()) {
+  //   throw new Error("Workflow description is required");
+  // }
 
   try {
     const openai = getOpenAIClient();
 
-    let prdText: string | undefined;
-    if (prdContent) {
-      if (prdContent.startsWith("data:application/pdf;base64,")) {
-        const base64Data = prdContent.replace(
-          /^data:application\/pdf;base64,/,
-          "",
-        );
-        const pdfBuffer = Buffer.from(base64Data, "base64");
-        const pdfData = await pdfParse(pdfBuffer);
-        prdText = pdfData.text;
-      } else {
-        prdText = prdContent;
-      }
-    }
-
-    const contexts = buildGenerationContexts(prdText, analysisResult);
+    const contexts = buildGenerationContexts({
+      prompt,
+      analysisResult,
+    });
     const allNodes: WorkflowNode[] = [];
 
     for (let i = 0; i < contexts.length; i++) {
@@ -103,7 +89,7 @@ export const generateWorkflowAction: GenerateWorkflowAction = async (
     nodes = normalizeNodeDefaults(nodes);
     nodes = normalizeStartInputData(nodes);
     nodes = normalizeNodeChaining(nodes);
-    if (prdContent) nodes = applyPRDFallbacks(nodes, prdContent);
+    nodes = applyPRDFallbacks(nodes);
 
     return {
       nodes,
@@ -329,12 +315,8 @@ function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
   });
 }
 
-/** Add placeholder prdReference and default testCases when PRD content was provided. */
-function applyPRDFallbacks(
-  nodes: WorkflowNode[],
-  prdContent: string,
-): WorkflowNode[] {
-  void prdContent; // prdContent presence was already checked by the caller
+/** Add placeholder prdReference and default testCases to all nodes. */
+function applyPRDFallbacks(nodes: WorkflowNode[]): WorkflowNode[] {
   return nodes.map((node) => ({
     ...node,
     data: {
@@ -494,7 +476,7 @@ async function generatePageNodes(
   openai: OpenAI,
   prompt: string,
   enrichedPrdText: string | undefined,
-  nodeLibrary: Parameters<GenerateWorkflowAction>[2],
+  nodeLibrary: GenerateWorkflowActionParams["nodeLibrary"],
 ): Promise<WorkflowNode[]> {
   const response = await openai.responses.create({
     model: "gpt-4o-mini",

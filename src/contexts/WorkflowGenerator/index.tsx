@@ -67,7 +67,6 @@ export function WorkflowGeneratorProvider({
 
   // Persisted across both steps so handleGenerate can use them
   const pendingPromptRef = useRef<string>("");
-  const pendingPrdContentRef = useRef<string | undefined>(undefined); // text mode: prompt (= PRD), PDF mode: undefined
 
   const [show, setShow] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -90,7 +89,6 @@ export function WorkflowGeneratorProvider({
     setError(null);
     setAnalysisResult(null);
     pendingPromptRef.current = "";
-    pendingPrdContentRef.current = undefined;
   }, []);
 
   const clearAnalysis = useCallback(() => {
@@ -126,8 +124,6 @@ export function WorkflowGeneratorProvider({
 
       // Persist for use in step 2
       pendingPromptRef.current = prompt ?? "";
-      // Text mode: prompt is the PRD content; PDF mode: raw text not available client-side
-      pendingPrdContentRef.current = pdfFiles?.length ? undefined : prompt;
 
       try {
         const result = await analyzePRD({
@@ -167,12 +163,11 @@ export function WorkflowGeneratorProvider({
     try {
       const nodeLibrary = loadNodeLibrary();
 
-      const generated = await generateWorkflowAction(
-        pendingPromptRef.current,
-        pendingPrdContentRef.current,
+      const generated = await generateWorkflowAction({
+        prompt: pendingPromptRef.current,
         nodeLibrary,
-        analysisResult ?? undefined,
-      );
+        analysisResult,
+      });
 
       const sanitized = sanitizeNewNodeIds(generated.nodes);
 

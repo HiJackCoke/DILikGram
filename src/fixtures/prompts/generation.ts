@@ -7,7 +7,7 @@ import {
   SERVICE_NODE_MOCK_DATA_RULES,
 } from "./common";
 import { buildPRDContext } from "@/utils/ai/contextBuilder";
-import { GenerateWorkflowAction } from "@/types";
+import { GenerateWorkflowActionParams } from "@/types";
 
 /**
  * PRD-based generation rules
@@ -478,9 +478,9 @@ export const GENERATION_SYSTEM_PROMPT = buildPrompt({
 });
 
 export function getGenerationContent(
-  prompt: Parameters<GenerateWorkflowAction>[0],
-  prdText?: Parameters<GenerateWorkflowAction>[1],
-  nodeLibrary?: Parameters<GenerateWorkflowAction>[2],
+  prompt: GenerateWorkflowActionParams['prompt'],
+  prdText?: string,
+  nodeLibrary?: GenerateWorkflowActionParams['nodeLibrary'],
 ): string {
   let content = `Create a workflow based on this request: "${prompt}"\n\n`;
 
