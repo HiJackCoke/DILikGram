@@ -6,7 +6,7 @@ import {
   TECHNICAL_SPECIFICATION_RULES,
   SERVICE_NODE_MOCK_DATA_RULES,
 } from "./common";
-import { buildPRDContext } from "@/utils/prd/contextBuilder";
+import { buildPRDContext } from "@/utils/ai/contextBuilder";
 import { GenerateWorkflowAction } from "@/types";
 
 /**

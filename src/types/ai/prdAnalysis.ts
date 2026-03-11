@@ -17,7 +17,7 @@ export interface PRDAnalysisResult {
   pages: PRDPage[];
 }
 
-export type AnalyzePRDAction = (
+export type AnalyzePRD = (
   prdContent: string,
   prompt: string,
 ) => Promise<PRDAnalysisResult>;

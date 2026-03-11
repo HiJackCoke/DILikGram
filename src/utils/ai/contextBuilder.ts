@@ -11,7 +11,7 @@ import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
  * Injected alongside the raw PRD to give AI a pre-structured reference,
  * reducing hallucination and improving coverage.
  *
- * @param analysis - Structured analysis result from analyzePRDAction
+ * @param analysis - Structured analysis result from AnalyzePRD
  * @returns Formatted context string to append to the generation prompt
  */
 export function buildAnalysisContext(analysis: PRDAnalysisResult): string {
@@ -66,12 +66,15 @@ export function buildSinglePageContext(
 ): string {
   const page = analysis.pages[pageIndex];
   const featureLines = page.features
-    .map((f) => `    - [${f.priority.toUpperCase()}] ${f.name}: ${f.description}`)
+    .map(
+      (f) => `    - [${f.priority.toUpperCase()}] ${f.name}: ${f.description}`,
+    )
     .join("\n");
 
   const groupNodeChain = page.features
     .map((f, i) => {
-      if (i === 0) return `    GroupNode 1 (${f.name}): parentNode = root Task id`;
+      if (i === 0)
+        return `    GroupNode 1 (${f.name}): parentNode = root Task id`;
       return `    GroupNode ${i + 1} (${f.name}): parentNode = GroupNode ${i} id`;
     })
     .join("\n");

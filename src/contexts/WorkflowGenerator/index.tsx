@@ -5,7 +5,7 @@
  *
  * Manages state for AI-powered workflow generation modal
  * and orchestrates the 2-step generation pipeline:
- *   Step 1: analyzePRDAction → show analysis review
+ *   Step 1: AnalyzePRD → show analysis review
  *   Step 2: generateWorkflowAction (with analysis result) → add to canvas
  */
 
@@ -27,7 +27,6 @@ import type {
 import type { ValidationProgress } from "../../types/ai/validators";
 import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
 import {
-  analyzePRDAction,
   generateWorkflowAction,
   updateWorkflowAction,
 } from "@/app/_actions/ai";
@@ -48,6 +47,7 @@ import {
   deduplicateNodesById,
   normalizeServiceNodes,
 } from "./utils/validationUtils";
+import { analyzePRD } from "@/ai";
 
 interface WorkflowGeneratorProviderProps {
   children: ReactNode;
@@ -125,7 +125,7 @@ export function WorkflowGeneratorProvider({
       pendingPrdContentRef.current = prdContent;
 
       try {
-        const result = await analyzePRDAction(prdContent, prompt);
+        const result = await analyzePRD(prdContent, prompt);
 
         setAnalysisResult(result);
       } catch (err) {

@@ -9,7 +9,6 @@
 
 import OpenAI from "openai";
 import { v4 as uuid } from "uuid";
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import type {
   GenerateWorkflowAction,
   GenerateWorkflowResponse,
@@ -24,10 +23,7 @@ import type {
   GroupNode,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
-import type {
-  PRDAnalysisResult,
-  AnalyzePRDAction,
-} from "@/types/ai/prdAnalysis";
+import type { PRDAnalysisResult } from "@/types/ai/prdAnalysis";
 import {
   GENERATION_SYSTEM_PROMPT,
   getGenerationContent,
@@ -37,130 +33,13 @@ import {
   getModificationContent,
   MODIFICATION_SYSTEM_PROMPT,
 } from "@/fixtures/prompts/modification";
+
 import {
-  ANALYSIS_SYSTEM_PROMPT,
-  getAnalysisContent,
-} from "@/fixtures/prompts/analysis";
-import {
-  buildAnalysisContext,
-  buildSinglePageContext,
-} from "@/utils/prd/contextBuilder";
-
-// ============================================================================
-// OPENAI CLIENT INITIALIZATION
-// ============================================================================
-
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY environment variable is not set. " +
-        "Please add it to your .env.local file.",
-    );
-  }
-
-  return new OpenAI({ apiKey });
-}
-
-// ============================================================================
-// ERROR HANDLING
-// ============================================================================
-
-/**
- * Convert OpenAI SDK errors to user-friendly messages
- */
-function handleOpenAIError(error: unknown): never {
-  if (error instanceof OpenAI.APIError) {
-    if (error.status === 401) {
-      throw new Error(
-        "Invalid OpenAI API key. Please check your environment configuration.",
-      );
-    }
-    if (error.status === 429) {
-      throw new Error(
-        "OpenAI rate limit exceeded. Please try again in a moment.",
-      );
-    }
-    if (error.status === 500 || error.status === 503) {
-      throw new Error(
-        "OpenAI service temporarily unavailable. Please try again later.",
-      );
-    }
-
-    throw new Error(`OpenAI API error: ${error.message}`);
-  }
-
-  if (error instanceof Error) {
-    throw error;
-  }
-
-  throw new Error(
-    "An unexpected error occurred while processing your request.",
-  );
-}
-
-// ============================================================================
-// SERVER ACTIONS
-// ============================================================================
-
-/**
- * Analyze PRD and extract page/feature structure (Step 1 of 2-step pipeline)
- *
- * @param prdContent - Base64 PDF data URL or plain text PRD
- * @param prompt - User's additional context/instructions
- * @returns Structured PRD analysis with pages and features
- */
-export const analyzePRDAction: AnalyzePRDAction = async (
-  prdContent,
-  prompt,
-) => {
-  if (!prdContent || !prdContent.trim()) {
-    throw new Error("PRD content is required for analysis");
-  }
-
-  try {
-    const openai = getOpenAIClient();
-
-    let prdText: string;
-    if (prdContent.startsWith("data:application/pdf;base64,")) {
-      const base64Data = prdContent.replace(
-        /^data:application\/pdf;base64,/,
-        "",
-      );
-      const pdfBuffer = Buffer.from(base64Data, "base64");
-      const pdfData = await pdfParse(pdfBuffer);
-      prdText = pdfData.text;
-    } else {
-      prdText = prdContent;
-    }
-
-    const response = await openai.responses.create({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
-      instructions: ANALYSIS_SYSTEM_PROMPT,
-      input: getAnalysisContent(prdText, prompt),
-      text: {
-        format: { type: "json_object" },
-      },
-    });
-
-    const content = response.output_text;
-    if (!content) {
-      throw new Error("No response from OpenAI");
-    }
-
-    const result = JSON.parse(content) as PRDAnalysisResult;
-
-    if (!result.goal || !Array.isArray(result.pages)) {
-      throw new Error("Invalid analysis response structure from OpenAI");
-    }
-
-    return result;
-  } catch (error) {
-    handleOpenAIError(error);
-  }
-};
+  buildGenerationContexts,
+  getOpenAIClient,
+  handleOpenAIError,
+} from "@/ai";
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 /**
  * Generate workflow from prompt using GPT-4o-mini
@@ -606,32 +485,6 @@ function normalizeNodeChaining(nodes: WorkflowNode[]): WorkflowNode[] {
     // task / service / decision whose parent is task / service / decision
     return setNodeInputData(node, parentOutputData);
   });
-}
-
-// ============================================================================
-// PRIVATE HELPERS (generateWorkflowAction — generation)
-// ============================================================================
-
-/**
- * Build the list of enriched PRD text strings to generate against.
- * - No analysisResult → [prdText] (single call, no context)
- * - Single page       → [prdText + full analysis context] (single call)
- * - Multiple pages    → one entry per page with per-page context (N calls)
- */
-function buildGenerationContexts(
-  prdText: string | undefined,
-  analysisResult: PRDAnalysisResult | undefined,
-): Array<string | undefined> {
-  if (!analysisResult) return [prdText];
-
-  if (analysisResult.pages.length > 1) {
-    return analysisResult.pages.map(
-      (_, i) =>
-        `${prdText ?? ""}\n\n${buildSinglePageContext(analysisResult, i)}`,
-    );
-  }
-
-  return [`${prdText ?? ""}\n\n${buildAnalysisContext(analysisResult)}`];
 }
 
 /**

@@ -72,7 +72,6 @@ export default function WorkflowGeneratorModal({
     await onAnalyze(prompt.trim(), prdContent);
   };
 
-
   const handleClose = () => {
     onClose?.();
   };
