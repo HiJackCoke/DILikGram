@@ -25,14 +25,15 @@ import {
   validateStartNodeChildren,
   repairStartNodeChildren,
 } from "./startNodeChild";
-import {
-  validateSyncOnlyNodes,
-  repairSyncOnlyNodes,
-} from "./syncOnlyNodes";
+import { validateSyncOnlyNodes, repairSyncOnlyNodes } from "./syncOnlyNodes";
 import {
   validateOutputDataTypeMismatch,
   repairOutputDataTypeMismatch,
 } from "./outputDataTypeMismatch";
+import {
+  validateServiceNodeSimulation,
+  repairServiceNodeSimulation,
+} from "./serviceNodeSimulation";
 
 /**
  * Run validation pipeline
@@ -96,6 +97,16 @@ export async function runValidationPipeline(
       name: "outputData Type Mismatch",
       validate: validateOutputDataTypeMismatch,
       repair: repairOutputDataTypeMismatch,
+    },
+    // {
+    //   name: "Service Node functionCode",
+    //   validate: validateServiceNodeFunctionCode,
+    //   repair: repairServiceNodeFunctionCode,
+    // },
+    {
+      name: "Service Node Simulation",
+      validate: validateServiceNodeSimulation,
+      repair: repairServiceNodeSimulation,
     },
   ];
 
