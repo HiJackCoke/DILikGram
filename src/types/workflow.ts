@@ -103,7 +103,7 @@ export type ExecutorFunction<TInput = unknown, TOutput = unknown> = (
  * @template TOutput - Type of output data returned by executor
  */
 export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
-  functionCode: string;
+  functionCode?: string;
   initFunctionCode?: string; // GroupNode PRE-processor: runs before internal nodes, transforms parent output → internal nodes' expected input
   lastModified?: number;
   isAsync?: boolean; // Set during compilation

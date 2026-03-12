@@ -210,8 +210,8 @@ export class WorkflowExecutor {
    * Returns null if no execution configured or node doesn't support executions
    */
   private getExecutorForNode(node: WorkflowNode): ExecutorFunction | null {
-    // Start and End nodes don't have executions
-    if (node.type === "start" || node.type === "end") {
+    // Start, End, and Group nodes don't have executors
+    if (node.type === "start" || node.type === "end" || node.type === "group") {
       return null;
     }
 
@@ -234,15 +234,7 @@ export class WorkflowExecutor {
     try {
       const nodeTypeForValidation = node.type as WorkflowNodeType;
 
-      const internalNodes =
-        node.type === "group"
-          ? (node.data as { groups?: WorkflowNode[] }).groups
-          : undefined;
-      const execution = compileExecutor(
-        config,
-        nodeTypeForValidation,
-        internalNodes,
-      );
+      const execution = compileExecutor(config, nodeTypeForValidation);
       this.executionCache.set(cacheKey, execution);
 
       return execution;
@@ -266,11 +258,26 @@ export class WorkflowExecutor {
 
     // Primary: Get from parent node's config.nodeData.outputData
     const parentNode = this.nodes.find((n) => n.id === node.parentNode);
-    const parentOutputData =
-      parentNode?.data.execution?.config?.nodeData?.outputData;
 
-    if (parentOutputData !== undefined) {
-      return parentOutputData;
+    if (parentNode?.type === "group") {
+      // Group nodes have no execution.config — read from last internal node's outputData
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const groups = (parentNode.data as any).groups as
+        | WorkflowNode[]
+        | undefined;
+      if (groups?.length) {
+        const lastInternal = groups[groups.length - 1];
+        const lastOutput =
+          lastInternal.data.execution?.config?.nodeData?.outputData;
+        if (lastOutput !== undefined) return lastOutput;
+      }
+      // Fall through to context.outputs fallback (group's final output stored under groupNode.id)
+    } else {
+      const parentOutputData =
+        parentNode?.data.execution?.config?.nodeData?.outputData;
+      if (parentOutputData !== undefined) {
+        return parentOutputData;
+      }
     }
 
     // Fallback: Get from executionState.context.outputs
@@ -386,41 +393,7 @@ export class WorkflowExecutor {
       return { outputData: inputData, success: true };
     }
 
-    // NEW: executor가 있으면 runtime.ts 사용 (내부 노드 + functionCode 처리)
-    const executor = this.getExecutorForNode(groupNode);
-
-    if (executor) {
-      try {
-        await this.delay(500);
-        const groupConfig = groupNode.data.execution?.config;
-        const mockData = groupConfig?.nodeData?.outputData;
-        const result = await executeFunction(
-          executor,
-          inputData,
-          30000,
-          this.isSimulated,
-          mockData,
-        );
-
-        if (!result.success) {
-          throw new Error(
-            result.error?.message || "GroupNode execution failed",
-          );
-        }
-
-        return {
-          outputData: result.data,
-          success: true,
-        };
-      } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
-        throw new Error(`GroupNode ${groupNode.id} failed: ${errorMsg}`);
-      }
-    }
-
-    // Fallback: executor 없으면 기존 방식 사용 (하위 호환성)
-
+    // Group nodes always execute sequentially through internal nodes
     let currentData = inputData;
     let allSucceeded = true;
 
@@ -630,6 +603,32 @@ export class WorkflowExecutor {
   }
 
   /**
+   * Notify UI: group node finished — explicitly sets inputData/outputData from internal nodes.
+   */
+  private async notifyGroupNodeExecuted(
+    nodeId: string,
+    inputData: unknown,
+    outputData: unknown,
+  ): Promise<void> {
+    if (!this.onNodeUpdate) return;
+
+    const existingNode = this.nodes.find((n) => n.id === nodeId);
+    const existingConfig = existingNode?.data.execution?.config;
+
+    const executionData: ExecutionData = {
+      state: "executed",
+      config: {
+        lastModified: existingConfig?.lastModified ?? Date.now(),
+        isAsync: existingConfig?.isAsync ?? false,
+        nodeData: { inputData, outputData },
+      },
+    };
+
+    this.onNodeUpdate(nodeId, executionData);
+    this.syncNodeAfterUpdate(nodeId, executionData);
+  }
+
+  /**
    * Notify UI that node finished executing (show outputData)
    */
   private async notifyNodeExecuted(
@@ -707,7 +706,11 @@ export class WorkflowExecutor {
       this.storeOutput(nodeId, outputData, success, startTime);
 
       // 6. Notify UI: node finished
-      await this.notifyNodeExecuted(nodeId, outputData);
+      if (node.type === "group") {
+        await this.notifyGroupNodeExecuted(nodeId, inputData, outputData);
+      } else {
+        await this.notifyNodeExecuted(nodeId, outputData);
+      }
 
       // 7. Execute next nodes
       await this.executeNextNodes(nodeId);
