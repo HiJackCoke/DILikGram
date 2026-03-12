@@ -98,10 +98,10 @@ export default function ExecutorEditorContent({
 
       // Determine simulation mode
       const isSimulation = config?.simulation?.enabled || false;
-      const mockResp = config?.simulation?.mockResponse || config?.nodeData?.outputData;
+      const mockData = config?.nodeData?.outputData;
 
       // Execute with simulation mode
-      const result = await executeFunction(fn, input, 30000, isSimulation, mockResp);
+      const result = await executeFunction(fn, input, 30000, isSimulation, mockData);
 
       if (!result.success) {
         setOutputData(`Error: ${result.error?.message || "Execution failed"}`);
@@ -138,8 +138,7 @@ export default function ExecutorEditorContent({
 
       // Determine simulation mode
       const isSimulation = config?.simulation?.enabled || false;
-      const mockResp =
-        config?.simulation?.mockResponse ||
+      const mockData =
         meta?.outputData ||
         testCase.expectedOutput ||
         { success: true };
@@ -150,7 +149,7 @@ export default function ExecutorEditorContent({
         testCase.inputData,
         30000,
         isSimulation,
-        mockResp,
+        mockData,
       );
 
       if (!executionResult.success) {

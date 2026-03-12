@@ -10,6 +10,8 @@ import {
 import {
   validateCircularReferences,
   repairCircularReferences,
+  validateParentNodeCycles,
+  repairParentNodeCycles,
 } from "./circularReference";
 import { validateDecisionNodes, repairDecisionNodes } from "./decisionNode";
 import {
@@ -31,9 +33,17 @@ import {
   repairOutputDataTypeMismatch,
 } from "./outputDataTypeMismatch";
 import {
+  validateServiceNodeFunctionCode,
+  repairServiceNodeFunctionCode,
+} from "./serviceNodeFunctionCode";
+import {
   validateServiceNodeSimulation,
   repairServiceNodeSimulation,
 } from "./serviceNodeSimulation";
+import {
+  validateServiceNodeRuntime,
+  repairServiceNodeRuntime,
+} from "./serviceNodeRuntime";
 
 /**
  * Run validation pipeline
@@ -62,6 +72,11 @@ export async function runValidationPipeline(
       name: "Circular References",
       validate: validateCircularReferences,
       repair: repairCircularReferences,
+    },
+    {
+      name: "Circular ParentNode Cycles",
+      validate: validateParentNodeCycles,
+      repair: repairParentNodeCycles,
     },
     {
       name: "Start Node Children",
@@ -98,15 +113,20 @@ export async function runValidationPipeline(
       validate: validateOutputDataTypeMismatch,
       repair: repairOutputDataTypeMismatch,
     },
-    // {
-    //   name: "Service Node functionCode",
-    //   validate: validateServiceNodeFunctionCode,
-    //   repair: repairServiceNodeFunctionCode,
-    // },
+    {
+      name: "Service Node functionCode",
+      validate: validateServiceNodeFunctionCode,
+      repair: repairServiceNodeFunctionCode,
+    },
     {
       name: "Service Node Simulation",
       validate: validateServiceNodeSimulation,
       repair: repairServiceNodeSimulation,
+    },
+    {
+      name: "Service Node Runtime",
+      validate: validateServiceNodeRuntime,
+      repair: repairServiceNodeRuntime,
     },
   ];
 

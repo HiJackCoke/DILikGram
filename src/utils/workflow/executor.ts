@@ -393,15 +393,13 @@ export class WorkflowExecutor {
       try {
         await this.delay(500);
         const groupConfig = groupNode.data.execution?.config;
-        const mockResponse =
-          groupConfig?.simulation?.mockResponse ??
-          groupConfig?.nodeData?.outputData;
+        const mockData = groupConfig?.nodeData?.outputData;
         const result = await executeFunction(
           executor,
           inputData,
           30000,
           this.simulationMode,
-          mockResponse,
+          mockData,
         );
 
         if (!result.success) {
@@ -581,26 +579,19 @@ export class WorkflowExecutor {
 
   /**
    * Run simulated execution using mock data
-   * Priority: mockResponse > nodeData.outputData > default success
+   * Priority: nodeData.outputData > default success
    */
   private runSimulatedExecution(
     node: WorkflowNode,
     inputData: unknown,
   ): { outputData: unknown; success: boolean } {
-    const simulation = node.data.execution?.config?.simulation;
-
-    // Priority 1: User-defined mockResponse
-    if (simulation?.mockResponse !== undefined) {
-      return this.extractSuccessFromOutput(node, simulation.mockResponse);
+    // Priority 1: nodeData.outputData
+    const mockData = node.data.execution?.config?.nodeData?.outputData;
+    if (mockData !== undefined) {
+      return this.extractSuccessFromOutput(node, mockData);
     }
 
-    // Priority 2: AI-generated nodeData.outputData
-    const aiMockData = node.data.execution?.config?.nodeData?.outputData;
-    if (aiMockData !== undefined) {
-      return this.extractSuccessFromOutput(node, aiMockData);
-    }
-
-    // Priority 3: Default success response
+    // Priority 2: Default success response
     return {
       outputData: { success: true, simulated: true, inputData },
       success: true,

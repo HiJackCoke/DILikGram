@@ -113,7 +113,6 @@ export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
   };
   simulation?: {
     enabled: boolean; // Enable simulation mode for this node
-    mockResponse?: TOutput; // User-defined mock response (optional)
   };
 };
 

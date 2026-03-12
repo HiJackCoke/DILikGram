@@ -29,6 +29,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
   const { open: openGenerator } = useWorkflowGenerator();
   const { open: openHistory } = useWorkflowVersioning();
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
+    console.log(nodeId, executionData);
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
         node.id === nodeId

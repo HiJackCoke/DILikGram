@@ -50,8 +50,16 @@ export function findFlowPath(
 
 /**
  * 특정 노드의 조상 노드들을 재귀적으로 찾기
+ * visited Set으로 순환 참조(A→B→A) 방어
  */
-function findAncestors(nodeId: string, nodes: WorkflowNode[]): string[] {
+function findAncestors(
+  nodeId: string,
+  nodes: WorkflowNode[],
+  visited = new Set<string>(),
+): string[] {
+  if (visited.has(nodeId)) return []; // 사이클 감지 → 즉시 종료
+  visited.add(nodeId);
+
   const ancestors: string[] = [];
   const node = nodes.find((n) => n.id === nodeId);
 
@@ -59,7 +67,7 @@ function findAncestors(nodeId: string, nodes: WorkflowNode[]): string[] {
 
   ancestors.push(node.parentNode);
   // 재귀적으로 상위 노드의 부모도 찾기
-  ancestors.push(...findAncestors(node.parentNode, nodes));
+  ancestors.push(...findAncestors(node.parentNode, nodes, visited));
 
   return ancestors;
 }

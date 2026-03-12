@@ -7,15 +7,15 @@ import { getExecutionConfig } from "../utils/validationUtils";
 
 function isMissingSimulationConfig(node: WorkflowNode): boolean {
   const config = getExecutionConfig(node);
-  if (!config?.functionCode) return false; // functionCode 없는 service는 스킵
+  if (!config?.functionCode?.trim()) return false; // empty/missing functionCode → skip (fixed by prior validator)
 
   const sim = config.simulation;
-  return !sim?.enabled || sim?.mockResponse === undefined;
+  return !sim?.enabled || config?.nodeData?.outputData === undefined;
 }
 
 /**
  * Validate that all service nodes with functionCode have simulation config
- * (simulation.enabled = true AND simulation.mockResponse defined)
+ * (simulation.enabled = true AND nodeData.outputData defined)
  */
 export function validateServiceNodeSimulation(
   nodes: WorkflowNode[],
@@ -29,7 +29,7 @@ export function validateServiceNodeSimulation(
   return {
     valid: false,
     errorType: "SERVICE_NODE_SIMULATION_MISSING",
-    errorMessage: `Found ${affected.length} service node(s) missing simulation.enabled or simulation.mockResponse`,
+    errorMessage: `Found ${affected.length} service node(s) missing simulation.enabled or nodeData.outputData`,
     affectedNodes: affected,
   };
 }
@@ -50,8 +50,8 @@ export async function repairServiceNodeSimulation(
     const sim = config?.simulation;
     const missing: string[] = [];
     if (!sim?.enabled) missing.push("simulation.enabled = true");
-    if (sim?.mockResponse === undefined)
-      missing.push("simulation.mockResponse (realistic mock data)");
+    if (config?.nodeData?.outputData === undefined)
+      missing.push("nodeData.outputData (realistic mock data)");
 
     const fixPrompt = `The service node "${node.data.title ?? "Untitled"}" (id: ${node.id}) is missing required simulation config.
 
@@ -63,10 +63,10 @@ MISSING: ${missing.join(", ")}
 
 RULE: ALL service nodes MUST have:
 1. execution.config.simulation.enabled = true
-2. execution.config.simulation.mockResponse — realistic mock data matching what the real API would return
+2. execution.config.nodeData.outputData — realistic mock data matching what the real API would return
 
 IMPORTANT:
-- mockResponse must reflect the actual structure downstream nodes depend on
+- nodeData.outputData must reflect the actual structure downstream nodes depend on
 - If a decision node follows, include a "success" field: e.g. { "success": true, "data": {...} }
 - Do NOT use placeholder values like null or empty objects — use realistic example data
 
@@ -82,11 +82,33 @@ Set both fields now.`;
       editResult.nodes.update.forEach((update) => {
         const idx = workingNodes.findIndex((n) => n.id === update.id);
         if (idx >= 0) {
+          // Save functionCode BEFORE shallow merge (set by step 11 repair)
+          const originalFunctionCode =
+            workingNodes[idx].data.execution?.config?.functionCode;
+
           workingNodes[idx] = {
             ...workingNodes[idx],
             data: { ...workingNodes[idx].data, ...update.data },
             parentNode: update.parentNode || workingNodes[idx].parentNode,
           };
+
+          // RESTORE functionCode (step 12 asks for simulation, not functionCode)
+          const updatedConfig = workingNodes[idx].data.execution?.config;
+          if (updatedConfig && originalFunctionCode !== undefined) {
+            workingNodes[idx] = {
+              ...workingNodes[idx],
+              data: {
+                ...workingNodes[idx].data,
+                execution: {
+                  ...workingNodes[idx].data.execution,
+                  config: {
+                    ...updatedConfig,
+                    functionCode: originalFunctionCode,
+                  },
+                },
+              },
+            };
+          }
         }
       });
     }

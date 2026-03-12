@@ -201,7 +201,7 @@ function createMockFetch(mockResponse: unknown): typeof globalThis.fetch {
  * @param inputData - Input data from parent node
  * @param timeout - Maximum execution time in milliseconds (default 30s)
  * @param simulationMode - Enable simulation mode (uses mock fetch instead of real fetch)
- * @param mockResponse - Mock response to return in simulation mode
+ * @param mockData - Mock data to return in simulation mode (from nodeData.outputData)
  * @returns Execution result with success status, data, and timing
  */
 export async function executeFunction(
@@ -209,15 +209,15 @@ export async function executeFunction(
   inputData: unknown,
   timeout: number = 30000,
   simulationMode: boolean = false,
-  mockResponse?: unknown,
+  mockData?: unknown,
 ): Promise<ExecutionResult> {
   const startTime = Date.now();
 
   try {
     // Use mock fetch in simulation mode, otherwise use real fetch
     const fetchImpl =
-      simulationMode && mockResponse !== undefined
-        ? createMockFetch(mockResponse)
+      simulationMode && mockData !== undefined
+        ? createMockFetch(mockData)
         : globalThis.fetch;
 
     const resultPromise = Promise.resolve(executorFn(inputData, fetchImpl));
