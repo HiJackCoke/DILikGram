@@ -188,7 +188,7 @@ export function deduplicateNodesById(nodes: WorkflowNode[]): WorkflowNode[] {
 // ============================================
 
 /**
- * Ensure all service nodes have simulation.enabled = true and a valid functionCode.
+ * Ensure all service nodes have a valid functionCode.
  *
  * Repair-created service nodes can bypass the normalization in ai.ts.
  * This function enforces the invariant on every service node in the list.
@@ -209,10 +209,6 @@ export function normalizeServiceNodes(nodes: WorkflowNode[]): WorkflowNode[] {
           config: {
             ...config,
             functionCode: config?.functionCode || "",
-            simulation: {
-              enabled: true,
-              ...config?.simulation,
-            },
           },
         },
       },

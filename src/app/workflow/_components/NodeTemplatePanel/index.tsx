@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import {
   SortableContext,

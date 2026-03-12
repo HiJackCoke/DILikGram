@@ -245,10 +245,6 @@ function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
               ...node.data.execution,
               config: {
                 ...node.data.execution.config,
-                simulation: {
-                  enabled: true,
-                  ...node.data.execution.config.simulation,
-                },
               },
             },
           },

@@ -68,7 +68,7 @@ export type WorkflowExecutorConfig = {
   /** Optional specific Start node ID to execute from */
   startNodeId?: string;
   /** Enable global simulation mode (use mock responses instead of real execution) */
-  simulationMode?: boolean;
+  isSimulated?: boolean;
   /** Callback invoked when execution state changes */
   onStateChange: OnStateChangeCallback;
   /** Optional callback invoked when node executor data updates */
@@ -110,9 +110,6 @@ export type ExecutionConfig<TInput = unknown, TOutput = unknown> = {
   nodeData?: {
     inputData?: TInput;
     outputData?: TOutput;
-  };
-  simulation?: {
-    enabled: boolean; // Enable simulation mode for this node
   };
 };
 

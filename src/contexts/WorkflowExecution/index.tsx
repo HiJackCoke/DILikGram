@@ -31,7 +31,8 @@ interface WorkflowExecutionContextValue {
 
   executeFromStartNode: (startNodeId: string) => void;
   stopExecution: () => void;
-  setSimulationMode: (enabled: boolean) => void;
+  isSimulated: boolean;
+  setIsSimulated: (enabled: boolean) => void;
   subscribeNodeUpdate: (cb: OnNodeUpdateCallback) => () => void;
   subscribeEdgeUpdate: (cb: OnEdgeUpdateCallback) => () => void;
 }
@@ -63,7 +64,7 @@ export function WorkflowExecutionProvider({
     string | null
   >(null);
 
-  const [simulationMode, setSimulationMode] = useState(true); // Default: simulation mode
+  const [isSimulated, setIsSimulated] = useState(true); // Default: simulation mode
 
   const executionRef = useRef<ReturnType<typeof createWorkflowExecutor> | null>(
     null,
@@ -119,7 +120,7 @@ export function WorkflowExecutionProvider({
         edges: store.getState().edges,
         // mode,
         startNodeId,
-        simulationMode, // Pass simulation mode to executor
+        isSimulated, // Pass simulation mode to executor
         onStateChange: (state) => {
           setExecutionState(state);
           if (!state.isRunning) {
@@ -136,7 +137,7 @@ export function WorkflowExecutionProvider({
       executionState.isRunning,
       store,
       // mode,
-      simulationMode,
+      isSimulated,
       handleNodeUpdate,
       handleEdgeUpdate,
     ],
@@ -159,11 +160,12 @@ export function WorkflowExecutionProvider({
     <WorkflowExecutionContext
       value={{
         isExecuting: executionState.isRunning,
+        isSimulated,
         executingStartNodeId,
         executionState,
         executeFromStartNode,
         stopExecution,
-        setSimulationMode,
+        setIsSimulated,
         subscribeNodeUpdate,
         subscribeEdgeUpdate,
       }}
@@ -178,7 +180,7 @@ export function WorkflowExecutionProvider({
 /* ------------------------------------------------------------------ */
 
 export function useWorkflowExecution(options?: {
-  simulationMode?: boolean;
+  isSimulated?: boolean;
   onNodeUpdate?: OnNodeUpdateCallback;
   onEdgeUpdate?: OnEdgeUpdateCallback;
 }) {
@@ -190,19 +192,15 @@ export function useWorkflowExecution(options?: {
     );
   }
 
-  const {
-    subscribeNodeUpdate,
-    subscribeEdgeUpdate,
-    setSimulationMode,
-    ...api
-  } = context;
+  const { subscribeNodeUpdate, subscribeEdgeUpdate, ...props } = context;
 
   // Update simulation mode when option changes
   useEffect(() => {
-    if (options?.simulationMode !== undefined) {
-      setSimulationMode(options.simulationMode);
+    if (options?.isSimulated !== undefined) {
+      props.setIsSimulated(options.isSimulated);
     }
-  }, [options?.simulationMode, setSimulationMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options?.isSimulated]);
 
   useEffect(() => {
     if (!options?.onNodeUpdate) return;
@@ -214,5 +212,5 @@ export function useWorkflowExecution(options?: {
     return subscribeEdgeUpdate(options.onEdgeUpdate);
   }, [options?.onEdgeUpdate, subscribeEdgeUpdate]);
 
-  return api;
+  return props;
 }

@@ -26,7 +26,7 @@ export class WorkflowExecutor {
   private executionState: WorkflowRuntimeState;
   private abortController: AbortController | null = null;
   private startNodeId?: string;
-  private simulationMode: boolean = false;
+  private isSimulated: boolean = false;
 
   private onStateChange: OnStateChangeCallback;
   private onNodeUpdate?: OnNodeUpdateCallback;
@@ -40,7 +40,7 @@ export class WorkflowExecutor {
     this.nodes = config.nodes;
     this.edges = config.edges;
     this.startNodeId = config.startNodeId;
-    this.simulationMode = config.simulationMode ?? false;
+    this.isSimulated = config.isSimulated ?? false;
     // mode is always "auto" now - no need to store it
     this.onStateChange = config.onStateChange;
     this.onNodeUpdate = config.onNodeUpdate;
@@ -398,7 +398,7 @@ export class WorkflowExecutor {
           executor,
           inputData,
           30000,
-          this.simulationMode,
+          this.isSimulated,
           mockData,
         );
 
@@ -521,11 +521,8 @@ export class WorkflowExecutor {
   ): Promise<{ outputData: unknown; success: boolean }> {
     await this.delay(500);
 
-    // Check if simulation mode is active AND node has simulation enabled
-    if (
-      this.simulationMode &&
-      node.data.execution?.config?.simulation?.enabled
-    ) {
+    // Check if simulation mode is active
+    if (this.isSimulated) {
       return this.runSimulatedExecution(node, inputData);
     }
 

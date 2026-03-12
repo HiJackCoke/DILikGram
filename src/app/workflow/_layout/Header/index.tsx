@@ -12,7 +12,6 @@ import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 import UndoRedoButtons from "./UndoRedoButtons";
 
-import { useState } from "react";
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
 import type { Dispatch, SetStateAction } from "react";
 import { Switch } from "@/components/ui/Switch";
@@ -25,11 +24,9 @@ interface Props {
 }
 
 export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
-  const [simulationMode, setSimulationMode] = useState(true); // Default: simulation mode
   const { open: openGenerator } = useWorkflowGenerator();
   const { open: openHistory } = useWorkflowVersioning();
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
-    console.log(nodeId, executionData);
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
         node.id === nodeId
@@ -51,8 +48,13 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
       ),
     );
   };
-  const { isExecuting, executionState, stopExecution } = useWorkflowExecution({
-    simulationMode,
+  const {
+    isExecuting,
+    executionState,
+    isSimulated,
+    stopExecution,
+    setIsSimulated,
+  } = useWorkflowExecution({
     onNodeUpdate: handleNodeUpdate,
     onEdgeUpdate: handleEdgeUpdate,
   });
@@ -75,15 +77,15 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
         </div>
 
         <Switch
-          label="REAL"
-          variant="icon"
-          checkedLabel="SIM"
-          disabled={isExecuting}
           palette="warning"
-          checked={simulationMode}
+          variant="icon"
+          label="REAL"
+          checkedLabel="SIM"
           icon={<FlaskConical className="text-white" />}
           checkedIcon={<Beaker className="text-white" />}
-          onChange={(_, checked) => setSimulationMode(checked)}
+          disabled={isExecuting}
+          checked={isSimulated}
+          onChange={(_, checked) => setIsSimulated(checked)}
         />
       </div>
 
@@ -129,7 +131,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
       </div>
 
       {/* Simulation Mode Indicator */}
-      {simulationMode && !isExecuting && (
+      {isSimulated && !isExecuting && (
         <div className="px-3 py-1.5 bg-yellow-600/90 border border-yellow-500 text-white rounded-lg text-sm flex items-center gap-2">
           <TestTube className="w-4 h-4" />
           <span className="font-semibold">SIMULATION MODE</span>

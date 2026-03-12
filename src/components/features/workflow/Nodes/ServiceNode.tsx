@@ -18,6 +18,7 @@ import type {
   ServiceNode,
 } from "@/types/nodes";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
+import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { getDefaultPorts } from "@/utils/graph/nodes";
 import PRDTooltip from "./PRDTooltip";
 import Tooltip from "@/components/ui/Tooltip";
@@ -68,6 +69,7 @@ const methodColors: Record<HttpMethod, string> = {
 export function ServiceNode(nodeProps: NodeProps<ServiceNode>) {
   const { data, selected } = nodeProps;
   const { open } = useExecutorEditor();
+  const { isSimulated } = useWorkflowExecution();
 
   const status = data.status || "idle";
   const StatusIcon = statusConfig[status]?.icon || Circle;
@@ -158,7 +160,7 @@ export function ServiceNode(nodeProps: NodeProps<ServiceNode>) {
               <Settings className="w-3 h-3" />
             </button>
             {/* Simulation Badge */}
-            {data.execution?.config?.simulation?.enabled && (
+            {isSimulated && (
               <div
                 className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 text-[10px] font-bold border border-yellow-300"
                 title="Simulation mode enabled"

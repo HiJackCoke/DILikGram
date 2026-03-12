@@ -55,11 +55,21 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
         try {
           const isInitAsync = detectAsync(config.initFunctionCode);
           if (isInitAsync) {
-            const AsyncFn = Object.getPrototypeOf(async function () {}).constructor;
-            const initFn = new AsyncFn("inputData", "fetch", config.initFunctionCode);
+            const AsyncFn = Object.getPrototypeOf(
+              async function () {},
+            ).constructor;
+            const initFn = new AsyncFn(
+              "inputData",
+              "fetch",
+              config.initFunctionCode,
+            );
             currentData = await initFn(inputData, fetch);
           } else {
-            const initFn = new Function("inputData", "fetch", config.initFunctionCode);
+            const initFn = new Function(
+              "inputData",
+              "fetch",
+              config.initFunctionCode,
+            );
             currentData = initFn(inputData, fetch);
           }
         } catch (error) {
@@ -72,9 +82,9 @@ export function compileExecutor<TInput = unknown, TOutput = unknown>(
         const nodeConfig = node.data.execution?.config;
         if (nodeConfig) {
           try {
-            // No functionCode: use simulated output or passthrough (never crash)
+            // No functionCode: use mock outputData or passthrough (never crash)
             if (!nodeConfig.functionCode) {
-              if (nodeConfig.simulation?.enabled && nodeConfig.nodeData?.outputData !== undefined) {
+              if (nodeConfig.nodeData?.outputData !== undefined) {
                 currentData = nodeConfig.nodeData.outputData;
               }
               // else: passthrough (currentData unchanged)
@@ -200,7 +210,7 @@ function createMockFetch(mockResponse: unknown): typeof globalThis.fetch {
  * @param executorFn - Compiled executor function
  * @param inputData - Input data from parent node
  * @param timeout - Maximum execution time in milliseconds (default 30s)
- * @param simulationMode - Enable simulation mode (uses mock fetch instead of real fetch)
+ * @param isSimulated - Enable simulation mode (uses mock fetch instead of real fetch)
  * @param mockData - Mock data to return in simulation mode (from nodeData.outputData)
  * @returns Execution result with success status, data, and timing
  */
@@ -208,7 +218,7 @@ export async function executeFunction(
   executorFn: ExecutorFunction,
   inputData: unknown,
   timeout: number = 30000,
-  simulationMode: boolean = false,
+  isSimulated: boolean = false,
   mockData?: unknown,
 ): Promise<ExecutionResult> {
   const startTime = Date.now();
@@ -216,7 +226,7 @@ export async function executeFunction(
   try {
     // Use mock fetch in simulation mode, otherwise use real fetch
     const fetchImpl =
-      simulationMode && mockData !== undefined
+      isSimulated && mockData !== undefined
         ? createMockFetch(mockData)
         : globalThis.fetch;
 

@@ -9,13 +9,12 @@ function isMissingSimulationConfig(node: WorkflowNode): boolean {
   const config = getExecutionConfig(node);
   if (!config?.functionCode?.trim()) return false; // empty/missing functionCode → skip (fixed by prior validator)
 
-  const sim = config.simulation;
-  return !sim?.enabled || config?.nodeData?.outputData === undefined;
+  return config?.nodeData?.outputData === undefined;
 }
 
 /**
  * Validate that all service nodes with functionCode have simulation config
- * (simulation.enabled = true AND nodeData.outputData defined)
+ * (nodeData.outputData defined)
  */
 export function validateServiceNodeSimulation(
   nodes: WorkflowNode[],
@@ -29,7 +28,7 @@ export function validateServiceNodeSimulation(
   return {
     valid: false,
     errorType: "SERVICE_NODE_SIMULATION_MISSING",
-    errorMessage: `Found ${affected.length} service node(s) missing simulation.enabled or nodeData.outputData`,
+    errorMessage: `Found ${affected.length} service node(s) missing nodeData.outputData`,
     affectedNodes: affected,
   };
 }
@@ -47,30 +46,26 @@ export async function repairServiceNodeSimulation(
 
   for (const node of affected) {
     const config = getExecutionConfig(node);
-    const sim = config?.simulation;
     const missing: string[] = [];
-    if (!sim?.enabled) missing.push("simulation.enabled = true");
     if (config?.nodeData?.outputData === undefined)
       missing.push("nodeData.outputData (realistic mock data)");
 
     const fixPrompt = `The service node "${node.data.title ?? "Untitled"}" (id: ${node.id}) is missing required simulation config.
 
 functionCode: ${config?.functionCode ?? "(none)"}
-Current simulation config: ${JSON.stringify(sim ?? null)}
 nodeData.outputData: ${JSON.stringify(config?.nodeData?.outputData ?? null)}
 
 MISSING: ${missing.join(", ")}
 
 RULE: ALL service nodes MUST have:
-1. execution.config.simulation.enabled = true
-2. execution.config.nodeData.outputData — realistic mock data matching what the real API would return
+1. execution.config.nodeData.outputData — realistic mock data matching what the real API would return
 
 IMPORTANT:
 - nodeData.outputData must reflect the actual structure downstream nodes depend on
 - If a decision node follows, include a "success" field: e.g. { "success": true, "data": {...} }
 - Do NOT use placeholder values like null or empty objects — use realistic example data
 
-Set both fields now.`;
+Set the field now.`;
 
     const editResult = await context.updateWorkflowAction(
       node.id,

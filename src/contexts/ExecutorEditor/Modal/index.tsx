@@ -3,6 +3,7 @@
  */
 import { useMemo, useState } from "react";
 import Modal from "@/components/ui/Modal";
+import { Switch } from "@/components/ui/Switch";
 import ExecutorEditorView from "../Content/View";
 import ExecutorEditorDrawer from "../Drawer";
 import ExecutorEditorContent from "../Content";
@@ -12,6 +13,8 @@ import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
 import type { WorkflowNode } from "@/types/nodes";
 import { ModalProps } from "@/types";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
+import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
+import { Beaker, FlaskConical } from "lucide-react";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> &
   Pick<ModalProps, "show" | "onClose"> & {
@@ -38,6 +41,7 @@ export default function ExecutorEditorModal({
 
   onClose,
 }: ExecutorEditorModalProps) {
+  const { isSimulated, setIsSimulated } = useWorkflowExecution();
   const { open } = usePropertiesPanel({
     onSave: handleInternalNodePropertiesSave,
   });
@@ -152,10 +156,28 @@ export default function ExecutorEditorModal({
     onClose?.();
   };
 
+  const ModalDescription = (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-sm text-gray-500">{description}</span>
+      {(nodeType === "service" || nodeType === "group") && (
+        <Switch
+          label="REAL"
+          variant="icon"
+          checkedLabel="SIM"
+          palette="warning"
+          checked={isSimulated}
+          icon={<FlaskConical className="text-white" />}
+          checkedIcon={<Beaker className="text-white" />}
+          onChange={(_, checked) => setIsSimulated(checked)}
+        />
+      )}
+    </div>
+  );
+
   return (
     <Modal
       title={<ExecutorEditorView.Title />}
-      description={description}
+      description={ModalDescription}
       show={show}
       onClose={onClose}
     >
@@ -164,6 +186,7 @@ export default function ExecutorEditorModal({
           nodeType={nodeType}
           config={config}
           initialTestCases={initialTestCases}
+          isSimulated={isSimulated}
           internalNodes={nodeType === "group" ? internalNodes : undefined}
           onReorder={nodeType === "group" ? handleReorder : undefined}
           onRemoveNode={nodeType === "group" ? handleRemoveNode : undefined}

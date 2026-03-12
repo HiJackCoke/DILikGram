@@ -368,9 +368,6 @@ User: "Create a document review process where if approved it goes to shipping, o
             "nodeData": {
               "inputData": { "orderId": "ORD-123", "address": "123 Main St" },
               "outputData": { "success": true, "trackingNumber": "TRACK-456" }
-            },
-            "simulation": {
-              "enabled": true
             }
           }
         },

@@ -654,9 +654,9 @@ CRITICAL: Every Service node MUST include realistic mock response in config.node
    - Example failure: { "success": false, "error": "Invalid credentials", "code": 401 } → Decision takes "no" branch
    - This allows users to test different Decision paths by editing mockResponse
 
-3. **Simulation Config**:
-   - Set config.simulation.enabled: true by default for all AI-generated Service nodes
-   - This allows instant workflow testing without real API calls
+3. **Mock Data Config**:
+   - Always provide realistic nodeData.outputData for all AI-generated Service nodes
+   - This allows instant workflow testing in simulation mode without real API calls
    - Example:
      \`\`\`json
      {
@@ -667,9 +667,6 @@ CRITICAL: Every Service node MUST include realistic mock response in config.node
            "nodeData": {
              "inputData": { "email": "user@example.com", "password": "password123" },
              "outputData": { "success": true, "token": "jwt...", "user": {...} }
-           },
-           "simulation": {
-             "enabled": true
            }
          }
        }

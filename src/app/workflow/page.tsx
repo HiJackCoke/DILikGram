@@ -723,7 +723,7 @@ export default function WorkflowPage() {
     });
   };
 
-  console.log(nodes.filter((s) => s.type === "service"));
+  console.log(nodes);
   return (
     <div
       ref={ref}

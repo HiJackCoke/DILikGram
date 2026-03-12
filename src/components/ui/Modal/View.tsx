@@ -16,7 +16,7 @@ export default function ModalView({
           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
             {title}
           </h2>
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+          <div className="text-sm text-gray-500 mt-1">{description}</div>
         </div>
         <button
           onClick={onClose}

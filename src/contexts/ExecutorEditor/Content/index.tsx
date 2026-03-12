@@ -16,6 +16,7 @@ interface ExecutorEditorContentProps {
   nodeType: WorkflowNodeType;
   config?: ExecutionConfig;
   initialTestCases?: TestCase[];
+  isSimulated?: boolean;
 
   internalNodes?: WorkflowNode[];
   onReorder?: (fromIndex: number, toIndex: number) => void;
@@ -31,6 +32,7 @@ export default function ExecutorEditorContent({
   nodeType,
   config,
   initialTestCases,
+  isSimulated,
   internalNodes,
   onReorder,
   onRemoveNode,
@@ -97,11 +99,17 @@ export default function ExecutorEditorContent({
       const input = JSON.parse(inputData || "null");
 
       // Determine simulation mode
-      const isSimulation = config?.simulation?.enabled || false;
+      const isSimulation = isSimulated ?? false;
       const mockData = config?.nodeData?.outputData;
 
       // Execute with simulation mode
-      const result = await executeFunction(fn, input, 30000, isSimulation, mockData);
+      const result = await executeFunction(
+        fn,
+        input,
+        30000,
+        isSimulation,
+        mockData,
+      );
 
       if (!result.success) {
         setOutputData(`Error: ${result.error?.message || "Execution failed"}`);
@@ -137,11 +145,9 @@ export default function ExecutorEditorContent({
       const fn = compileExecutor(testConfig, nodeType, internalNodes);
 
       // Determine simulation mode
-      const isSimulation = config?.simulation?.enabled || false;
-      const mockData =
-        meta?.outputData ||
-        testCase.expectedOutput ||
-        { success: true };
+      const isSimulation = isSimulated ?? false;
+      const mockData = meta?.outputData ||
+        testCase.expectedOutput || { success: true };
 
       // Execute with simulation mode
       const executionResult = await executeFunction(

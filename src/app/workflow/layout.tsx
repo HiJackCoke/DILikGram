@@ -19,22 +19,22 @@ export default function WorkflowLayout({
   return (
     <ReactDiagramProvider>
       <PropertiesPanelProvider>
-        <ExecutorEditorProvider>
-          <ExecutionSummaryProvider>
-            <AIWorkflowEditorProvider>
-              <WorkflowGeneratorProvider>
-                <WorkflowExecutionProvider>
+        <WorkflowExecutionProvider>
+          <ExecutorEditorProvider>
+            <ExecutionSummaryProvider>
+              <AIWorkflowEditorProvider>
+                <WorkflowGeneratorProvider>
                   <WorkflowVersioningProvider>
                     <div className="modal-root" id="workflow-generator-modal" />
                     <div className="modal-root" id="workflow-summary-modal" />
 
                     {children}
                   </WorkflowVersioningProvider>
-                </WorkflowExecutionProvider>
-              </WorkflowGeneratorProvider>
-            </AIWorkflowEditorProvider>
-          </ExecutionSummaryProvider>
-        </ExecutorEditorProvider>
+                </WorkflowGeneratorProvider>
+              </AIWorkflowEditorProvider>
+            </ExecutionSummaryProvider>
+          </ExecutorEditorProvider>
+        </WorkflowExecutionProvider>
       </PropertiesPanelProvider>
     </ReactDiagramProvider>
     // <ToastProvider>
