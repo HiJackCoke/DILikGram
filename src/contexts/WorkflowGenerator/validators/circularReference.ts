@@ -5,6 +5,77 @@ import type {
 } from "../../../types/ai/validators";
 import { getGroups, getNodeTitle } from "../utils/typeGuards";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// General parentNode cycle detection (A → B → ... → A)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Detect general parentNode cycles: A → B → ... → A
+ * Returns the list of node IDs that are entry points of each cycle.
+ */
+function detectParentNodeCycleEntries(nodes: WorkflowNode[]): Set<string> {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const globalVisited = new Set<string>();
+  const cycleEntries = new Set<string>();
+
+  for (const startNode of nodes) {
+    if (globalVisited.has(startNode.id)) continue;
+
+    const chainIndexMap = new Map<string, number>();
+    const chain: WorkflowNode[] = [];
+    let current: WorkflowNode | undefined = startNode;
+
+    while (current) {
+      if (globalVisited.has(current.id)) break;
+
+      if (chainIndexMap.has(current.id)) {
+        // current.id is the entry point of the cycle
+        cycleEntries.add(current.id);
+        break;
+      }
+
+      chainIndexMap.set(current.id, chain.length);
+      chain.push(current);
+      current = current.parentNode ? nodeMap.get(current.parentNode) : undefined;
+    }
+
+    chain.forEach((n) => globalVisited.add(n.id));
+  }
+
+  return cycleEntries;
+}
+
+export function validateParentNodeCycles(nodes: WorkflowNode[]): ValidationResult {
+  const cycleEntries = detectParentNodeCycleEntries(nodes);
+  if (cycleEntries.size === 0) return { valid: true };
+
+  const affectedNodes = nodes.filter((n) => cycleEntries.has(n.id));
+  return {
+    valid: false,
+    errorType: "CIRCULAR_PARENTNODE_CYCLE",
+    errorMessage: `Found ${cycleEntries.size} node(s) forming circular parentNode cycles`,
+    affectedNodes,
+  };
+}
+
+export async function repairParentNodeCycles(
+  context: ValidationContext,
+): Promise<WorkflowNode[]> {
+  const workingNodes = [...context.nodes];
+  const cycleEntries = detectParentNodeCycleEntries(workingNodes);
+  if (cycleEntries.size === 0) return workingNodes;
+
+  return workingNodes.map((n) => {
+    if (cycleEntries.has(n.id)) {
+      console.log(
+        `[circularReference] Breaking parentNode cycle at node: ${n.id} (was parentNode: ${n.parentNode})`,
+      );
+      return { ...n, parentNode: undefined };
+    }
+    return n;
+  });
+}
+
 /**
  * Information about circular reference in GroupNode
  */

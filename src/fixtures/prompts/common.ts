@@ -254,6 +254,20 @@ export const PARENT_CHILD_RULES = `
    - DO NOT generate "edges" array.
    - DO NOT generate nodes of type "start" or "end".
    - Focus ONLY on the functional nodes (task, service, decision, group).
+
+5. **No Circular parentNode References (CRASH PREVENTION)**
+   - NEVER create circular parentNode chains.
+   - If Node A sets parentNode = B's id, then Node B MUST NOT set parentNode = A's id.
+   - More generally: following parentNode links must always reach a root node (no parentNode). A chain must never loop.
+   - ❌ FATAL — causes "Maximum call stack exceeded" crash that users cannot recover from:
+     { "id": "node-task-A", "parentNode": "node-task-B" }  ← A points to B
+     { "id": "node-task-B", "parentNode": "node-task-A" }  ← B points BACK to A ← CRASH
+   - ✅ CORRECT — chain always flows toward root:
+     { "id": "node-task-A" }                               ← root (no parentNode)
+     { "id": "node-task-B", "parentNode": "node-task-A" }  ← A is parent
+     { "id": "node-task-C", "parentNode": "node-task-B" }  ← B is parent
+   - SELF-CHECK: For each node, trace parentNode → parentNode → ... until null.
+     If you encounter a node ID already seen in that trace → you have a cycle. Fix it before outputting.
 `;
 
 export const COMMON_VALIDATION_RULES = `
@@ -267,6 +281,10 @@ VALIDATION CHECKLIST (Self-Correction):
    - For every non-root node, confirm its \`parentNode\` value appears in that list.
    - ❌ If any \`parentNode\` does NOT match an actual \`id\` → rewrite before outputting.
    - This is a FATAL error that breaks the entire workflow.
+□ **Circular parentNode Cycle Check (CRASH PREVENTION)**:
+   - For every node, trace: node.parentNode → that node's parentNode → ... until undefined.
+   - If you see the same node ID twice in a trace → CIRCULAR REFERENCE. Fix before outputting.
+   - ❌ FATAL: A → B → A (any length cycle causes "Maximum call stack exceeded" app crash)
 □ **Data Fields Complete?**
    - Task: title, description, assignee, estimatedTime, execution.config, ports
    - Service: title, description, serviceType, http, execution.config, ports
