@@ -1,5 +1,5 @@
 import React from "react";
-import { SwitchViewProps } from "./type";
+import { SwitchPalette, SwitchViewProps } from "./type";
 
 // Size configuration for different switch sizes
 const SIZE_CONFIG = {
@@ -29,6 +29,15 @@ const SIZE_CONFIG = {
   },
 } as const;
 
+const LABEL_PALETTE: Record<SwitchPalette, string> = {
+  primary: "text-palette-primary-color",
+  warning: "text-palette-warning-color",
+  success: "text-palette-success-color",
+  neutral: "text-palette-neutral-color",
+  danger: "text-palette-danger-color",
+  secondary: "text-palette-secondary-color",
+};
+
 export const SwitchView: React.FC<SwitchViewProps> = ({
   checked,
   checkedIcon,
@@ -52,7 +61,7 @@ export const SwitchView: React.FC<SwitchViewProps> = ({
       {/* Left Label (Off) */}
       {label && (
         <span
-          className={`${sizeClasses.label} font-medium select-none ${!checked ? "text-white" : "text-gray-400"}`}
+          className={`${sizeClasses.label} font-medium select-none ${!checked ? LABEL_PALETTE[palette] : "text-gray-400"}`}
         >
           {label}
         </span>
@@ -94,7 +103,7 @@ export const SwitchView: React.FC<SwitchViewProps> = ({
       {/* Right Label (On) */}
       {checkedLabel && (
         <span
-          className={`${sizeClasses.label} font-medium select-none ${checked ? "text-white" : "text-gray-400"}`}
+          className={`${sizeClasses.label} font-medium select-none ${checked ? LABEL_PALETTE[palette] : "text-gray-400"}`}
         >
           {checkedLabel}
         </span>
