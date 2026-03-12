@@ -40,6 +40,10 @@ import {
   getOpenAIClient,
   handleOpenAIError,
 } from "@/ai";
+import {
+  validateParentNodeCycles,
+  validateCircularReferences,
+} from "@/contexts/WorkflowGenerator/validators/circularReference";
 /**
  * Generate workflow from prompt using GPT-4o-mini
  *
@@ -84,7 +88,62 @@ export const generateWorkflowAction: GenerateWorkflowAction = async ({
     assertNodesValid(allNodes);
 
     let nodes = populateGroupChildren(allNodes);
-    assertNoCircularGroupReferences(nodes);
+
+    // Detect and auto-fix circular parentNode cycles (max 3 retries)
+    const MAX_CIRCULAR_FIX_RETRIES = 3;
+    for (let attempt = 0; attempt < MAX_CIRCULAR_FIX_RETRIES; attempt++) {
+      const cycleResult = validateParentNodeCycles(nodes);
+      const groupCycleResult = validateCircularReferences(nodes);
+
+      if (cycleResult.valid && groupCycleResult.valid) break;
+
+      if (attempt === MAX_CIRCULAR_FIX_RETRIES - 1) {
+        throw new Error(
+          `Failed to resolve circular parentNode cycles after ${MAX_CIRCULAR_FIX_RETRIES} retries`,
+        );
+      }
+
+      console.warn(
+        `[generateWorkflowAction] Circular parentNode cycle detected (attempt ${attempt + 1}/${MAX_CIRCULAR_FIX_RETRIES}), requesting AI fix...`,
+      );
+
+      const affectedNodes = [
+        ...(cycleResult.affectedNodes ?? []),
+        ...(groupCycleResult.affectedNodes ?? []),
+      ];
+
+      const fixPrompt = buildCircularCycleFixPrompt(nodes, affectedNodes);
+      const firstAffectedId = affectedNodes[0]?.id ?? nodes[0].id;
+
+      const editResult = await updateWorkflowAction(
+        firstAffectedId,
+        fixPrompt,
+        nodes,
+      );
+
+      if (editResult.nodes.update?.length) {
+        editResult.nodes.update.forEach((update) => {
+          const idx = nodes.findIndex((n) => n.id === update.id);
+          if (idx >= 0) {
+            nodes[idx] = {
+              ...nodes[idx],
+              data: { ...nodes[idx].data, ...update.data },
+              parentNode: update.parentNode ?? nodes[idx].parentNode,
+            };
+          }
+        });
+      }
+      if (editResult.nodes.create?.length) {
+        nodes = [...nodes, ...editResult.nodes.create];
+      }
+      if (editResult.nodes.delete?.length) {
+        const deleteIds = new Set(editResult.nodes.delete);
+        nodes = nodes.filter((n) => !deleteIds.has(n.id));
+      }
+
+      nodes = populateGroupChildren(nodes);
+    }
+
     nodes = removeUndersizedGroups(nodes);
     nodes = normalizeNodeDefaults(nodes);
     nodes = normalizeStartInputData(nodes);
@@ -144,24 +203,32 @@ function populateGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
   });
 }
 
-/** Throw if any GroupNode.parentNode is also listed in its own groups[] (prevents infinite loop). */
-function assertNoCircularGroupReferences(nodes: WorkflowNode[]): void {
-  nodes.forEach((node) => {
-    if (node.type === "group" && node.parentNode) {
-      const groupData = node.data as GroupNodeData;
-      const internalNodeIds = new Set(
-        (groupData.groups || []).map((n: WorkflowNode) => n.id),
+function buildCircularCycleFixPrompt(
+  nodes: WorkflowNode[],
+  affectedNodes: WorkflowNode[],
+): string {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const descriptions = affectedNodes
+    .map((node) => {
+      const parent = node.parentNode ? nodeMap.get(node.parentNode) : undefined;
+      return (
+        `- "${node.data?.title ?? node.id}" (id: ${node.id}, type: ${node.type}) ` +
+        `has parentNode → "${parent?.data?.title ?? node.parentNode}" (id: ${node.parentNode})`
       );
-      if (internalNodeIds.has(node.parentNode)) {
-        throw new Error(
-          `CIRCULAR REFERENCE DETECTED: GroupNode "${node.data.title}" (id: ${node.id}) ` +
-            `has parentNode "${node.parentNode}" which is also in its groups[] array. ` +
-            `This will cause infinite loop. ` +
-            `Fix: Make "${node.parentNode}" a standalone node OUTSIDE the GroupNode.`,
-        );
-      }
-    }
-  });
+    })
+    .join("\n");
+
+  return (
+    `CRITICAL BUG: Circular parentNode cycle detected!\n\n` +
+    `The following nodes form a mutual parentNode reference cycle (A.parentNode = B, B.parentNode = A):\n` +
+    descriptions +
+    `\n\nThis causes "Maximum call stack size exceeded" during rendering.\n\n` +
+    `FIX REQUIRED: Break the cycle by removing or correcting the parentNode of one of the involved nodes.\n` +
+    `RULES:\n` +
+    `- parentNode must only point UP the hierarchy (to a containing group or task)\n` +
+    `- Two nodes must NEVER mutually reference each other as parents\n` +
+    `- Make one of the involved nodes a root node (remove its parentNode) or re-parent it to a different valid ancestor`
+  );
 }
 
 /** Remove GroupNodes with < 2 non-Decision children and re-parent their orphaned children. */
