@@ -17,6 +17,8 @@ import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import Button from "@/components/ui/Button";
 import TestCasesTab from "./TestCasesTab";
 
+import GroupDataFlow from "./GroupDataFlow";
+
 type ExecutorEditorViewProps = {
   isInternalNode?: boolean;
   meta: ExecutionConfig["nodeData"];
@@ -208,30 +210,7 @@ export default function ExecutorEditorView({
             <section className="flex h-full">
               {/* Editor */}
               <div className="flex-1 flex flex-col py-6 pr-6 border-r">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-gray-700">
-                    Function Code
-                  </label>
-                  {/* Async Detection Indicator */}
-                  {isAsync && (
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                      <Zap className="w-3 h-3" />
-                      <span>Async Detected</span>
-                    </div>
-                  )}
-                  {/* TaskNode async warning */}
-                  {nodeType === "task" && isAsync && (
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
-                      <AlertTriangle className="w-3 h-3" />
-                      <span>
-                        TaskNode must be sync - use ServiceNode instead
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Type Hints */}
-
+                {/* Type Hints - always shown */}
                 <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1.5">
                   <div className="text-gray-700">
                     <span className="font-semibold">Input Type:</span>{" "}
@@ -249,36 +228,62 @@ export default function ExecutorEditorView({
                   </div>
                 </div>
 
-                <textarea
-                  value={code}
-                  onChange={(e) => onCodeChange(e.target.value)}
-                  placeholder={
-                    nodeType === "decision"
-                      ? `// Decision evaluator - return structured output\n// Example:\nconst isValid = inputData && inputData.isValid === true;\n\nreturn {\n  outputData: { ...inputData, checked: true },\n  success: isValid  // true = Yes, false = No\n};`
-                      : nodeType === "task"
-                        ? `// Task function (SYNC ONLY - no await/async)\n// Receives: inputData, fetch\n// Returns: transformed data\n\nreturn { ...inputData };`
-                        : nodeType === "group"
-                          ? `// Optional: Override default group execution\n// Default: Sequential execution of internal nodes\n// Receives: inputData, fetch\n// Returns: outputData\n\nreturn outputData;`
-                          : meta
-                            ? `// Receives: inputData (${stringifyForDisplay(meta.inputData)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn outputData;`
-                            : `// Your function code here\n// Receives: inputData, fetch\n// Return: output data\n\nreturn inputData;`
-                  }
-                  className="flex-1 w-full p-4 font-mono text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  spellCheck={false}
-                />
-
-                {error && (
-                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-red-800">
-                        Compilation Error
-                      </p>
-                      <p className="text-xs text-red-600 mt-1 font-mono">
-                        {error}
-                      </p>
+                {nodeType === "group" ? (
+                  <GroupDataFlow internalNodes={internalNodes} />
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium text-gray-700">
+                        Function Code
+                      </label>
+                      {/* Async Detection Indicator */}
+                      {isAsync && (
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                          <Zap className="w-3 h-3" />
+                          <span>Async Detected</span>
+                        </div>
+                      )}
+                      {/* TaskNode async warning */}
+                      {nodeType === "task" && isAsync && (
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>
+                            TaskNode must be sync - use ServiceNode instead
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
+
+                    <textarea
+                      value={code}
+                      onChange={(e) => onCodeChange(e.target.value)}
+                      placeholder={
+                        nodeType === "decision"
+                          ? `// Decision evaluator - return structured output\n// Example:\nconst isValid = inputData && inputData.isValid === true;\n\nreturn {\n  outputData: { ...inputData, checked: true },\n  success: isValid  // true = Yes, false = No\n};`
+                          : nodeType === "task"
+                            ? `// Task function (SYNC ONLY - no await/async)\n// Receives: inputData, fetch\n// Returns: transformed data\n\nreturn { ...inputData };`
+                            : meta
+                              ? `// Receives: inputData (${stringifyForDisplay(meta.inputData)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn outputData;`
+                              : `// Your function code here\n// Receives: inputData, fetch\n// Return: output data\n\nreturn inputData;`
+                      }
+                      className="flex-1 w-full p-4 font-mono text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      spellCheck={false}
+                    />
+
+                    {error && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-red-800">
+                            Compilation Error
+                          </p>
+                          <p className="text-xs text-red-600 mt-1 font-mono">
+                            {error}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -351,7 +356,7 @@ export default function ExecutorEditorView({
 
         <Button
           palette="primary"
-          disabled={!!error || !code.trim()}
+          disabled={nodeType !== "group" && (!!error || !code.trim())}
           onClick={onSave}
         >
           Save Function
