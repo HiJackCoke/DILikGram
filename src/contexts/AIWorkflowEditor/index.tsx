@@ -17,7 +17,6 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { WorkflowNode } from "@/types/nodes";
-import type { WorkflowEdge } from "@/types/edges";
 
 import type {
   AIWorkflowEditorContextValue,
@@ -32,6 +31,8 @@ import {
   sanitizeNewNodeIds,
 } from "@/utils/ai/workflowProcessor";
 import AIEditPanel from "@/contexts/AIWorkflowEditor/Popover";
+import { useStoreApi } from "react-cosmos-diagram";
+import { findAllDescendantNodes } from "@/utils/graph/nodes";
 
 interface AIWorkflowEditorProviderProps {
   children: ReactNode;
@@ -43,6 +44,7 @@ const AIWorkflowEditorContext =
 export function AIWorkflowEditorProvider({
   children,
 }: AIWorkflowEditorProviderProps) {
+  const { getState } = useStoreApi<WorkflowNode>();
   const [state, setState] = useState<AIWorkflowEditorState>({
     isOpen: false,
     nodeId: null,
@@ -53,8 +55,6 @@ export function AIWorkflowEditorProvider({
   const [error, setError] = useState<string | null>(null);
 
   const listeners = useRef<OnWorkflowEditCallback[]>([]);
-  const currentNodesRef = useRef<WorkflowNode[]>([]);
-  const currentEdgesRef = useRef<WorkflowEdge[]>([]);
 
   const open = useCallback(
     (nodeId: string, position: { x: number; y: number }) => {
@@ -87,28 +87,22 @@ export function AIWorkflowEditorProvider({
     };
   }, []);
 
-  const setCurrentWorkflow = useCallback(
-    (nodes: WorkflowNode[], edges: WorkflowEdge[]) => {
-      currentNodesRef.current = nodes;
-      currentEdgesRef.current = edges;
-    },
-    [],
-  );
-
   const update = useCallback(
     async (nodeId: string, prompt: string) => {
       setIsEditing(true);
       setError(null);
 
       try {
-        const currentNodes = currentNodesRef.current;
+        const allNodes = getState().getNodes();
         // const currentEdges = currentEdgesRef.current;
 
-        const editResult = await updateWorkflowAction(
-          nodeId,
+        const nodeIds = findAllDescendantNodes(allNodes, new Set([nodeId]));
+
+        const editResult = await updateWorkflowAction({
+          targetNodeIds: [...nodeIds],
           prompt,
-          currentNodes,
-        );
+          nodes: allNodes,
+        });
 
         // Step 4: Merge edit result into current workflow (ParentNode-First)
         // Sanitize AI-generated IDs before merging to prevent duplicates/circular refs
@@ -119,7 +113,7 @@ export function AIWorkflowEditorProvider({
             create: sanitizeNewNodeIds(editResult.nodes?.create ?? []),
           },
         };
-        const { nodes, edges } = mergeWorkflow(currentNodes, sanitizedResult);
+        const { nodes, edges } = mergeWorkflow(allNodes, sanitizedResult);
 
         // Step 5: Notify listeners with updated workflow
         listeners.current.forEach((listener) => listener(nodes, edges));
@@ -147,7 +141,6 @@ export function AIWorkflowEditorProvider({
         open,
         close,
         registerOnEdit,
-        setCurrentWorkflow,
         update,
       }}
     >
@@ -165,7 +158,7 @@ export function AIWorkflowEditorProvider({
  */
 export function useAIWorkflowEditor(
   handlers?: AIWorkflowEditorHandlers,
-): AIWorkflowEditorContextValue {
+): Omit<AIWorkflowEditorContextValue, "registerOnEdit"> {
   const context = use(AIWorkflowEditorContext);
   if (!context) {
     throw new Error(
@@ -173,7 +166,7 @@ export function useAIWorkflowEditor(
     );
   }
 
-  const { registerOnEdit } = context;
+  const { registerOnEdit, ...props } = context;
 
   useEffect(() => {
     const unregisterFns: (() => void)[] = [];
@@ -188,5 +181,5 @@ export function useAIWorkflowEditor(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return context;
+  return props;
 }

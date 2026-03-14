@@ -1,4 +1,4 @@
-import type { WorkflowNode } from "@/types";
+import type { UpdateWorkflowActionParams } from "@/types";
 import { buildPrompt } from "./utils";
 import {
   CORE_NODE_TYPES,
@@ -7,18 +7,35 @@ import {
   TECHNICAL_SPECIFICATION_RULES,
 } from "./common";
 
+// const MODIFICATION_CONTEXT_RULES = `
+// MODIFICATION CONTEXT:
+// - You are provided with a specific **Selected Node** and its **Descendants**.
+// - This is your "Effective Scope". You can modify, delete, or add children to these nodes.
+// - You can also rewire existing nodes by updating their \`parentNode\`.
+
+// ACTIONS:
+// 1. **create**: Add new task/service/decision nodes.
+//    - MUST specify \`parentNode\`.
+//    - If parent is Decision, MUST specify \`branchLabel\` in the \`data\` object.
+// 2. **update**: Modify data or \`parentNode\` of existing nodes.
+// 3. **delete**: Remove nodes from the workflow.
+// `;
+
 const MODIFICATION_CONTEXT_RULES = `
 MODIFICATION CONTEXT:
-- You are provided with a specific **Selected Node** and its **Descendants**.
-- This is your "Effective Scope". You can modify, delete, or add children to these nodes.
-- You can also rewire existing nodes by updating their \`parentNode\`.
+- You are provided with a list of editable node IDs (\`nodeIds\`) and a set of reference nodes (\`nodes\`).
+- The nodes listed in \`nodeIds\` define your "Effective Scope".
+- You may only modify, delete, or attach children to nodes within this scope.
+- Nodes provided in \`nodes\` are reference context and must not be modified.
 
 ACTIONS:
 1. **create**: Add new task/service/decision nodes.
    - MUST specify \`parentNode\`.
+   - The \`parentNode\` MUST be one of the nodes in \`nodeIds\`.
    - If parent is Decision, MUST specify \`branchLabel\` in the \`data\` object.
-2. **update**: Modify data or \`parentNode\` of existing nodes.
-3. **delete**: Remove nodes from the workflow.
+2. **update**: Modify data or \`parentNode\` of nodes within the Effective Scope.
+   - The new \`parentNode\` MUST reference a node within \`nodeIds\`.
+3. **delete**: Remove nodes from the workflow, but only if they are within the Effective Scope.
 `;
 
 const MODIFICATION_EXAMPLES = `
@@ -195,7 +212,7 @@ const MODIFICATION_RESPONSE_FORMAT = `
 RESPONSE FORMAT (JSON):
 {
   "nodes": {
-    "create": [ ...Array of new Nodes (task, service, decision) ],
+    "create": [ ...Array of new Nodes (task, service, decision, group) ],
     "update": [ { "id": "...", "parentNode": "...", "data": {...} } ],
     "delete": [ "node-id-1", "node-id-2" ]
   },
@@ -253,19 +270,15 @@ export const MODIFICATION_SYSTEM_PROMPT = buildPrompt({
 });
 
 export function getModificationContent({
-  nodeId,
+  targetNodeIds,
   prompt,
   nodes,
-}: {
-  prompt: string;
-  nodeId: string;
-  nodes: WorkflowNode[];
-}): string {
+}: UpdateWorkflowActionParams): string {
   // Basic context preparation logic handled by caller, just passing prompt
   // Ideally you would serialize the 'effective scope' here.
   return `
 USER REQUEST: ${prompt}
-SELECTED NODE ID: ${nodeId}
+SELECTED NODE ID's: ${JSON.stringify(targetNodeIds, null, 2)}
 EXISTING NODES (Scope): ${JSON.stringify(nodes, null, 2)}
 
 Provide the JSON for creation, update, and deletion of nodes.

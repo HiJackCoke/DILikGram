@@ -20,7 +20,7 @@ export interface AIWorkflowEditorState {
  */
 export type OnWorkflowEditCallback = (
   nodes: WorkflowNode[],
-  edges: WorkflowEdge[]
+  edges: WorkflowEdge[],
 ) => void;
 
 /**
@@ -49,7 +49,7 @@ export interface AIWorkflowEditorContextValue {
   /**
    * Set current workflow state for edit operations
    */
-  setCurrentWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
+  // setCurrentWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
 
   /**
    * Handle edit operation via Server Actions

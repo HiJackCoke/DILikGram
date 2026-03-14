@@ -36,7 +36,9 @@ function detectParentNodeCycleEntries(nodes: WorkflowNode[]): Set<string> {
 
       chainIndexMap.set(current.id, chain.length);
       chain.push(current);
-      current = current.parentNode ? nodeMap.get(current.parentNode) : undefined;
+      current = current.parentNode
+        ? nodeMap.get(current.parentNode)
+        : undefined;
     }
 
     chain.forEach((n) => globalVisited.add(n.id));
@@ -45,7 +47,9 @@ function detectParentNodeCycleEntries(nodes: WorkflowNode[]): Set<string> {
   return cycleEntries;
 }
 
-export function validateParentNodeCycles(nodes: WorkflowNode[]): ValidationResult {
+export function validateParentNodeCycles(
+  nodes: WorkflowNode[],
+): ValidationResult {
   const cycleEntries = detectParentNodeCycleEntries(nodes);
   if (cycleEntries.size === 0) return { valid: true };
 
@@ -194,11 +198,11 @@ export async function repairCircularReferences(
         `- "${parentNodeTitle}": standalone node (comes BEFORE GroupNode)\n` +
         `- GroupNode "${groupNode.data?.title}": parentNode = "${parentNodeId}", groups[] does NOT contain "${parentNodeId}"`;
 
-      const editResult = await context.updateWorkflowAction(
-        groupNode.id,
-        fixPrompt,
-        workingNodes,
-      );
+      const editResult = await context.updateWorkflowAction({
+        targetNodeIds: [groupNode.id],
+        prompt: fixPrompt,
+        nodes: workingNodes,
+      });
 
       // Apply updates
       if (editResult.nodes.update?.length) {

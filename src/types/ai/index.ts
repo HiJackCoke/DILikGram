@@ -39,8 +39,12 @@ export interface UpdateWorkflowResponse {
   };
 }
 
+export type UpdateWorkflowActionParams = {
+  targetNodeIds: string[];
+  prompt: string;
+  nodes: WorkflowNode[];
+};
+
 export type UpdateWorkflowAction = (
-  nodeId: string,
-  prompt: string,
-  nodes: WorkflowNode[],
+  params: UpdateWorkflowActionParams,
 ) => Promise<UpdateWorkflowResponse>;

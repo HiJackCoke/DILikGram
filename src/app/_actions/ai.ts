@@ -115,11 +115,11 @@ export const generateWorkflowAction: GenerateWorkflowAction = async ({
       const fixPrompt = buildCircularCycleFixPrompt(nodes, affectedNodes);
       const firstAffectedId = affectedNodes[0]?.id ?? nodes[0].id;
 
-      const editResult = await updateWorkflowAction(
-        firstAffectedId,
-        fixPrompt,
+      const editResult = await updateWorkflowAction({
+        targetNodeIds: [firstAffectedId],
+        prompt: fixPrompt,
         nodes,
-      );
+      });
 
       if (editResult.nodes.update?.length) {
         editResult.nodes.update.forEach((update) => {
@@ -596,21 +596,21 @@ function generateDefaultTestCases(node: WorkflowNode): TestCase[] {
 /**
  * Update workflow using GPT-4o-mini with incremental edits
  *
- * @param nodeId - Target node ID to edit
+ * @param nodeIds - Target node IDs to edit
  * @param prompt - User's edit instructions
  * @param nodes - Current workflow nodes
  * @returns Incremental edit operations (update/create/delete)
  */
-export const updateWorkflowAction: UpdateWorkflowAction = async (
-  nodeId,
+export const updateWorkflowAction: UpdateWorkflowAction = async ({
+  targetNodeIds,
   prompt,
   nodes,
-) => {
+}) => {
   if (!prompt || !prompt.trim()) {
     throw new Error("Edit description is required");
   }
 
-  if (!nodeId) {
+  if (!targetNodeIds.length) {
     throw new Error("Node ID is required");
   }
 
@@ -623,10 +623,10 @@ export const updateWorkflowAction: UpdateWorkflowAction = async (
         { role: "system", content: MODIFICATION_SYSTEM_PROMPT },
         {
           role: "user",
-          content: getModificationContent({ prompt, nodeId, nodes }),
+          content: getModificationContent({ targetNodeIds, prompt, nodes }),
         },
       ],
-      temperature: 0.6,
+      temperature: 0.3,
       response_format: {
         type: "json_schema",
         json_schema: {

@@ -109,7 +109,7 @@ export default function WorkflowPage() {
       setEdges(edges);
     },
   });
-  const { open: openAIEdit, setCurrentWorkflow } = useAIWorkflowEditor({
+  const { open: openAIEdit } = useAIWorkflowEditor({
     onEdit: (nodes, edges) => {
       setNodes(nodes);
       setEdges(edges);
@@ -144,9 +144,9 @@ export default function WorkflowPage() {
   }, [edges]);
 
   // Update AIWorkflowEditor with current workflow state
-  useEffect(() => {
-    setCurrentWorkflow(nodes, edges);
-  }, [nodes, edges, setCurrentWorkflow]);
+  // useEffect(() => {
+  //   setCurrentWorkflow(nodes, edges);
+  // }, [nodes, edges, setCurrentWorkflow]);
 
   // Register restore listener for version history
   // useEffect(() => {
@@ -239,21 +239,20 @@ export default function WorkflowPage() {
     }
   };
 
-  const handleNodeContextMenu = useCallback(
-    (event: ReactMouseEvent, node: WorkflowNode) => {
-      event.preventDefault();
+  const handleNodeContextMenu = (
+    event: ReactMouseEvent,
+    node: WorkflowNode,
+  ) => {
+    event.preventDefault();
 
-      // Don't allow editing START and END nodes
-      if (node.type === "start" || node.type === "end") {
-        return;
-      }
+    // Don't allow editing START and END nodes
+    if (node.type === "start" || node.type === "end") {
+      return;
+    }
 
-      // Open AI edit panel at cursor position
-      openAIEdit(node.id, { x: event.clientX, y: event.clientY });
-    },
-    [openAIEdit],
-  );
-
+    // Open AI edit panel at cursor position
+    openAIEdit(node.id, { x: event.clientX, y: event.clientY });
+  };
   const onEdgeUpdateStart = useCallback(() => {
     edgeUpdateSuccessful.current = false;
   }, []);
@@ -723,7 +722,6 @@ export default function WorkflowPage() {
     });
   };
 
-  console.log(nodes);
   return (
     <div
       ref={ref}
