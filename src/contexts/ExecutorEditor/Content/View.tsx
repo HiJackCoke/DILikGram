@@ -36,7 +36,7 @@ export default function ExecutorEditorContentView({
   onReorder,
   onInternalNodePropertiesSave,
   openInternalNode,
-  onRemoveNode,
+  onRemove,
 }: ExecutorEditorContentViewProps) {
   const [activeTab, setActiveTab] = useState<"code" | "tests">("code");
 
@@ -158,8 +158,8 @@ export default function ExecutorEditorContentView({
                 {nodeType === "group" ? (
                   <GroupDataFlow
                     internalNodes={internalNodes}
-                    onDragEnd={onReorder}
-                    onRemove={onRemoveNode}
+                    onReorder={onReorder}
+                    onRemove={onRemove}
                     onInternalNodePropertiesSave={onInternalNodePropertiesSave}
                   />
                 ) : (

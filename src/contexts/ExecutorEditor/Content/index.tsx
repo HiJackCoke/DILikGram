@@ -20,7 +20,7 @@ export default function ExecutorEditorContent({
   isSimulated,
   internalNodes,
   onReorder,
-  onRemoveNode,
+  onRemove,
   openInternalNode,
   onInternalNodePropertiesSave,
   onSave,
@@ -263,7 +263,7 @@ export default function ExecutorEditorContent({
       onRunAllTests={handleRunAllTests}
       internalNodes={internalNodes}
       onReorder={onReorder}
-      onRemoveNode={onRemoveNode}
+      onRemove={onRemove}
       openInternalNode={openInternalNode}
       onInternalNodePropertiesSave={onInternalNodePropertiesSave}
     />

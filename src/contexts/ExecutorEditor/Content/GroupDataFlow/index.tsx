@@ -20,21 +20,14 @@ import {
 import { Fragment, useState } from "react";
 import GroupDataFlowView from "./VIew";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
+import { GroupDataFlowProps } from "./type";
 
 export default function GroupDataFlow({
   internalNodes = [],
-  onDragEnd,
+  onReorder,
   onRemove,
   onInternalNodePropertiesSave,
-}: {
-  internalNodes?: WorkflowNode[];
-  onDragEnd?: (items: WorkflowNode[]) => void;
-  onRemove?: (items: WorkflowNode[]) => void;
-  onInternalNodePropertiesSave?: (
-    targetIte: string,
-    items: WorkflowNode[],
-  ) => void;
-}) {
+}: GroupDataFlowProps) {
   const { open } = usePropertiesPanel({ onSave: handlePropertiesSave });
 
   const hasMouseSupport = useBrowserEnv(({ window }) => {
@@ -75,7 +68,7 @@ export default function GroupDataFlow({
       return updated;
     });
 
-    onDragEnd?.(newItems);
+    onReorder?.(newItems);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

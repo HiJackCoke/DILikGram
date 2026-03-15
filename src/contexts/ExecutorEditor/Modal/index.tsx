@@ -12,7 +12,7 @@ import type { ExecutionConfig } from "@/types/workflow";
 import type { ExecutorEditorState } from "@/contexts/ExecutorEditor/type";
 import type { WorkflowNode } from "@/types/nodes";
 import { ModalProps } from "@/types";
-import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
+
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { Beaker, FlaskConical } from "lucide-react";
 import { ExecutorEditorContentProps } from "../Content/type";
@@ -71,7 +71,7 @@ export default function ExecutorEditorModal({
   };
 
   // Remove node from group
-  const handleRemoveNode: ExecutorEditorContentProps["onRemoveNode"] = (
+  const handleRemoveNode: ExecutorEditorContentProps["onRemove"] = (
     updatedItems,
   ) => {
     setInternalNodes(updatedItems);
@@ -170,7 +170,7 @@ export default function ExecutorEditorModal({
           isSimulated={isSimulated}
           internalNodes={nodeType === "group" ? internalNodes : undefined}
           onReorder={nodeType === "group" ? handleReorder : undefined}
-          onRemoveNode={nodeType === "group" ? handleRemoveNode : undefined}
+          onRemove={nodeType === "group" ? handleRemoveNode : undefined}
           openInternalNode={
             nodeType === "group" ? setCurrentInternalNode : undefined
           }

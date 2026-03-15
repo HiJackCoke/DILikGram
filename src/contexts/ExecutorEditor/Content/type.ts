@@ -1,18 +1,16 @@
 import { ExecutionConfig, WorkflowNode, WorkflowNodeType } from "@/types";
 import { TestCase } from "@/types/prd";
+import { GroupDataFlowProps } from "./GroupDataFlow/type";
 
-type CoreProps = {
+type CoreProps = GroupDataFlowProps & {
   isInternalNode?: boolean;
-  internalNodes?: WorkflowNode[];
+
   nodeType: WorkflowNodeType;
 
-  onReorder?: (updatedItems: WorkflowNode[]) => void;
-  onRemoveNode?: (updatedItems: WorkflowNode[]) => void;
+
+
   openInternalNode?: (node: WorkflowNode) => void;
-  onInternalNodePropertiesSave?: (
-    targetId: string,
-    updatedItems: WorkflowNode[],
-  ) => void;
+
   onClose?: () => void;
 };
 
