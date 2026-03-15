@@ -91,7 +91,11 @@ const Icon = ({ icon, size = "md" }: ButtonViewProps) => {
 
   const sizeClasses = SIZE_CONFIG[size];
   return (
-    <span className={`flex items-center ${sizeClasses.icon}`}>{icon}</span>
+    <span
+      className={`pointer-events-none flex items-center ${sizeClasses.icon}`}
+    >
+      {icon}
+    </span>
   );
 };
 
@@ -139,6 +143,8 @@ export default function ButtonView({
   iconOnly = false,
   children,
   onClick,
+
+  ...props
 }: ButtonViewProps) {
   const sizeClasses = SIZE_CONFIG[size];
   const variantClasses = VARIANT_CONFIG[variant];
@@ -172,6 +178,7 @@ export default function ButtonView({
 
   return (
     <button
+      {...props}
       type={type}
       disabled={disabled}
       onClick={onClick}

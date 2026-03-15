@@ -1,5 +1,5 @@
 import type { KeysOfUnion } from "@/types/utils";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { PALETTE } from "@/constants/palette";
 
 // Size options matching Select component
@@ -17,7 +17,7 @@ export type IconPosition = "left" | "right";
 export type ButtonType = "button" | "submit" | "reset";
 
 // Button props - simplified with optional children and icon
-export interface ButtonProps {
+export type ButtonProps = ComponentProps<"button"> & {
   children?: ReactNode;
   icon?: ReactNode;
   iconPosition?: IconPosition;
@@ -31,7 +31,7 @@ export interface ButtonProps {
   fullWidth?: boolean;
   "aria-label"?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-}
+};
 
 // View props (internal)
 export interface ButtonViewProps extends ButtonProps {

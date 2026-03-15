@@ -36,6 +36,7 @@ export default function Button({
 
   return (
     <ButtonView
+      {...props}
       palette={palette}
       size={size}
       variant={variant}
