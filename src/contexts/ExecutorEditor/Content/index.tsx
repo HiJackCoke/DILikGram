@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import ExecutorEditorView from "./View";
+import ExecutorEditorContentView from "./View";
 import {
   compileExecutor,
   executeFunction,
@@ -8,24 +8,9 @@ import {
   inferType,
 } from "@/utils/workflow";
 import type { ExecutionConfig } from "@/types/workflow";
-import type { WorkflowNodeType, WorkflowNode } from "@/types/nodes";
+
 import type { TestCase } from "@/types/prd";
-
-interface ExecutorEditorContentProps {
-  isInternalNode?: boolean;
-  nodeType: WorkflowNodeType;
-  config?: ExecutionConfig;
-  initialTestCases?: TestCase[];
-  isSimulated?: boolean;
-
-  internalNodes?: WorkflowNode[];
-  onReorder?: (fromIndex: number, toIndex: number) => void;
-  onRemoveNode?: (nodeId: string) => void;
-  openInternalNode?: (node: WorkflowNode) => void;
-  openInternalNodePropertiesPanel?: (node: WorkflowNode) => void;
-  onSave: (config: ExecutionConfig) => void;
-  onClose?: () => void;
-}
+import { ExecutorEditorContentProps } from "./type";
 
 export default function ExecutorEditorContent({
   isInternalNode = false,
@@ -258,7 +243,7 @@ export default function ExecutorEditorContent({
   };
 
   return (
-    <ExecutorEditorView
+    <ExecutorEditorContentView
       isInternalNode={isInternalNode}
       meta={meta}
       nodeType={nodeType}

@@ -1,15 +1,20 @@
+import Button from "@/components/ui/Button";
 import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 import { WorkflowNode } from "@/types";
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Trash2 } from "lucide-react";
+import { PointerEventHandler } from "react";
 
 export default function GroupDataFlowView({
   node,
-  index,
+
+  onRemove,
 }: {
   node: WorkflowNode;
-  index: number;
+
+  onRemove?: (id: string) => void;
 }) {
   const isClientRendered = useBrowserEnv(({ window }) => !!window, false);
 
@@ -20,7 +25,12 @@ export default function GroupDataFlowView({
     transition,
     isDragging,
     setNodeRef,
-  } = useSortable(node);
+  } = useSortable({
+    id: node.id,
+    data: {
+      nodeData: node,
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -35,22 +45,50 @@ export default function GroupDataFlowView({
     : "—";
   const outputType = nodeData ? inferType(nodeData.outputData) : "—";
 
+  const handleOnPointerDownCapture: PointerEventHandler = async (e) => {
+    const target = e.target as HTMLElement;
+
+    if (target.role === "delete-button") {
+      const confirm = await dialog.confirm(
+        `Delete "${node.data.title}" Node?`,
+        `Are you sure you want to delete the internal node "${node.data.title}"?
+This action cannot be undone.`,
+      );
+
+      if (confirm) {
+        onRemove?.(node.id);
+      }
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className="cursor-move p-3 border rounded-lg bg-white text-sm hover:border-blue-400 hover:shadow-md"
+      onPointerDownCapture={handleOnPointerDownCapture}
+      className="relative cursor-move p-3 border rounded-lg bg-white text-sm hover:border-blue-400 hover:shadow-md"
     >
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs text-gray-400 font-mono">{index + 1}.</span>
-        <span className="font-medium flex-1 truncate">
-          {node.data?.title || node.id}
-        </span>
         <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
           {node.type}
         </span>
+        {/* <span className="text-xs text-gray-400 font-mono">{index + 1}.</span> */}
+        <span className="font-medium flex-1 truncate">
+          {node.data?.title || node.id}
+        </span>
+        {/* <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
+          {node.type}
+        </span> */}
+        <Button
+          size="sm"
+          role="delete-button"
+          variant="ghost"
+          palette="danger"
+          icon={<Trash2 />}
+          onClick={() => onRemove?.(node.id)}
+        />
       </div>
       <div className="space-y-1 text-xs text-gray-600">
         <div>

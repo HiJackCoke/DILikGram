@@ -1,6 +1,6 @@
 import { useBrowserEnv } from "@/hooks/useBrowserEnv";
 import { WorkflowNode } from "@/types";
-import { inferType, stringifyForDisplay } from "@/utils/workflow";
+
 import {
   closestCorners,
   DndContext,
@@ -19,13 +19,15 @@ import {
 } from "@dnd-kit/sortable";
 import { Fragment, useState } from "react";
 import GroupDataFlowView from "./VIew";
-import Button from "@/components/ui/Button";
-import { X } from "lucide-react";
 
 export default function GroupDataFlow({
   internalNodes = [],
+  onDragEnd,
+  onRemove,
 }: {
   internalNodes?: WorkflowNode[];
+  onDragEnd?: (items: WorkflowNode[]) => void;
+  onRemove?: (items: WorkflowNode[]) => void;
 }) {
   const hasMouseSupport = useBrowserEnv(({ window }) => {
     const hasPointerFine = window.matchMedia("(pointer: fine)").matches;
@@ -54,12 +56,13 @@ export default function GroupDataFlow({
     const { id: overId } = over;
 
     if (activeId === overId) return;
-    setItems((items) => {
-      const oldIndex = items.findIndex(({ id }) => id === activeId);
-      const newIndex = items.findIndex(({ id }) => id === overId);
+    const oldIndex = items.findIndex(({ id }) => id === activeId);
+    const newIndex = items.findIndex(({ id }) => id === overId);
 
-      return arrayMove(items, oldIndex, newIndex);
-    });
+    const newItems = arrayMove(items, oldIndex, newIndex);
+    setItems(newItems);
+
+    onDragEnd?.(newItems);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -75,6 +78,13 @@ export default function GroupDataFlow({
       </div>
     );
   }
+
+  const handleRemove = (id: string) => {
+    const newItems = items.filter((item) => item.id !== id);
+
+    setItems(newItems);
+    onRemove?.(newItems);
+  };
 
   return (
     <DndContext
@@ -96,7 +106,7 @@ export default function GroupDataFlow({
         >
           {items.map((node, index) => (
             <Fragment key={node.id}>
-              <GroupDataFlowView node={node} index={index} />
+              <GroupDataFlowView node={node} onRemove={handleRemove} />
 
               {index < internalNodes.length - 1 && (
                 <div className="flex justify-center py-1 text-gray-400 text-xs">

@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import { Switch } from "@/components/ui/Switch";
-import ExecutorEditorView from "../Content/View";
+import ExecutorEditorContentView from "../Content/View";
 import ExecutorEditorDrawer from "../Drawer";
 import ExecutorEditorContent from "../Content";
 
@@ -15,6 +15,7 @@ import { ModalProps } from "@/types";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { Beaker, FlaskConical } from "lucide-react";
+import { ExecutorEditorContentProps } from "../Content/type";
 
 type ExecutorEditorModalProps = Partial<ExecutorEditorState> &
   Pick<ModalProps, "show" | "onClose"> & {
@@ -58,27 +59,26 @@ export default function ExecutorEditorModal({
     [nodeId, nodeType],
   );
 
-  // Reorder internal nodes
-  const handleReorder = (fromIndex: number, toIndex: number) => {
-    const updated = [...internalNodes];
-    const [moved] = updated.splice(fromIndex, 1);
-    updated.splice(toIndex, 0, moved);
-    setInternalNodes(updated);
+  const handleReorder: ExecutorEditorContentProps["onReorder"] = (
+    updatedItems,
+  ) => {
+    setInternalNodes(updatedItems);
 
     // Auto-save via new callback
     if (nodeId && onInternalNodesChange) {
-      onInternalNodesChange(nodeId, updated);
+      onInternalNodesChange(nodeId, updatedItems);
     }
   };
 
   // Remove node from group
-  const handleRemoveNode = (nodeIdToRemove: string) => {
-    const updated = internalNodes.filter((n) => n.id !== nodeIdToRemove);
-    setInternalNodes(updated);
+  const handleRemoveNode: ExecutorEditorContentProps["onRemoveNode"] = (
+    updatedItems,
+  ) => {
+    setInternalNodes(updatedItems);
 
     // Auto-save via new callback
     if (nodeId && onInternalNodesChange) {
-      onInternalNodesChange(nodeId, updated);
+      onInternalNodesChange(nodeId, updatedItems);
     }
   };
 
@@ -176,7 +176,7 @@ export default function ExecutorEditorModal({
 
   return (
     <Modal
-      title={<ExecutorEditorView.Title />}
+      title={<ExecutorEditorContentView.Title />}
       description={ModalDescription}
       show={show}
       onClose={onClose}

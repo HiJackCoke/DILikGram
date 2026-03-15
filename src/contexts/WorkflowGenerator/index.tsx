@@ -196,7 +196,7 @@ export function WorkflowGeneratorProvider({
           },
         );
 
-        workingNodes = normalizeServiceNodes(workingNodes);
+        // workingNodes = normalizeServiceNodes(workingNodes);
 
         workingNodes = rebuildGroupChildren(workingNodes);
         workingNodes = deduplicateNodesById(workingNodes);

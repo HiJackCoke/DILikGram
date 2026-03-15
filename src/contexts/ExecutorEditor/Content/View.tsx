@@ -10,50 +10,20 @@ import {
   Edit,
   ArrowLeft,
 } from "lucide-react";
-import type { ExecutionConfig } from "@/types/workflow";
-import type { WorkflowNodeType, WorkflowNode } from "@/types/nodes";
-import type { TestCase } from "@/types/prd";
+
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import Button from "@/components/ui/Button";
 import TestCasesTab from "./TestCasesTab";
 
 import GroupDataFlow from "./GroupDataFlow";
 
-type ExecutorEditorViewProps = {
-  isInternalNode?: boolean;
-  meta: ExecutionConfig["nodeData"];
-  nodeType: WorkflowNodeType;
-  code: string;
-  isAsync: boolean;
-  error: string | null;
-  inputData: string;
-  outputData: string | null;
-  internalNodes?: WorkflowNode[];
-  testCases: TestCase[];
-
-  onCodeChange: (code: string) => void;
-  onInputDataChange: (input: string) => void;
-  onTest: () => Promise<void>;
-  onSave: () => void;
-  onClose?: () => void;
-
-  // For test cases
-  onTestCasesChange: (cases: TestCase[]) => void;
-  onRunTest: (testCase: TestCase) => Promise<void>;
-  onRunAllTests: () => Promise<void>;
-
-  // For group nodes
-  onReorder?: (fromIndex: number, toIndex: number) => void;
-  onRemoveNode?: (nodeId: string) => void;
-  openInternalNode?: (node: WorkflowNode) => void;
-  openInternalNodePropertiesPanel?: (node: WorkflowNode) => void;
-};
+import { ExecutorEditorContentViewProps } from "./type";
 
 /**
  * Format unknown type value for display in UI
  */
 
-export default function ExecutorEditorView({
+export default function ExecutorEditorContentView({
   isInternalNode = false,
   meta,
   nodeType,
@@ -77,7 +47,7 @@ export default function ExecutorEditorView({
   openInternalNodePropertiesPanel,
   openInternalNode,
   onRemoveNode,
-}: ExecutorEditorViewProps) {
+}: ExecutorEditorContentViewProps) {
   const [activeTab, setActiveTab] = useState<"code" | "tests">("code");
 
   return (
@@ -166,39 +136,6 @@ export default function ExecutorEditorView({
                           onClick={() => openInternalNode?.(node)}
                         />
 
-                        {/* Reorder buttons */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          palette="primary"
-                          disabled={index === 0}
-                          icon={<ArrowUp />}
-                          onClick={() =>
-                            onReorder?.(index, Math.max(0, index - 1))
-                          }
-                        />
-
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          palette="primary"
-                          disabled={index === internalNodes.length - 1}
-                          icon={<ArrowDown />}
-                          onClick={() =>
-                            onReorder?.(
-                              index,
-                              Math.min(internalNodes.length - 1, index + 1),
-                            )
-                          }
-                        />
-                        {/* Remove button */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          palette="danger"
-                          icon={<X />}
-                          onClick={() => onRemoveNode?.(node.id)}
-                        />
                       </div>
                     ))
                   )}
@@ -229,7 +166,11 @@ export default function ExecutorEditorView({
                 </div>
 
                 {nodeType === "group" ? (
-                  <GroupDataFlow internalNodes={internalNodes} />
+                  <GroupDataFlow
+                    internalNodes={internalNodes}
+                    onDragEnd={onReorder}
+                    onRemove={onRemoveNode}
+                  />
                 ) : (
                   <>
                     <div className="flex items-center justify-between mb-3">
@@ -373,4 +314,4 @@ const Title = () => (
   </>
 );
 
-ExecutorEditorView.Title = Title;
+ExecutorEditorContentView.Title = Title;
