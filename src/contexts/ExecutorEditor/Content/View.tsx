@@ -1,15 +1,5 @@
 import { useState } from "react";
-import {
-  Play,
-  AlertTriangle,
-  Zap,
-  Code,
-  ArrowUp,
-  ArrowDown,
-  X,
-  Edit,
-  ArrowLeft,
-} from "lucide-react";
+import { Play, AlertTriangle, Zap, Code, Edit, ArrowLeft } from "lucide-react";
 
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import Button from "@/components/ui/Button";
@@ -44,7 +34,7 @@ export default function ExecutorEditorContentView({
   onRunTest,
   onRunAllTests,
   onReorder,
-  openInternalNodePropertiesPanel,
+  onInternalNodePropertiesSave,
   openInternalNode,
   onRemoveNode,
 }: ExecutorEditorContentViewProps) {
@@ -112,16 +102,17 @@ export default function ExecutorEditorContentView({
                         </span>
 
                         <div className="text-sm font-medium flex-1 truncate">
-                          <Button
+                          {node.data?.title || node.type}
+                          {/* <Button
                             size="sm"
                             variant="text"
                             palette="primary"
                             onClick={() =>
-                              openInternalNodePropertiesPanel?.(node)
+                              onInternalNodePropertiesUpdate?.(node)
                             }
                           >
                             {node.data?.title || node.type}
-                          </Button>
+                          </Button> */}
                         </div>
                         <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
                           {node.type}
@@ -135,7 +126,6 @@ export default function ExecutorEditorContentView({
                           icon={<Edit />}
                           onClick={() => openInternalNode?.(node)}
                         />
-
                       </div>
                     ))
                   )}
@@ -170,6 +160,7 @@ export default function ExecutorEditorContentView({
                     internalNodes={internalNodes}
                     onDragEnd={onReorder}
                     onRemove={onRemoveNode}
+                    onInternalNodePropertiesSave={onInternalNodePropertiesSave}
                   />
                 ) : (
                   <>

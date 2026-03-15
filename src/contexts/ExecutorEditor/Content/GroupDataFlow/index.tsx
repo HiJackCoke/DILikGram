@@ -19,16 +19,24 @@ import {
 } from "@dnd-kit/sortable";
 import { Fragment, useState } from "react";
 import GroupDataFlowView from "./VIew";
+import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 
 export default function GroupDataFlow({
   internalNodes = [],
   onDragEnd,
   onRemove,
+  onInternalNodePropertiesSave,
 }: {
   internalNodes?: WorkflowNode[];
   onDragEnd?: (items: WorkflowNode[]) => void;
   onRemove?: (items: WorkflowNode[]) => void;
+  onInternalNodePropertiesSave?: (
+    targetIte: string,
+    items: WorkflowNode[],
+  ) => void;
 }) {
+  const { open } = usePropertiesPanel({ onSave: handlePropertiesSave });
+
   const hasMouseSupport = useBrowserEnv(({ window }) => {
     const hasPointerFine = window.matchMedia("(pointer: fine)").matches;
 
@@ -54,13 +62,18 @@ export default function GroupDataFlow({
 
     const { id: activeId } = active;
     const { id: overId } = over;
-
     if (activeId === overId) return;
-    const oldIndex = items.findIndex(({ id }) => id === activeId);
-    const newIndex = items.findIndex(({ id }) => id === overId);
+    let newItems = [...items];
 
-    const newItems = arrayMove(items, oldIndex, newIndex);
-    setItems(newItems);
+    setItems((items) => {
+      const oldIndex = items.findIndex(({ id }) => id === activeId);
+      const newIndex = items.findIndex(({ id }) => id === overId);
+
+      const updated = arrayMove(items, oldIndex, newIndex);
+
+      newItems = updated;
+      return updated;
+    });
 
     onDragEnd?.(newItems);
   };
@@ -79,12 +92,41 @@ export default function GroupDataFlow({
     );
   }
 
-  const handleRemove = (id: string) => {
-    const newItems = items.filter((item) => item.id !== id);
+  const handleRemove = ({ id }: WorkflowNode) => {
+    let newItems = [...items];
 
-    setItems(newItems);
+    setItems((items) => {
+      const updated = items.filter((item) => item.id !== id);
+
+      newItems = updated;
+      return updated;
+    });
     onRemove?.(newItems);
   };
+
+  function handlePropertiesSave(
+    nodeId: string,
+    nodeData: WorkflowNode["data"],
+  ) {
+    let newItems = [...internalNodes];
+    setItems((prev) => {
+      const updated = prev.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...nodeData,
+            },
+          };
+        }
+        return node;
+      });
+      newItems = updated;
+      return updated;
+    });
+    onInternalNodePropertiesSave?.(nodeId, newItems);
+  }
 
   return (
     <DndContext
@@ -106,7 +148,11 @@ export default function GroupDataFlow({
         >
           {items.map((node, index) => (
             <Fragment key={node.id}>
-              <GroupDataFlowView node={node} onRemove={handleRemove} />
+              <GroupDataFlowView
+                node={node}
+                onRemoveButtonClick={handleRemove}
+                onOpenPropertiesButtonClick={open}
+              />
 
               {index < internalNodes.length - 1 && (
                 <div className="flex justify-center py-1 text-gray-400 text-xs">

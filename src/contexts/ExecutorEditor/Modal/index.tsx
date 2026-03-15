@@ -43,9 +43,9 @@ export default function ExecutorEditorModal({
   onClose,
 }: ExecutorEditorModalProps) {
   const { isSimulated, setIsSimulated } = useWorkflowExecution();
-  const { open } = usePropertiesPanel({
-    onSave: handleInternalNodePropertiesSave,
-  });
+  // const { open } = usePropertiesPanel({
+  //   onSave: handleInternalNodePropertiesSave,
+  // });
 
   const [currentInternalNode, setCurrentInternalNode] =
     useState<WorkflowNode | null>(null);
@@ -82,33 +82,14 @@ export default function ExecutorEditorModal({
     }
   };
 
-  function handleInternalNodePropertiesSave(
+  const handleInternalNodePropertiesSave = (
     nodeId: string,
-    nodeData: WorkflowNode["data"],
-  ) {
-    let updatedInternalNodes = [...internalNodes];
-    setInternalNodes((prev) => {
-      const updated = prev.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              ...nodeData,
-            },
-          };
-        }
+    updatedItems: WorkflowNode[],
+  ) => {
+    setInternalNodes(updatedItems);
 
-        return node;
-      });
-
-      updatedInternalNodes = updated;
-
-      return updated;
-    });
-
-    onInternalNodesChange?.(nodeId, updatedInternalNodes);
-  }
+    onInternalNodesChange?.(nodeId, updatedItems);
+  };
 
   // Handle internal node save
   const handleInternalNodeSave = (config: ExecutionConfig) => {
@@ -193,8 +174,8 @@ export default function ExecutorEditorModal({
           openInternalNode={
             nodeType === "group" ? setCurrentInternalNode : undefined
           }
-          openInternalNodePropertiesPanel={
-            nodeType === "group" ? open : undefined
+          onInternalNodePropertiesSave={
+            nodeType === "group" ? handleInternalNodePropertiesSave : undefined
           }
           onSave={handleSave}
           onClose={onClose}

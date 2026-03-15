@@ -9,7 +9,10 @@ type CoreProps = {
   onReorder?: (updatedItems: WorkflowNode[]) => void;
   onRemoveNode?: (updatedItems: WorkflowNode[]) => void;
   openInternalNode?: (node: WorkflowNode) => void;
-  openInternalNodePropertiesPanel?: (node: WorkflowNode) => void;
+  onInternalNodePropertiesSave?: (
+    targetId: string,
+    updatedItems: WorkflowNode[],
+  ) => void;
   onClose?: () => void;
 };
 

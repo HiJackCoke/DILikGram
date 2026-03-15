@@ -22,7 +22,7 @@ export default function ExecutorEditorContent({
   onReorder,
   onRemoveNode,
   openInternalNode,
-  openInternalNodePropertiesPanel,
+  onInternalNodePropertiesSave,
   onSave,
   onClose,
 }: ExecutorEditorContentProps) {
@@ -265,7 +265,7 @@ export default function ExecutorEditorContent({
       onReorder={onReorder}
       onRemoveNode={onRemoveNode}
       openInternalNode={openInternalNode}
-      openInternalNodePropertiesPanel={openInternalNodePropertiesPanel}
+      onInternalNodePropertiesSave={onInternalNodePropertiesSave}
     />
   );
 }

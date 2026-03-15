@@ -4,17 +4,19 @@ import { WorkflowNode } from "@/types";
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { PointerEventHandler } from "react";
 
 export default function GroupDataFlowView({
   node,
 
-  onRemove,
+  onRemoveButtonClick,
+  onOpenPropertiesButtonClick,
 }: {
   node: WorkflowNode;
 
-  onRemove?: (id: string) => void;
+  onRemoveButtonClick?: (node: WorkflowNode) => void;
+  onOpenPropertiesButtonClick?: (node: WorkflowNode) => void;
 }) {
   const isClientRendered = useBrowserEnv(({ window }) => !!window, false);
 
@@ -48,6 +50,11 @@ export default function GroupDataFlowView({
   const handleOnPointerDownCapture: PointerEventHandler = async (e) => {
     const target = e.target as HTMLElement;
 
+    if (target.role === "open-properties-button") {
+      onOpenPropertiesButtonClick?.(node);
+      return;
+    }
+
     if (target.role === "delete-button") {
       const confirm = await dialog.confirm(
         `Delete "${node.data.title}" Node?`,
@@ -56,19 +63,21 @@ This action cannot be undone.`,
       );
 
       if (confirm) {
-        onRemove?.(node.id);
+        onRemoveButtonClick?.(node);
       }
+
+      return;
     }
   };
 
   return (
     <div
+      className="relative cursor-move p-3 border rounded-lg bg-white text-sm hover:border-blue-400 hover:shadow-md"
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
       onPointerDownCapture={handleOnPointerDownCapture}
-      className="relative cursor-move p-3 border rounded-lg bg-white text-sm hover:border-blue-400 hover:shadow-md"
     >
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
@@ -81,14 +90,25 @@ This action cannot be undone.`,
         {/* <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
           {node.type}
         </span> */}
-        <Button
-          size="sm"
-          role="delete-button"
-          variant="ghost"
-          palette="danger"
-          icon={<Trash2 />}
-          onClick={() => onRemove?.(node.id)}
-        />
+
+        <div className="flex items-center">
+          <Button
+            size="sm"
+            variant="ghost"
+            role="open-properties-button"
+            palette="primary"
+            icon={<Edit />}
+            // onClick={() => onOpenPropertiesButtonClick?.(node)}
+          />
+          <Button
+            size="sm"
+            role="delete-button"
+            variant="ghost"
+            palette="danger"
+            icon={<Trash2 />}
+            // onClick={() => onRemoveButtonClick?.(node)}
+          />
+        </div>
       </div>
       <div className="space-y-1 text-xs text-gray-600">
         <div>
