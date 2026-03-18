@@ -110,33 +110,32 @@ export function createDefaultNode(node: Partial<WorkflowNode>) {
   return newNode;
 }
 
-export const setInternalNodesInGroupNode = (  nodeId: string,
-  internalNodes: WorkflowNode[],) => (
-  nodes: WorkflowNode[],
+export const setInternalNodesInGroupNode =
+  (nodeId: string, internalNodes: WorkflowNode[]) =>
+  (nodes: WorkflowNode[]) => {
+    return nodes.map((node) => {
+      const isInternalNode = (node.data as GroupNodeData).groups?.some(
+        (internalNode) => internalNode.id === nodeId,
+      );
+      if (node.id === nodeId && node.type === "group") {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            groups: internalNodes,
+          },
+        };
+      } else if (isInternalNode) {
+        console.log(internalNodes);
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            groups: internalNodes,
+          },
+        };
+      }
 
-) => {
-  return nodes.map((node) => {
-    const isInternalNode = (node.data as GroupNodeData).groups?.some(
-      (internalNode) => internalNode.id === nodeId,
-    );
-    if (node.id === nodeId && node.type === "group") {
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          groups: internalNodes,
-        },
-      };
-    } else if (isInternalNode) {
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          groups: internalNodes,
-        },
-      };
-    }
-
-    return node;
-  });
-}
+      return node;
+    });
+  };

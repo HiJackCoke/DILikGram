@@ -1,15 +1,12 @@
-import { ExecutionConfig, WorkflowNode, WorkflowNodeType } from "@/types";
+import { ExecutionConfig, WorkflowNodeType } from "@/types";
 import { TestCase } from "@/types/prd";
 import { GroupDataFlowProps } from "./GroupDataFlow/type";
 
-type CoreProps = GroupDataFlowProps & {
-  isInternalNode?: boolean;
+type CoreProps = Omit<GroupDataFlowProps, "rootInputData"> & {
+  isVisibleTypeHint?: boolean;
+  isVisibleTestExecutor?: boolean;
 
   nodeType: WorkflowNodeType;
-
-
-
-  openInternalNode?: (node: WorkflowNode) => void;
 
   onClose?: () => void;
 };
@@ -20,12 +17,12 @@ export type ExecutorEditorContentViewProps = CoreProps & {
   isAsync: boolean;
   error: string | null;
   inputData: string;
-  outputData: string | null;
+  outputData?: string | null;
   testCases: TestCase[];
 
   onCodeChange: (code: string) => void;
   onInputDataChange: (input: string) => void;
-  onTest: () => Promise<void>;
+  onRunCode: () => Promise<void>;
   onSave: () => void;
 
   // For test cases
@@ -40,4 +37,5 @@ export type ExecutorEditorContentProps = CoreProps & {
   isSimulated?: boolean;
 
   onSave: (config: ExecutionConfig) => void;
+  onRunCode?: (meta: ExecutionConfig["nodeData"]) => void;
 };

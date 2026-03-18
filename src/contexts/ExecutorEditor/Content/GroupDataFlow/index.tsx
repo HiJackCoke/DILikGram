@@ -1,5 +1,5 @@
 import { useBrowserEnv } from "@/hooks/useBrowserEnv";
-import { WorkflowNode } from "@/types";
+import { ExecutionConfig, WorkflowNode } from "@/types";
 
 import {
   closestCorners,
@@ -18,15 +18,19 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { Fragment, useState } from "react";
-import GroupDataFlowView from "./VIew";
+import GroupDataFlowView from "./View";
 import { usePropertiesPanel } from "@/contexts/PropertiesPanel";
 import { GroupDataFlowProps } from "./type";
+import ExecutorEditorContent from "..";
+import { flushSync } from "react-dom";
 
 export default function GroupDataFlow({
   internalNodes = [],
+  rootInputData,
   onReorder,
   onRemove,
   onInternalNodePropertiesSave,
+  onInternalNodeConfigSave,
 }: GroupDataFlowProps) {
   const { open } = usePropertiesPanel({ onSave: handlePropertiesSave });
 
@@ -48,7 +52,103 @@ export default function GroupDataFlow({
     }),
   );
 
-  const [items, setItems] = useState(internalNodes);
+  const [items, setItems] = useState(
+    internalNodes.map((node, index) => {
+      if (index === 0) {
+        return getUpdatedNodeData(node, {
+          nodeData: {
+            inputData: rootInputData,
+            outputData: node.data.execution?.config?.nodeData?.outputData,
+          },
+        });
+      }
+      if (index + 1 === internalNodes.length) {
+        return getUpdatedNodeData(node, {
+          nodeData: {
+            ...node.data.execution?.config?.nodeData,
+            inputData:
+              internalNodes[index - 1]?.data.execution?.config?.nodeData
+                ?.outputData,
+          },
+        });
+      }
+      return node;
+    }),
+  );
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function getUpdatedNodeData(node: WorkflowNode, config: ExecutionConfig) {
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        execution: {
+          ...node.data.execution,
+          config: {
+            ...node.data.execution?.config,
+            ...config,
+            nodeData: {
+              ...node.data.execution?.config?.nodeData,
+              ...config.nodeData,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleOnRunCode =
+    (index: number) => (nodeData: ExecutionConfig["nodeData"]) => {
+      setItems((nodes) =>
+        nodes.map((node, itemIndex) => {
+          if (index === itemIndex) {
+            return getUpdatedNodeData(node, {
+              nodeData: {
+                inputData:
+                  itemIndex === 0
+                    ? rootInputData
+                    : nodes[index - 1]?.data.execution?.config?.nodeData
+                        ?.outputData,
+                outputData: nodeData?.outputData,
+              },
+            });
+          } else if (itemIndex === 0) {
+            return getUpdatedNodeData(node, {
+              nodeData: {
+                inputData: rootInputData,
+              },
+            });
+          }
+
+          if (index + 1 === itemIndex) {
+            return getUpdatedNodeData(node, {
+              nodeData: {
+                ...node.data.execution?.config?.nodeData,
+                inputData: nodeData?.outputData,
+              },
+            });
+          }
+
+          return getUpdatedNodeData(node, {
+            nodeData: {
+              outputData: nodeData?.outputData,
+            },
+          });
+        }),
+      );
+    };
 
   const updateSorting = ({ active, over }: DragEndEvent) => {
     if (!over) return;
@@ -101,32 +201,68 @@ export default function GroupDataFlow({
     nodeId: string,
     nodeData: WorkflowNode["data"],
   ) {
-    let newItems = [...internalNodes];
-    setItems((prev) => {
-      const updated = prev.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              ...nodeData,
-            },
-          };
-        }
-        return node;
+    let newItems = [...items];
+
+    flushSync(() => {
+      setItems((nodes) => {
+        const updated = nodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                ...nodeData,
+              },
+            };
+          }
+          return node;
+        });
+        newItems = updated;
+
+        return updated;
       });
-      newItems = updated;
-      return updated;
     });
+
     onInternalNodePropertiesSave?.(nodeId, newItems);
   }
+
+  const handleSave = (nodeId: string) => (config: ExecutionConfig) => {
+    let newItems = [...items];
+
+    flushSync(() => {
+      setItems((nodes) => {
+        const updated = nodes.map((node, index) => {
+          if (node.id === nodeId) {
+            return getUpdatedNodeData(node, {
+              ...config,
+              nodeData: {
+                inputData:
+                  index === 0
+                    ? rootInputData
+                    : nodes[index - 1]?.data.execution?.config?.nodeData
+                        ?.outputData,
+              },
+            });
+          }
+
+          return node;
+        });
+
+        newItems = updated;
+
+        return updated;
+      });
+    });
+
+    toggleExpand(nodeId);
+    onInternalNodeConfigSave?.(nodeId, newItems);
+  };
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
       autoScroll={false}
-      onDragStart={console.log}
       // onDragMove={onDragMove}
       onDragEnd={handleDragEnd}
     >
@@ -139,21 +275,46 @@ export default function GroupDataFlow({
           items={items?.map((item) => item.id)}
           strategy={rectSortingStrategy}
         >
-          {items.map((node, index) => (
-            <Fragment key={node.id}>
-              <GroupDataFlowView
-                node={node}
-                onRemoveButtonClick={handleRemove}
-                onOpenPropertiesButtonClick={open}
-              />
+          {items.map((node, index) => {
+            const isExpanded = expandedIds.has(node.id);
+            const outputData =
+              node.data.execution?.config?.nodeData?.outputData;
 
-              {index < internalNodes.length - 1 && (
-                <div className="flex justify-center py-1 text-gray-400 text-xs">
-                  ↓
-                </div>
-              )}
-            </Fragment>
-          ))}
+            return (
+              <Fragment key={node.id}>
+                <GroupDataFlowView
+                  node={node}
+                  isExpanded={isExpanded}
+                  expandedContent={
+                    <ExecutorEditorContent
+                      isVisibleTypeHint={false}
+                      isVisibleTestExecutor={false}
+                      nodeType={node.type!}
+                      config={node.data.execution?.config}
+                      isSimulated={false}
+                      onSave={handleSave(node.id)}
+                      onClose={() => toggleExpand(node.id)}
+                      onRunCode={handleOnRunCode(index)}
+                    />
+                  }
+                  onToggleExpand={() => toggleExpand(node.id)}
+                  onRemoveButtonClick={handleRemove}
+                  onOpenPropertiesButtonClick={open}
+                />
+
+                {index < items.length - 1 && (
+                  <div className="flex flex-col items-center py-1 text-gray-400 text-xs gap-0.5">
+                    {isExpanded && outputData != null && (
+                      <code className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded font-mono max-w-[90%] truncate">
+                        {JSON.stringify(outputData).slice(0, 50)}
+                      </code>
+                    )}
+                    <span>↓</span>
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
         </SortableContext>
       </div>
     </DndContext>

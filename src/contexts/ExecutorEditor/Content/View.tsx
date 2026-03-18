@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, AlertTriangle, Zap, Code, Edit, ArrowLeft } from "lucide-react";
+import { Play, AlertTriangle, Zap, Code } from "lucide-react";
 
 import { inferType, stringifyForDisplay } from "@/utils/workflow";
 import Button from "@/components/ui/Button";
@@ -14,7 +14,8 @@ import { ExecutorEditorContentViewProps } from "./type";
  */
 
 export default function ExecutorEditorContentView({
-  isInternalNode = false,
+  isVisibleTypeHint = true,
+  isVisibleTestExecutor = true,
   meta,
   nodeType,
   code,
@@ -27,7 +28,7 @@ export default function ExecutorEditorContentView({
 
   onCodeChange,
   onInputDataChange,
-  onTest,
+  onRunCode,
   onSave,
   onClose,
   onTestCasesChange,
@@ -35,7 +36,8 @@ export default function ExecutorEditorContentView({
   onRunAllTests,
   onReorder,
   onInternalNodePropertiesSave,
-  openInternalNode,
+
+  onInternalNodeConfigSave,
   onRemove,
 }: ExecutorEditorContentViewProps) {
   const [activeTab, setActiveTab] = useState<"code" | "tests">("code");
@@ -80,87 +82,41 @@ export default function ExecutorEditorContentView({
         {/* Code Tab Content */}
         {activeTab === "code" && (
           <>
-            {/* Internal Nodes Management (Group nodes only, not shown when editing internal node) */}
-            {nodeType === "group" && internalNodes && (
-              <section>
-                <h3 className="text-lg font-medium mb-3">
-                  Internal Nodes ({internalNodes.length})
-                </h3>
-                <div className="space-y-2 border rounded-lg p-3 bg-gray-50 max-h-[200px] overflow-y-auto">
-                  {internalNodes.length === 0 ? (
-                    <p className="text-sm text-gray-400 italic">
-                      No internal nodes
-                    </p>
-                  ) : (
-                    internalNodes.map((node, index) => (
-                      <div
-                        key={node.id}
-                        className="flex items-center gap-2 px-3 py-2 bg-white rounded border border-gray-200"
-                      >
-                        <span className="text-xs text-gray-400 font-mono w-6">
-                          {index + 1}.
-                        </span>
-
-                        <div className="text-sm font-medium flex-1 truncate">
-                          {node.data?.title || node.type}
-                          {/* <Button
-                            size="sm"
-                            variant="text"
-                            palette="primary"
-                            onClick={() =>
-                              onInternalNodePropertiesUpdate?.(node)
-                            }
-                          >
-                            {node.data?.title || node.type}
-                          </Button> */}
-                        </div>
-                        <span className="text-xs text-gray-400 uppercase px-2 py-0.5 bg-gray-100 rounded">
-                          {node.type}
-                        </span>
-
-                        {/* Edit button */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          palette="primary"
-                          icon={<Edit />}
-                          onClick={() => openInternalNode?.(node)}
-                        />
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-            )}
-
             {/* Code Editor + Test Panel */}
             <section className="flex h-full">
               {/* Editor */}
-              <div className="flex-1 flex flex-col py-6 pr-6 border-r">
+              <div
+                className={`flex-1 flex flex-col py-6  ${isVisibleTestExecutor ? "border-r pr-6" : ""} `}
+              >
                 {/* Type Hints - always shown */}
-                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1.5">
-                  <div className="text-gray-700">
-                    <span className="font-semibold">Input Type:</span>{" "}
-                    <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
-                      {meta
-                        ? inferType(stringifyForDisplay(meta.inputData))
-                        : "null"}
-                    </code>
+                {isVisibleTypeHint && (
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1.5">
+                    <div className="text-gray-700">
+                      <span className="font-semibold">Input Type:</span>{" "}
+                      <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
+                        {meta?.inputData
+                          ? inferType(meta.inputData)
+                          : "undefined"}
+                      </code>
+                    </div>
+                    <div className="text-gray-700">
+                      <span className="font-semibold">Output Type:</span>{" "}
+                      <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
+                        {meta?.outputData
+                          ? inferType(meta.outputData)
+                          : "undefined"}
+                      </code>
+                    </div>
                   </div>
-                  <div className="text-gray-700">
-                    <span className="font-semibold">Output Type:</span>{" "}
-                    <code className="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded whitespace-pre-wrap">
-                      {meta ? inferType(meta.outputData) : "null"}
-                    </code>
-                  </div>
-                </div>
-
+                )}
                 {nodeType === "group" ? (
                   <GroupDataFlow
                     internalNodes={internalNodes}
+                    rootInputData={meta?.inputData}
                     onReorder={onReorder}
                     onRemove={onRemove}
                     onInternalNodePropertiesSave={onInternalNodePropertiesSave}
+                    onInternalNodeConfigSave={onInternalNodeConfigSave}
                   />
                 ) : (
                   <>
@@ -217,42 +173,60 @@ export default function ExecutorEditorContentView({
                     )}
                   </>
                 )}
+
+                {!isVisibleTestExecutor && activeTab === "code" && (
+                  <div className="mt-6">
+                    <Button
+                      fullWidth
+                      palette="success"
+                      icon={<Play />}
+                      disabled={!!error}
+                      onClick={onRunCode}
+                    >
+                      Run Test
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Test Panel */}
-              <div className="w-80 flex flex-col py-6 pl-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  Test Executor
-                </h3>
+              {isVisibleTestExecutor && (
+                <div className="w-80 flex flex-col py-6 pl-6">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">
+                    Test Executor
+                  </h3>
 
-                <label className="text-xs text-gray-600 mb-2">
-                  Input Data (JSON)
-                </label>
-                <textarea
-                  value={inputData}
-                  onChange={(e) => onInputDataChange(e.target.value)}
-                  className="h-24 p-3 font-mono text-xs border rounded-lg resize-none mb-3"
-                  placeholder='{"key": "value"}'
-                />
+                  <label className="text-xs text-gray-600 mb-2">
+                    Input Data (JSON)
+                  </label>
+                  <textarea
+                    value={inputData}
+                    onChange={(e) => onInputDataChange(e.target.value)}
+                    className="h-24 p-3 font-mono text-xs border rounded-lg resize-none mb-3"
+                    placeholder='{"key": "value"}'
+                  />
 
-                <Button
-                  palette="success"
-                  icon={<Play />}
-                  disabled={!!error}
-                  onClick={onTest}
-                >
-                  Run Test
-                </Button>
+                  <Button
+                    palette="success"
+                    icon={<Play />}
+                    disabled={!!error}
+                    onClick={onRunCode}
+                  >
+                    Run Test
+                  </Button>
 
-                {outputData && (
-                  <>
-                    <label className="text-xs text-gray-600 mb-2">Output</label>
-                    <div className="flex-1 p-3 font-mono text-xs bg-gray-50 border rounded-lg overflow-auto">
-                      <pre className="whitespace-pre-wrap">{outputData}</pre>
-                    </div>
-                  </>
-                )}
-              </div>
+                  {outputData && (
+                    <>
+                      <label className="text-xs text-gray-600 mt-3 mb-2">
+                        Output Data (JSON)
+                      </label>
+                      <div className="flex-1 p-3 font-mono text-xs bg-gray-50 border rounded-lg overflow-auto">
+                        <pre className="whitespace-pre-wrap">{outputData}</pre>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </section>
           </>
         )}
@@ -270,21 +244,10 @@ export default function ExecutorEditorContentView({
 
       {/* Footer - only for Modal context */}
 
-      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
-        {isInternalNode ? (
-          <Button
-            palette="neutral"
-            variant="ghost"
-            icon={<ArrowLeft />}
-            onClick={onClose}
-          >
-            Back to Group
-          </Button>
-        ) : (
-          <Button palette="neutral" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-        )}
+      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-lg">
+        <Button palette="neutral" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
 
         <Button
           palette="primary"

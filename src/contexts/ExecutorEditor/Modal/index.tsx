@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import { Switch } from "@/components/ui/Switch";
 import ExecutorEditorContentView from "../Content/View";
-import ExecutorEditorDrawer from "../Drawer";
+
 import ExecutorEditorContent from "../Content";
 
 import type { ExecutionConfig } from "@/types/workflow";
@@ -43,12 +43,6 @@ export default function ExecutorEditorModal({
   onClose,
 }: ExecutorEditorModalProps) {
   const { isSimulated, setIsSimulated } = useWorkflowExecution();
-  // const { open } = usePropertiesPanel({
-  //   onSave: handleInternalNodePropertiesSave,
-  // });
-
-  const [currentInternalNode, setCurrentInternalNode] =
-    useState<WorkflowNode | null>(null);
 
   const [internalNodes, setInternalNodes] = useState<WorkflowNode[]>(
     initialInternalNodes || [],
@@ -92,40 +86,13 @@ export default function ExecutorEditorModal({
   };
 
   // Handle internal node save
-  const handleInternalNodeSave = (config: ExecutionConfig) => {
-    if (!currentInternalNode) return;
+  const handleInternalNodeSave = (
+    nodeId: string,
+    updatedItems: WorkflowNode[],
+  ) => {
+    setInternalNodes(updatedItems);
 
-    let updatedInternalNodes = [...internalNodes];
-
-    setInternalNodes((prev) => {
-      const updated = prev.map((node) => {
-        if (node.id === currentInternalNode.id) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              execution: {
-                ...node.data.execution,
-                config,
-              },
-            },
-          };
-        }
-        return node;
-      });
-
-      updatedInternalNodes = updated;
-
-      return updated;
-    });
-
-    // Auto-save via callback
-    if (nodeId && onInternalNodesChange) {
-      onInternalNodesChange(nodeId, updatedInternalNodes);
-    }
-
-    // Close drawer after save
-    setCurrentInternalNode(null);
+    onInternalNodesChange?.(nodeId, updatedItems);
   };
 
   const handleSave = (config: ExecutionConfig) => {
@@ -171,28 +138,16 @@ export default function ExecutorEditorModal({
           internalNodes={nodeType === "group" ? internalNodes : undefined}
           onReorder={nodeType === "group" ? handleReorder : undefined}
           onRemove={nodeType === "group" ? handleRemoveNode : undefined}
-          openInternalNode={
-            nodeType === "group" ? setCurrentInternalNode : undefined
-          }
           onInternalNodePropertiesSave={
             nodeType === "group" ? handleInternalNodePropertiesSave : undefined
+          }
+          onInternalNodeConfigSave={
+            nodeType === "group" ? handleInternalNodeSave : undefined
           }
           onSave={handleSave}
           onClose={onClose}
         />
       )}
-
-      {/* Overlay layer - drawer slides in from right */}
-
-      <ExecutorEditorDrawer
-        show={!!currentInternalNode}
-        nodeId={currentInternalNode?.id}
-        nodeType={currentInternalNode?.type}
-        config={currentInternalNode?.data.execution?.config}
-        parentTitle={description}
-        onSave={handleInternalNodeSave}
-        onClose={() => setCurrentInternalNode(null)}
-      />
     </Modal>
   );
 }

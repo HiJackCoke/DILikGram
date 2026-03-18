@@ -13,7 +13,8 @@ import type { TestCase } from "@/types/prd";
 import { ExecutorEditorContentProps } from "./type";
 
 export default function ExecutorEditorContent({
-  isInternalNode = false,
+  isVisibleTypeHint = true,
+  isVisibleTestExecutor = true,
   nodeType,
   config,
   initialTestCases,
@@ -21,8 +22,10 @@ export default function ExecutorEditorContent({
   internalNodes,
   onReorder,
   onRemove,
-  openInternalNode,
+
   onInternalNodePropertiesSave,
+  onInternalNodeConfigSave,
+  onRunCode,
   onSave,
   onClose,
 }: ExecutorEditorContentProps) {
@@ -33,7 +36,9 @@ export default function ExecutorEditorContent({
   const [inputData, setInputData] = useState(() =>
     stringifyForDisplay(config?.nodeData?.inputData),
   );
-  const [outputData, setOutputData] = useState<string | null>(null);
+  const [outputData, setOutputData] = useState<string | null | undefined>(
+    undefined,
+  );
   const [testCases, setTestCases] = useState<TestCase[]>(
     () => initialTestCases ?? [],
   );
@@ -60,7 +65,7 @@ export default function ExecutorEditorContent({
   // Effects
   useEffect(() => {
     setCode(config?.functionCode || "");
-    setOutputData(null);
+    // setOutputData(null);
     setCompileError(null);
   }, [config?.functionCode]);
 
@@ -69,7 +74,7 @@ export default function ExecutorEditorContent({
   }, [validationError]);
 
   // Handlers
-  const handleTest = async () => {
+  const handleOnRunCode = async () => {
     try {
       const testConfig: ExecutionConfig = {
         functionCode: code,
@@ -88,28 +93,38 @@ export default function ExecutorEditorContent({
       const mockData = config?.nodeData?.outputData;
 
       // Execute with simulation mode
+
       const result = await executeFunction(
         fn,
-        input,
+        isVisibleTestExecutor ? input : config?.nodeData?.inputData,
         30000,
         isSimulation,
         mockData,
       );
 
       if (!result.success) {
-        setOutputData(`Error: ${result.error?.message || "Execution failed"}`);
+        const newOutputData = `Error: ${result.error?.message || "Execution failed"}`;
+        setOutputData(newOutputData);
+
+        onRunCode?.({ outputData: newOutputData, inputData: meta?.inputData });
         return;
       }
 
-      const outputData = JSON.stringify(result.data, null, 2);
-      setOutputData(outputData);
-
-      setMeta({
+      const newOutputData = JSON.stringify(result.data, null, 2);
+      const newMeta = {
         inputData: input,
         outputData: result.data,
-      });
+      };
+
+      setOutputData(newOutputData);
+      setMeta(newMeta);
+
+      onRunCode?.(newMeta);
     } catch (error) {
-      setOutputData(`Error: ${(error as Error).message}`);
+      const newOutputData = `Error: ${(error as Error).message}`;
+      setOutputData(newOutputData);
+
+      onRunCode?.({ outputData: newOutputData, inputData: meta?.inputData });
     }
   };
 
@@ -244,7 +259,8 @@ export default function ExecutorEditorContent({
 
   return (
     <ExecutorEditorContentView
-      isInternalNode={isInternalNode}
+      isVisibleTypeHint={isVisibleTypeHint}
+      isVisibleTestExecutor={isVisibleTestExecutor}
       meta={meta}
       nodeType={nodeType}
       code={code}
@@ -255,7 +271,7 @@ export default function ExecutorEditorContent({
       testCases={testCases}
       onCodeChange={setCode}
       onInputDataChange={setInputData}
-      onTest={handleTest}
+      onRunCode={handleOnRunCode}
       onSave={handleSave}
       onClose={onClose}
       onTestCasesChange={setTestCases}
@@ -264,8 +280,8 @@ export default function ExecutorEditorContent({
       internalNodes={internalNodes}
       onReorder={onReorder}
       onRemove={onRemove}
-      openInternalNode={openInternalNode}
       onInternalNodePropertiesSave={onInternalNodePropertiesSave}
+      onInternalNodeConfigSave={onInternalNodeConfigSave}
     />
   );
 }
