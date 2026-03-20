@@ -1,9 +1,7 @@
 import type { WorkflowNode } from "@/types";
 import type {
   ValidationResult,
-  ValidationContext,
 } from "../../../types/ai/validators";
-import type { ServiceNodeData } from "@/types/nodes";
 import { getExecutionConfig } from "../utils/validationUtils";
 
 interface RuntimeIssue {
@@ -56,10 +54,19 @@ export async function validateServiceNodeRuntime(
     const functionCode = config?.functionCode?.trim();
     const outputData = config?.nodeData?.outputData;
 
-    // Only validate nodes that have both functionCode AND outputData to compare against
-    if (!functionCode || outputData === undefined) continue;
+    // Only validate nodes that have both functionCode AND a non-null outputData to compare against.
+    // null outputData means the service node hasn't been given mock data yet (e.g. DELETE 204).
+    // undefined → caught by serviceNodeSimulation validator. null → skip (no mock data to compare).
+    if (!functionCode || outputData === undefined || outputData === null) continue;
 
     const inputData = config?.nodeData?.inputData ?? null;
+
+    // Skip runtime validation when inputData is null.
+    // Self-contained service nodes (GET /resource) have intentional null inputData.
+    // Service nodes that need inputData but have null (e.g. DELETE with body template)
+    // are caught by the pipeline validator instead — no double-reporting needed.
+    if (inputData === null) continue;
+
     const sandboxResult = await runSandbox(functionCode, inputData, outputData);
 
     if (!sandboxResult.ok) {
@@ -102,61 +109,3 @@ export async function validateServiceNodeRuntime(
   };
 }
 
-/** Repair: AI에게 실행 결과와 기대 타입을 알려주고 functionCode 수정 요청 */
-export async function repairServiceNodeRuntime(
-  context: ValidationContext,
-): Promise<WorkflowNode[]> {
-  let workingNodes = [...context.nodes];
-  const result = await validateServiceNodeRuntime(workingNodes);
-  if (result.valid) return workingNodes;
-
-  const issues = result.metadata?.issues as RuntimeIssue[] | undefined;
-  if (!issues?.length) return workingNodes;
-
-  for (const { node, issue, details } of issues) {
-    const config = getExecutionConfig(node);
-    const outputData = config?.nodeData?.outputData;
-    const data = node.data as ServiceNodeData;
-
-    const fixPrompt =
-      `CRITICAL: Service node "${data.title ?? "Untitled"}" (id: ${node.id}) has a functionCode runtime issue.\n\n` +
-      `Issue: ${issue} — ${details}\n\n` +
-      `Current functionCode:\n\`\`\`javascript\n${config?.functionCode ?? "(empty)"}\n\`\`\`\n\n` +
-      `Expected outputData type:\n${JSON.stringify(outputData, null, 2)}\n\n` +
-      `REQUIREMENT: The functionCode MUST return an object with at least these top-level keys: ` +
-      `${[...topLevelKeys(outputData)].join(", ")}\n\n` +
-      `FIX: Rewrite the functionCode so that:\n` +
-      `1. It is a valid async function body (no "async function" wrapper)\n` +
-      `2. It uses fetch to call the API\n` +
-      `3. It returns await response.json() (which should match the outputData structure)\n` +
-      `4. It has proper error handling with try/catch\n` +
-      `5. The return value's top-level keys include: ${[...topLevelKeys(outputData)].join(", ")}`;
-
-    const editResult = await context.updateWorkflowAction(
-      node.id,
-      fixPrompt,
-      workingNodes,
-    );
-
-    if (editResult.nodes.update?.length) {
-      editResult.nodes.update.forEach((update) => {
-        const idx = workingNodes.findIndex((n) => n.id === update.id);
-        if (idx >= 0) {
-          workingNodes[idx] = {
-            ...workingNodes[idx],
-            data: { ...workingNodes[idx].data, ...update.data },
-            parentNode: update.parentNode || workingNodes[idx].parentNode,
-          };
-        }
-      });
-    }
-    if (editResult.nodes.create?.length)
-      workingNodes = [...workingNodes, ...editResult.nodes.create];
-    if (editResult.nodes.delete?.length) {
-      const del = new Set(editResult.nodes.delete);
-      workingNodes = workingNodes.filter((n) => !del.has(n.id));
-    }
-  }
-
-  return workingNodes;
-}

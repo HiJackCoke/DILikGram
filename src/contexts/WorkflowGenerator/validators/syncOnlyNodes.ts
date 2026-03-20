@@ -89,11 +89,11 @@ You MUST update functionCode to be synchronous:
 3. functionCode should only contain pure boolean logic using inputData fields`;
     }
 
-    const editResult = await context.updateWorkflowAction(
-      id,
-      fixPrompt,
-      workingNodes,
-    );
+    const editResult = await context.updateWorkflowAction({
+      targetNodeIds: [id],
+      prompt: fixPrompt,
+      nodes: workingNodes,
+    });
 
     // Apply updates
     if (editResult.nodes.update?.length) {

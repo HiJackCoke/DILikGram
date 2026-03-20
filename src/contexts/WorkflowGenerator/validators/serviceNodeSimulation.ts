@@ -67,11 +67,11 @@ IMPORTANT:
 
 Set the field now.`;
 
-    const editResult = await context.updateWorkflowAction(
-      node.id,
-      fixPrompt,
-      workingNodes,
-    );
+    const editResult = await context.updateWorkflowAction({
+      targetNodeIds: [node.id],
+      prompt: fixPrompt,
+      nodes: workingNodes,
+    });
 
     if (editResult.nodes.update?.length) {
       editResult.nodes.update.forEach((update) => {

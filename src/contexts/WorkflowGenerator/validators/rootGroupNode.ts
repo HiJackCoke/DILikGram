@@ -64,11 +64,11 @@ export async function repairRootGroupNodes(
     for (const groupNode of rootGroupNodes) {
       const fixPrompt = `The GroupNode "${groupNode.data.title ?? "Untitled"}" (id: ${groupNode.id}) is a direct child of Start, which is invalid. GroupNodes require input data but Start provides none. Insert a Task node before this GroupNode to initialize the required data (e.g., { date, tasks: [] }). The Task node should have no parentNode (root), and the GroupNode should have the Task as its parentNode.`;
 
-      const editResult = await context.updateWorkflowAction(
-        groupNode.id,
-        fixPrompt,
-        workingNodes,
-      );
+      const editResult = await context.updateWorkflowAction({
+        targetNodeIds: [groupNode.id],
+        prompt: fixPrompt,
+        nodes: workingNodes,
+      });
 
       if (editResult.nodes.create?.length) {
         workingNodes = [...workingNodes, ...editResult.nodes.create];

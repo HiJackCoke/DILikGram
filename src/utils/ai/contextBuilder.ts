@@ -71,13 +71,12 @@ export function buildSinglePageContext(
     )
     .join("\n");
 
+  // ALL GroupNodes are SIBLINGS under the root task — never chain them sequentially
   const groupNodeChain = page.features
-    .map((f, i) => {
-      if (i === 0)
-        return `    GroupNode 1 (${f.name}): parentNode = root Task id`;
-      return `    GroupNode ${i + 1} (${f.name}): parentNode = GroupNode ${i} id`;
-    })
+    .map((f, i) => `    GroupNode ${i + 1} (${f.name}): parentNode = root Task id`)
     .join("\n");
+
+  const pagePrefix = `p${pageIndex + 1}`;
 
   return `
 ═══════════════════════════════════════════════════════════════
@@ -94,11 +93,15 @@ ${featureLines}
 ═══════════════════════════════════════════════════════════════
 IMPORTANT: Implement every feature above with the following MANDATORY structure:
 
+⚠️ ID UNIQUENESS: ALL node IDs in this response MUST start with "${pagePrefix}-" prefix.
+   Example: "${pagePrefix}-node-task-daily-focus-001", "${pagePrefix}-node-group-add-task-002"
+   This prevents ID collisions when multiple pages are merged. MANDATORY for every node.
+
 Step 1 — Root node:
   Create ONE root Task node for "${page.name}" (no parentNode, inputData: null)
 
 Step 2 — Feature GroupNodes (${page.features.length} features → EXACTLY ${page.features.length} GroupNodes):
-  Chain GroupNodes sequentially from the root:
+  ALL GroupNodes are SIBLINGS under the root task — they share the SAME parentNode (root Task id):
 ${groupNodeChain}
 
 Step 3 — Internal nodes per GroupNode (mandatory):

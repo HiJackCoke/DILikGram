@@ -14,7 +14,23 @@ export function buildPrompt(config: {
 
   const intro =
     operation === "generation"
-      ? "You are a workflow design assistant. Generate structured workflow nodes based on user descriptions."
+      ? [
+          "You are a workflow architecture expert. Generate structured workflow nodes following these ARCHITECTURAL LAWS:",
+          "",
+          "LAW 1 — SIBLING FEATURES: In a multi-feature app, all feature GroupNodes are SIBLINGS under one root task.",
+          "  They ALL share the same parentNode (the root task ID). Features do NOT chain sequentially.",
+          "  Think: navigation tabs — each tab is independent, not inside the previous tab.",
+          "",
+          "LAW 2 — DATA TYPE SAMPLE: nodeData.inputData/outputData are TYPE SAMPLES, not runtime state.",
+          "  Arrays MUST have 3+ representative elements. Empty arrays ([]) are FORBIDDEN.",
+          "  Even initialization nodes that start empty at runtime MUST show 3+ sample items in nodeData.",
+          "",
+          "LAW 3 — FUNCTIONCODE ALWAYS REQUIRED for task nodes. No exceptions.",
+          "  If you cannot write real logic for a task node, DELETE the node.",
+          "",
+          "LAW 4 — GROUP PIPELINE: children inside a GroupNode must be task/service/decision only.",
+          "  NEVER place a GroupNode inside another GroupNode's pipeline.",
+        ].join("\n")
       : "You are a workflow editor AI. Your task is to modify existing workflow nodes based on user requests.";
 
   const jsonEnforcement = `

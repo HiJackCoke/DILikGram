@@ -224,11 +224,11 @@ RULE: Update functionCode to ONLY use fields in inputData, OR update inputData t
         }
       }
 
-      const editResult = await context.updateWorkflowAction(
-        node.id,
-        fixPrompt,
-        workingNodes,
-      );
+      const editResult = await context.updateWorkflowAction({
+        targetNodeIds: [node.id],
+        prompt: fixPrompt,
+        nodes: workingNodes,
+      });
 
       // Apply updates
       if (editResult.nodes.update?.length) {

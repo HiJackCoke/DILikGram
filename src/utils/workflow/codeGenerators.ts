@@ -97,7 +97,7 @@ const PANEL_CODE_GENERATORS: Partial<
     const entries = Object.entries(condition) as [string, string][];
 
     if (entries.length === 0) {
-      return `// No conditions specified\nreturn {\n  ...inputData,\n  success: false\n};`;
+      return `// No conditions specified\nreturn false;`;
     }
 
     const conditionExpressions: string[] = [];
@@ -129,7 +129,7 @@ const PANEL_CODE_GENERATORS: Partial<
     });
 
     if (conditionExpressions.length === 0) {
-      return `// No valid conditions\nreturn {\n  ...inputData,\n  success: false\n};`;
+      return `// No valid conditions\nreturn false;`;
     }
 
     const combinedExpression =
@@ -146,12 +146,7 @@ const PANEL_CODE_GENERATORS: Partial<
       .join(", ");
 
     return `// Auto-generated conditions: ${conditionSummary}
-const success = ${combinedExpression};
-
-return {
-  ...inputData,
-  success
-};`;
+return ${combinedExpression};`;
   },
 
   // Future node types can be added here

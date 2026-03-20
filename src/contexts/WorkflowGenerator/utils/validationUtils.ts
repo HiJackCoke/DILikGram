@@ -1,5 +1,103 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ExecutionConfig, ExecutionData, WorkflowNode } from "@/types";
+import type { UpdateWorkflowResponse } from "@/types/ai";
+import type { DecisionNodeData } from "@/types/nodes";
 import { isExecutionConfig } from "./typeGuards";
+import { generatePanelCode } from "@/utils/workflow/codeGenerators";
+
+// ============================================
+// AI FIX APPLICATION
+// ============================================
+
+/**
+ * Apply AI fix response to current node list.
+ *
+ * Order: delete → update → create
+ * - delete: removes nodes first so orphaned refs are exposed to next validation cycle
+ * - update: merges data and parentNode in-place
+ * - create: adds new nodes, skipping ID collisions
+ */
+export function applyAIFixes(
+  nodes: WorkflowNode[],
+  response: UpdateWorkflowResponse,
+): WorkflowNode[] {
+  let result = [...nodes];
+
+  // 1. Delete first (orphaned refs will be caught by next iteration)
+  const deleteSet = new Set(response.nodes.delete ?? []);
+  result = result.filter((n) => !deleteSet.has(n.id));
+
+  // 2. Update in-place (merge data, optionally reassign parentNode)
+  // AI responds in flat format (functionCode, inputData, outputData at top level of data).
+  // Map flat fields → nested WorkflowNode path: data.execution.config.*
+  for (const update of response.nodes.update ?? []) {
+    const idx = result.findIndex((n) => n.id === update.id);
+    if (idx >= 0) {
+      const { functionCode, inputData, outputData, title, ...restData } =
+        (update.data ?? {}) as any;
+      const existingConfig = result[idx].data?.execution?.config ?? {};
+      const existingNodeData =
+        (existingConfig as ExecutionConfig)?.nodeData ?? {};
+
+      const hasExecutionFields =
+        functionCode !== undefined ||
+        inputData !== undefined ||
+        outputData !== undefined;
+
+      const rawParentNode = (update as any).parentNode;
+      // Allow AI to explicitly remove parentNode by sending null (JSON null → undefined = root node)
+      const resolvedParentNode =
+        rawParentNode !== undefined
+          ? rawParentNode !== null
+            ? rawParentNode
+            : undefined
+          : result[idx].parentNode;
+
+      // Guard: never overwrite functionCode with null/empty string.
+      // The AI is instructed not to send functionCode: "" but may do so accidentally.
+      // A null/empty functionCode update is always a mistake — preserve existing.
+      const resolvedFunctionCode =
+        functionCode !== undefined && functionCode !== null && String(functionCode).trim() !== ""
+          ? functionCode
+          : undefined;
+
+      result[idx] = {
+        ...result[idx],
+        parentNode: resolvedParentNode,
+        data: {
+          ...result[idx].data,
+          ...(title !== undefined ? { title } : {}),
+          ...restData,
+          ...(hasExecutionFields
+            ? {
+                execution: {
+                  ...result[idx].data?.execution,
+                  config: {
+                    ...existingConfig,
+                    ...(resolvedFunctionCode !== undefined ? { functionCode: resolvedFunctionCode } : {}),
+                    nodeData: {
+                      ...existingNodeData,
+                      ...(inputData !== undefined ? { inputData } : {}),
+                      ...(outputData !== undefined ? { outputData } : {}),
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
+      };
+    }
+  }
+
+  // 3. Create (skip if ID already exists)
+  for (const newNode of response.nodes.create ?? []) {
+    if (!result.find((n) => n.id === newNode.id)) {
+      result.push(newNode);
+    }
+  }
+
+  return result;
+}
 
 // ============================================
 // EXECUTION CONFIG UTILITIES (from dataFlowUtils.ts)
@@ -45,161 +143,424 @@ export function extractInputDataReferences(functionCode: string): Set<string> {
   return referencedFields;
 }
 
+
 // ============================================
-// GROUPNODE UTILITIES (NEW)
+// AI RESPONSE SANITY CHECK
 // ============================================
 
 /**
- * Rebuild GroupNode.data.groups from flat node list
+ * Pre-validate AI response before applying fixes.
  *
- * After validation/AI modifications, GroupNode.data.groups can become stale.
- * This function rebuilds it from the flat node list using parentNode references.
+ * Catches common failure modes that would cause applyAIFixes to silently no-op:
+ * 1. Empty response — all arrays empty, nothing to apply
+ * 2. Coverage gap — none of the violated nodes are touched by update/delete
+ * 3. Ghost updates — all update targets are non-existent node IDs
  *
- * @param nodes - Flat list of all workflow nodes
- * @returns Updated nodes with corrected GroupNode.data.groups
- *
- * @example
- * workingNodes = rebuildGroupChildren(workingNodes);
+ * @param response - AI update response
+ * @param workingNodes - Current node list
+ * @param allAffectedIds - IDs of nodes flagged by validators
+ * @returns { valid: true } or { valid: false, reason: string }
  */
+export function checkAIResponseSanity(
+  response: UpdateWorkflowResponse,
+  workingNodes: WorkflowNode[],
+  allAffectedIds: string[],
+): { valid: boolean; reason?: string } {
+  const updates = response.nodes.update ?? [];
+  const creates = response.nodes.create ?? [];
+  const deletes = response.nodes.delete ?? [];
 
-// export function rebuildGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
-//   const groupChildren = buildParentChildMap(nodes);
+  // 1. Empty response
+  if (updates.length === 0 && creates.length === 0 && deletes.length === 0) {
+    return { valid: false, reason: "empty response (no operations)" };
+  }
 
-//   const result: WorkflowNode[] = [];
-
-//   for (const node of nodes) {
-//     if (node.type !== "group") {
-//       result.push(node);
-//       continue;
-//     }
-
-//     const children = groupChildren[node.id] || [];
-
-//     result.push({
-//       ...node,
-//       data: {
-//         ...node.data,
-//         groups: children
-//           .filter((child) => child.type !== "decision")
-//           .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
-//           .map(({ parentNode: _p, ...rest }) => rest),
-//       },
-//     });
-//   }
-
-//   return result;
-// }
-
-// export function rebuildGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
-//   const groupChildren = buildParentChildMap(nodes);
-
-//   // function 키워드를 사용하고, 첫 번째 인자로 this의 타입을 명시합니다.
-//   return nodes.map(function (this: Record<string, WorkflowNode[]>, node) {
-//     if (node.type !== "group") return node;
-
-//     // 이제 이 안에서 this는 Record<string, WorkflowNode[]> 타입으로 안전하게 추론됩니다.
-//     const children = this[node.id] ?? [];
-
-//     return {
-//       ...node,
-//       data: {
-//         ...node.data,
-//         groups: children
-//           .filter((child) => child.type !== "decision")
-//           .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
-//           .map(({ parentNode: _p, ...rest }) => rest),
-//       },
-//     };
-//   }, groupChildren); // 실제 groupChildren이 this로 주입됨
-// }
-
-// 1. 노드 하나를 변환하는 로직을 완전히 분리 (Minifier가 접근 못 함)
-const transformNode = (
-  node: WorkflowNode,
-  lookup: Record<string, WorkflowNode[]>,
-) => {
-  if (node.type !== "group") return node;
-  const children = lookup[node.id] ?? [];
-
-  return {
-    ...node,
-    data: {
-      ...node.data,
-      groups: children
-        .filter((child) => child.type !== "decision" && child.type !== "group")
-        .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
-        .map(({ parentNode: _p, ...rest }) => rest),
-    },
-  };
-};
-
-export function rebuildGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
-  const groupChildren = buildParentChildMap(nodes);
-
-  // 2. lookup이라는 명시적 인자로 넘기기 (this 타입 고민 없음)
-  return nodes.map((node) => transformNode(node, groupChildren));
-}
-
-/**
- * Build parent-child map from flat node list
- *
- * @param nodes - Flat list of nodes
- * @returns Map of parent ID to child nodes
- *
- * @example
- * const childrenMap = buildParentChildMap(nodes);
- * const groupChildren = childrenMap["group-node-id"] ?? [];
- */
-export function buildParentChildMap(
-  nodes: WorkflowNode[],
-): Record<string, WorkflowNode[]> {
-  const map: Record<string, WorkflowNode[]> = {};
-
-  nodes.forEach((node) => {
-    if (node.parentNode) {
-      if (!map[node.parentNode]) {
-        map[node.parentNode] = [];
-      }
-      map[node.parentNode].push(node);
+  // 2. Coverage gap: none of the violated nodes are touched by update/delete/create
+  // Note: creates that target an affected node as parentNode count as valid coverage
+  // (this is how GroupNode Min Children is fixed — by adding child nodes, not updating the group)
+  if (allAffectedIds.length > 0) {
+    const touchedIds = new Set([...updates.map((u) => u.id), ...deletes]);
+    const affectedSet = new Set(allAffectedIds);
+    const anyTouched =
+      allAffectedIds.some((id) => touchedIds.has(id)) ||
+      creates.some((c) => affectedSet.has(c.parentNode ?? ""));
+    if (!anyTouched) {
+      return {
+        valid: false,
+        reason: `no affected nodes touched (affected: ${allAffectedIds.join(", ")})`,
+      };
     }
-  });
+  }
 
-  return map;
-}
+  // 3. Ghost updates: all update targets are non-existent node IDs
+  if (updates.length > 0) {
+    const workingIds = new Set(workingNodes.map((n) => n.id));
+    const allGhost = updates.every((u) => !workingIds.has(u.id));
+    if (allGhost) {
+      return {
+        valid: false,
+        reason: `all update targets are non-existent: ${updates.map((u) => u.id).join(", ")}`,
+      };
+    }
+  }
 
-/**
- * Remove duplicate nodes by ID, keeping last occurrence
- *
- * When AI fixes are applied, updated nodes should override originals.
- * Map keeps the last value when duplicate keys are inserted.
- *
- * @param nodes - Array of nodes (may contain duplicates)
- * @returns Deduplicated array
- *
- * @example
- * workingNodes = deduplicateNodesById(workingNodes);
- */
-export function deduplicateNodesById(nodes: WorkflowNode[]): WorkflowNode[] {
-  return Array.from(new Map(nodes.map((node) => [node.id, node])).values());
+  return { valid: true };
 }
 
 // ============================================
-// SERVICE NODE NORMALIZATION UTILITIES
+// DETERMINISTIC CODE GENERATION
 // ============================================
 
 /**
- * Ensure all service nodes have a valid functionCode.
+ * Unconditionally generate functionCode for service and decision nodes.
  *
- * Repair-created service nodes can bypass the normalization in ai.ts.
- * This function enforces the invariant on every service node in the list.
+ * Service nodes: always generate from data.http via generatePanelCode("service", data).
+ *   Also rescues misplaced functionCode from top-level data to execution.config.
+ * Decision nodes: always generate from data.condition + force outputData = true.
  *
- * @param nodes - Flat list of workflow nodes
- * @returns Updated list with all service nodes normalized
+ * Called early (before validation) and after every applyAIFixes call so that
+ * AI never needs to write functionCode for these node types.
  */
-export function normalizeServiceNodes(nodes: WorkflowNode[]): WorkflowNode[] {
+export function applyDeterministicCodeGeneration(
+  nodes: WorkflowNode[],
+): WorkflowNode[] {
   return nodes.map((node) => {
-    if (node.type !== "service") return node;
-    const config = node.data.execution?.config;
+    // --- Service Node ---
+    if (node.type === "service") {
+      const config = node.data.execution?.config;
+
+      // Detect functionCode placed at the wrong top-level position
+
+      const misplacedCode = (
+        (node.data as any).functionCode as string | undefined
+      )?.trim();
+
+      // Always generate from http config
+      const code = generatePanelCode("service", node.data);
+      if (!code) return node;
+
+      // Strip misplaced top-level functionCode if present
+
+      let baseData: typeof node.data = node.data;
+      if (misplacedCode) {
+        const { functionCode: _removed, ...restData } = node.data as any;
+        baseData = restData as typeof node.data;
+        console.log(
+          `[applyDeterministicCodeGeneration] Rescuing misplaced functionCode for service node ${node.id}`,
+        );
+      }
+
+      return {
+        ...node,
+        data: {
+          ...baseData,
+          execution: {
+            ...node.data.execution,
+            config: {
+              ...config,
+              functionCode: code,
+            },
+          },
+        },
+      } satisfies { data: { execution: ExecutionData } };
+    }
+
+    // --- Decision Node ---
+    if (node.type === "decision") {
+      const config = getExecutionConfig(node);
+      if (!config) return node;
+
+      const condition = (node.data as DecisionNodeData).condition ?? {};
+      const code =
+        generatePanelCode("decision", { condition }) ?? "return false;";
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          execution: {
+            ...node.data?.execution,
+            config: {
+              ...config,
+              functionCode: code,
+              nodeData: {
+                ...config?.nodeData,
+                outputData: true,
+              },
+            },
+          },
+        },
+      };
+    }
+
+    // --- Task Node (functionCode misplaced inside nodeData) ---
+    if (node.type === "task") {
+      const config = node.data.execution?.config;
+
+      const misplacedCode = (
+        (config as any)?.nodeData?.functionCode as string | undefined
+      )?.trim();
+
+      if (misplacedCode && !config?.functionCode?.trim()) {
+        // Rescue: move from config.nodeData.functionCode → config.functionCode
+        console.log(
+          `[applyDeterministicCodeGeneration] Rescuing misplaced functionCode in nodeData for task node ${node.id}`,
+        );
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            execution: {
+              ...node.data.execution,
+              config: {
+                ...config,
+                functionCode: misplacedCode,
+                nodeData: {
+                  ...(config as any)?.nodeData,
+                  functionCode: undefined,
+                },
+              },
+            },
+          },
+        };
+      }
+    }
+
+    return node;
+  });
+}
+
+// ============================================
+// FUNCTION CODE REQUIRED REPAIR
+// ============================================
+
+// ============================================
+// EMPTY DATA SHAPE REPAIR
+// ============================================
+
+function padUnderPopulatedArray(arr: unknown[]): unknown[] {
+  // Precondition: arr.length > 0 (empty arrays are not passed here)
+  const last = arr[arr.length - 1];
+  const padded = [...arr];
+  while (padded.length < 3) {
+    padded.push(
+      typeof last === "object" && last !== null && !Array.isArray(last)
+        ? { ...(last as object) }
+        : last,
+    );
+  }
+  return padded;
+}
+
+function fixArrayShapes(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== "object") return value;
+
+  if (Array.isArray(value)) {
+    // Empty arrays are left for AI — element type is unknown, padding would destroy semantic intent
+    const padded =
+      value.length > 0 && value.length < 3
+        ? padUnderPopulatedArray(value)
+        : value;
+    return padded.map(fixArrayShapes);
+  }
+
+  const keys = Object.keys(value as object);
+  if (keys.length === 0) return value; // leave empty objects to AI
+  return Object.fromEntries(
+    Object.entries(value as object).map(([k, v]) => [k, fixArrayShapes(v)]),
+  );
+}
+
+function hasUnderPopulatedArray(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) {
+    // Empty arrays (length === 0) are NOT reported here — validateEmptyDataShape handles them via AI
+    return (
+      (value.length > 0 && value.length < 3) ||
+      value.some(hasUnderPopulatedArray)
+    );
+  }
+  return Object.values(value as object).some(hasUnderPopulatedArray);
+}
+
+/**
+ * Returns true if a top-level key in an inputData/outputData object has an empty array value.
+ * Only checks the first level (Strategy A/B only need to handle top-level keys).
+ */
+function hasTopLevelEmptyArray(data: unknown): boolean {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  return Object.values(data as object).some(
+    (v) => Array.isArray(v) && v.length === 0,
+  );
+}
+
+/**
+ * Pad under-populated arrays in inputData/outputData to >= 3 elements.
+ * Also fills empty arrays (length === 0) using cross-node inference:
+ *
+ * Strategy A — inputData[key] = []:
+ *   Case 1: parent outputData has key with array >= 3 elements → copy
+ *   Case 2: parent doesn't have key AND functionCode doesn't reference it → remove (spurious field)
+ *   Case 3: parent doesn't have key BUT functionCode references it → leave for AI
+ *
+ * Strategy B — outputData[key] = []:
+ *   Step B1: inputData has the same key with array >= 3 → copy (same-key passthrough)
+ *   Step B2: functionCode pattern `{ key: inputData.otherKey }` and inputData.otherKey >= 3 → copy
+ *
+ * Decision node parents pass their inputData (not outputData) to children.
+ */
+export function deterministicRepairEmptyDataShape(
+  nodes: WorkflowNode[],
+): WorkflowNode[] {
+  const nodeMap = new Map<string, WorkflowNode>(nodes.map((n) => [n.id, n]));
+
+  return nodes.map((node) => {
+    const config = getExecutionConfig(node);
+    if (!config) return node;
+
+    const { inputData, outputData } = config.nodeData ?? {};
+    const fixInput = hasUnderPopulatedArray(inputData);
+    const fixOutput = hasUnderPopulatedArray(outputData);
+    const hasEmptyInput = hasTopLevelEmptyArray(inputData);
+    const hasEmptyOutput = hasTopLevelEmptyArray(outputData);
+
+    if (!fixInput && !fixOutput && !hasEmptyInput && !hasEmptyOutput) return node;
+
+    // Step 1: Pad under-populated arrays (existing behavior)
+    let newInputData: unknown = fixInput ? fixArrayShapes(inputData) : inputData;
+    let newOutputData: unknown = fixOutput ? fixArrayShapes(outputData) : outputData;
+
+    if (fixInput || fixOutput) {
+      console.log(
+        `[deterministicRepairEmptyDataShape] Padding arrays for node ${node.id}`,
+      );
+    }
+
+    // Step 2 — Strategy A: Fill/remove top-level empty arrays in inputData
+    if (hasEmptyInput && node.parentNode) {
+      const parentNode = nodeMap.get(node.parentNode);
+      if (parentNode) {
+        const parentConfig = getExecutionConfig(parentNode);
+        // Decision nodes pass their inputData (not outputData) to children
+        const parentReference =
+          parentNode.type === "decision"
+            ? parentConfig?.nodeData?.inputData
+            : parentConfig?.nodeData?.outputData;
+        const functionCode: string = config.functionCode ?? "";
+
+        if (
+          newInputData &&
+          typeof newInputData === "object" &&
+          !Array.isArray(newInputData)
+        ) {
+          const result = { ...(newInputData as Record<string, unknown>) };
+          let strategyAChanged = false;
+
+          for (const [key, value] of Object.entries(result)) {
+            if (!(Array.isArray(value) && value.length === 0)) continue;
+
+            const parentIsObject =
+              parentReference !== null &&
+              parentReference !== undefined &&
+              typeof parentReference === "object" &&
+              !Array.isArray(parentReference);
+            const parentHasKey =
+              parentIsObject &&
+              key in (parentReference as Record<string, unknown>);
+            const parentValue = parentHasKey
+              ? (parentReference as Record<string, unknown>)[key]
+              : undefined;
+
+            if (Array.isArray(parentValue) && parentValue.length >= 3) {
+              // Case 1: parent has key with non-empty array → copy
+              result[key] = parentValue;
+              strategyAChanged = true;
+              console.log(
+                `[deterministicRepairEmptyDataShape] Filled inputData.${key} from parent outputData for ${node.id}`,
+              );
+            } else if (
+              !parentHasKey &&
+              !new RegExp(`\\binputData\\.${key}\\b`).test(functionCode)
+            ) {
+              // Case 2: parent doesn't have key AND functionCode doesn't reference it → remove
+              delete result[key];
+              strategyAChanged = true;
+              console.log(
+                `[deterministicRepairEmptyDataShape] Removed spurious inputData.${key} (absent from parent output + unreferenced in functionCode) for ${node.id}`,
+              );
+            }
+            // Case 3: parent doesn't have key BUT functionCode references it → leave for AI
+          }
+
+          if (strategyAChanged) newInputData = result;
+        }
+      }
+    }
+
+    // Step 3 — Strategy B: Fill top-level empty arrays in outputData from inputData
+    if (hasEmptyOutput) {
+      const functionCode: string = config.functionCode ?? "";
+
+      if (
+        newOutputData &&
+        typeof newOutputData === "object" &&
+        !Array.isArray(newOutputData)
+      ) {
+        const result = { ...(newOutputData as Record<string, unknown>) };
+        let strategyBChanged = false;
+
+        for (const [key, value] of Object.entries(result)) {
+          if (!(Array.isArray(value) && value.length === 0)) continue;
+
+          // B1: Same-key passthrough from inputData
+          if (
+            newInputData &&
+            typeof newInputData === "object" &&
+            !Array.isArray(newInputData)
+          ) {
+            const sameKeyValue = (newInputData as Record<string, unknown>)[key];
+            if (Array.isArray(sameKeyValue) && sameKeyValue.length >= 3) {
+              result[key] = sameKeyValue;
+              strategyBChanged = true;
+              console.log(
+                `[deterministicRepairEmptyDataShape] Filled outputData.${key} from same-key inputData for ${node.id}`,
+              );
+              continue;
+            }
+          }
+
+          // B2: functionCode pattern match: { key: inputData.someOtherKey }
+          const pattern = new RegExp(`\\b${key}\\s*:\\s*inputData\\.(\\w+)`);
+          const match = pattern.exec(functionCode);
+          if (match) {
+            const inKey = match[1];
+            if (
+              newInputData &&
+              typeof newInputData === "object" &&
+              !Array.isArray(newInputData)
+            ) {
+              const inValue = (newInputData as Record<string, unknown>)[inKey];
+              if (Array.isArray(inValue) && inValue.length >= 3) {
+                result[key] = inValue;
+                strategyBChanged = true;
+                console.log(
+                  `[deterministicRepairEmptyDataShape] Filled outputData.${key} from inputData.${inKey} via functionCode pattern for ${node.id}`,
+                );
+              }
+            }
+          }
+        }
+
+        if (strategyBChanged) newOutputData = result;
+      }
+    }
+
+    const inputChanged = newInputData !== inputData;
+    const outputChanged = newOutputData !== outputData;
+
+    if (!inputChanged && !outputChanged) return node;
+
     return {
       ...node,
       data: {
@@ -208,10 +569,26 @@ export function normalizeServiceNodes(nodes: WorkflowNode[]): WorkflowNode[] {
           ...node.data.execution,
           config: {
             ...config,
-            functionCode: config?.functionCode || "",
+            nodeData: {
+              ...config.nodeData,
+              ...(inputChanged ? { inputData: newInputData } : {}),
+              ...(outputChanged ? { outputData: newOutputData } : {}),
+            },
           },
         },
       },
     } satisfies { data: { execution: ExecutionData } };
   });
+}
+
+// ============================================
+// TEST CASE REPAIR
+// ============================================
+
+/** Check if two values have the same set of top-level keys. */
+export function hasSameTopLevelKeys(a: unknown, b: unknown): boolean {
+  if (!a || typeof a !== "object" || !b || typeof b !== "object") return false;
+  const aKeys = Object.keys(a as object).sort();
+  const bKeys = Object.keys(b as object).sort();
+  return aKeys.length === bKeys.length && aKeys.every((k, i) => k === bKeys[i]);
 }

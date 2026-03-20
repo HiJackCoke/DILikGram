@@ -197,11 +197,11 @@ Examples:
 
 Also update execution.config.nodeData.inputData to null.`;
 
-        const editResult = await context.updateWorkflowAction(
-          node.id,
-          fixPrompt,
-          workingNodes,
-        );
+        const editResult = await context.updateWorkflowAction({
+          targetNodeIds: [node.id],
+          prompt: fixPrompt,
+          nodes: workingNodes,
+        });
 
         // Apply AI updates
         if (editResult.nodes.update?.length) {

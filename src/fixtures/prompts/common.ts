@@ -28,7 +28,7 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
          - **CRITICAL**: Receives \`inputData\` (output from parent node) as parameter
          - **EXCEPTION**: If parent is a START NODE, inputData will be NULL
            - ❌ Wrong (start child): \`return inputData.tasks.length;\`
-           - ✅ Correct (start child): \`return [];\` // initialize data from scratch
+           - ✅ Correct (start child): \`return { tasks: [{id:'task-1',content:'Buy milk',completed:false,date:'2026-01-01'},{id:'task-2',content:'Read book',completed:true,date:'2026-01-01'},{id:'task-3',content:'Exercise',completed:false,date:'2026-01-01'}] };\` // initialize data from scratch with 3+ representative elements
          - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
          - ❌ Wrong: \`return tasks.length <= maxTasks\`
          - ✅ Correct: \`return inputData.tasks.length <= maxTasks\`
@@ -73,12 +73,12 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
        - \`config.nodeData.inputData\`: input parameters sample
           - **CRITICAL CONTRACT**: Keys MUST match the \`inputData.xxx\` accesses in functionCode
           - nodeData.inputData = sample of what functionCode READS (input schema)
-          - ❌ Wrong: functionCode does \`inputData.tasks.slice(0,3)\` but nodeData.inputData = { displayedTasks: [] }
-          - ✅ Correct: functionCode does \`inputData.tasks.slice(0,3)\` → nodeData.inputData = { tasks: [] }
+          - ❌ Wrong: functionCode does \`inputData.tasks.slice(0,3)\` but nodeData.inputData = { displayedTasks: [{id:"t1",content:"Buy milk",completed:false,date:"2026-01-01"},{id:"t2",content:"Read book",completed:true,date:"2026-01-01"},{id:"t3",content:"Exercise",completed:false,date:"2026-01-01"}] }
+          - ✅ Correct: functionCode does \`inputData.tasks.slice(0,3)\` → nodeData.inputData = { tasks: [{id:"t1",content:"Buy milk",completed:false,date:"2026-01-01"},{id:"t2",content:"Read book",completed:true,date:"2026-01-01"},{id:"t3",content:"Exercise",completed:false,date:"2026-01-01"}] }
        - \`config.nodeData.outputData\`: output result sample
           - Keys MUST match what functionCode RETURNS
           - nodeData.outputData = sample of what functionCode produces (output schema)
-          - ✅ Correct (above example): return { displayedTasks: ... } → nodeData.outputData = { displayedTasks: [] }
+          - ✅ Correct (above example): return { displayedTasks: ... } → nodeData.outputData = { displayedTasks: [{id:"t1",content:"Buy milk",completed:false,date:"2026-01-01"},{id:"t2",content:"Read book",completed:true,date:"2026-01-01"},{id:"t3",content:"Exercise",completed:false,date:"2026-01-01"}] }
      - \`ports\`: array (Default: [
          {
             "id": "input",
@@ -116,28 +116,13 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
 
      - \`execution\`: object (**REQUIRED**)
        - \`config.nodeData.isAsync\`: true
-       - \`config.functionCode\`: async API call logic (function body only, no "async function" wrapper)
-         - **CRITICAL**: Receives \`inputData\` (upstream data) and \`fetch\` as parameters
-         - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
-         - ❌ Wrong: \`userId\`, \`email\`, \`endpoint\`
-         - ✅ Correct: \`inputData.userId\`, \`inputData.email\`, \`inputData.endpoint\`
-         - **CRITICAL SCOPE RULE**: functionCode has ONLY 2 variables available:
-           1. \`inputData\` - Data from parent node's output
-           2. \`fetch\` - Global fetch API for external calls
-         - **FORBIDDEN REFERENCES**:
-           - ❌ NEVER reference \`metadata\`, \`node\`, \`config\`, \`this\`, or any external variables
-           - ❌ Wrong: \`metadata.maxTasks\`, \`node.data.title\`, \`config.timeout\`
-           - ✅ Correct: Pass all values via \`inputData\`: \`inputData.maxTasks\`, \`inputData.title\`
-         - **How to use metadata/config values**:
-           - DON'T try to access \`node.data.metadata\` in functionCode (not in scope!)
-           - DO pass required values explicitly in \`inputData\`:
-             - Example: If you need \`maxTasks\` limit, include it in \`inputData: { maxTasks: 3 }\`
-             - Then reference as \`inputData.maxTasks\` in functionCode
-         - **CRITICAL**: MUST always end with a \`return\` statement that produces the outputData object
-         - ❌ Wrong (result discarded, no return): \`await fetch(endpoint, options);\`
-         - ✅ Correct (return the API response): \`const res = await fetch(endpoint, options); return await res.json();\`
+       - ⚠️ **DO NOT include \`functionCode\`** — it is AUTO-GENERATED from \`data.http\` (endpoint/method/headers/body).
+         The system always calls \`generatePanelCode("service", data)\` which produces the correct \`fetch(...)\` template.
+         Including functionCode yourself wastes tokens and may conflict with the generated version.
        - \`config.nodeData.inputData\`: request body/query params sample
-       - \`config.nodeData.outputData\`: API response structure sample
+       - \`config.nodeData.outputData\`: **REQUIRED** — declares the expected shape of \`response.json()\`:
+         - \`null\` → fire-and-forget (response is not used downstream, no child task needed)
+         - \`{ ... }\` → declares the shape of the response; a child task node should chain this via inputData
      - \`ports\`: array (Default: [
          {
             "id": "input",
@@ -186,17 +171,11 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
          }
       ])
      - \`execution\`: object (**REQUIRED**)
-       - \`config.functionCode\`: business logic implementation (function body only, no "function" wrapper), MUST return a \`boolean\` value.
-         - **CRITICAL**: Receives \`inputData\` (output from parent node) and \`fetch\` as parameters
-         - ALL data MUST be accessed via \`inputData.<field>\` — NEVER reference fields directly
-         - ❌ Wrong: \`return status === 'active'\`
-         - ✅ Correct: \`return inputData.status === 'active'\`
+       - ⚠️ **DO NOT include \`functionCode\`** — it is AUTO-GENERATED from \`data.condition\` by the system.
+         The system calls \`generatePanelCode("decision", { condition })\` which evaluates the condition operators.
        - \`config.nodeData.inputData\`: input parameters sample
-          - **CRITICAL CONTRACT**: Keys MUST match the \`inputData.xxx\` accesses in functionCode
-          - nodeData.inputData = sample of what functionCode READS (input schema)
-       - \`config.nodeData.outputData\`: output result sample
-          - Keys MUST match what functionCode RETURNS
-          - nodeData.outputData = sample of what functionCode produces (output schema)
+          - Keys determine which fields the condition evaluates (e.g., \`{ isApproved: true }\`)
+       - \`config.nodeData.outputData\`: MUST be \`true\` (boolean, AUTO-SET by system) — do NOT include this field
      - **CRITICAL**: Must have at least two children nodes (one 'yes', one 'no').
 
 4. **Group Node** ("group")
@@ -219,6 +198,62 @@ AVAILABLE NODE TYPES & MANDATORY DATA FIELDS:
             "type": "source"
          }
        ])
+
+   **GROUPNODE STRUCTURE RULE (ABSOLUTE):**
+   - GroupNode MUST contain at least 2 child nodes (Task/Service/Decision)
+   - A GroupNode with only 1 child provides no value as a container
+   - If only 1 child is needed: either add a second meaningful child node OR
+     dissolve the GroupNode and make the child a standalone node
+   - ❌ WRONG: GroupNode with a single child TaskNode
+   - ✅ CORRECT: GroupNode with TaskNode → ServiceNode (or any 2+ children)
+
+   **GROUPNODE PIPELINE DATA FLOW RULE (ABSOLUTE):**
+   - In a GroupNode pipeline: node[i].inputData MUST be a subset of node[i-1].outputData
+   - When node[i] needs keys that node[i-1] does not output:
+     → node[i-1] MUST pass through those keys from its OWN inputData
+     → e.g., return { ...ownResult, taskId: inputData.taskId, newDetails: inputData.newDetails }
+     → Do NOT change node[i].inputData to match node[i-1]'s output
+        (node[i]'s inputData reflects its semantic requirements — preserve them)
+   - The pass-through pattern is valid because:
+     node[i-1].inputData is itself a subset of node[i-2].outputData (or GroupNode.inputData),
+     so any key in node[i-1].inputData can safely be forwarded to node[i]
+   - ❌ WRONG: Change "Edit Task API" inputData from { taskId, newDetails } to { success, message }
+   - ✅ CORRECT: Change "Edit Task" functionCode to return { success: true, message: "...", taskId: inputData.taskId, newDetails: inputData.newDetails }
+`;
+
+export const FORBIDDEN_EMPTY_CONVERSION_RULES = `
+═══════════════════════════════════════════════════════════════
+⛔ FORBIDDEN: EMPTY-VALUE CONVERSION NODES (NEVER GENERATE)
+═══════════════════════════════════════════════════════════════
+
+null, undefined, {}, [], "" are STRICTLY DIFFERENT types and values.
+Converting between empty values with no real computation is MEANINGLESS.
+
+FORBIDDEN PATTERNS — Do NOT create nodes whose only logic is:
+  null → {}          functionCode: "return {};"       outputData: {}
+  null → []          functionCode: "return [];"
+  null → ""          functionCode: "return '';"
+  null → undefined   functionCode: "return;" / "return undefined;"
+  {} → []            empty object to empty array
+  {} → null          functionCode: "return null;"
+  {} → undefined     functionCode: "return undefined;"
+  (any empty type → any other empty type, with zero computation)
+
+A node MUST perform REAL computation: fetch data, filter, transform, validate, or compute.
+
+If a GroupNode requires a Task parent (GroupNodes cannot be root nodes):
+  - That Task MUST initialize REAL data (session, timestamps, config, user input, etc.)
+  - ❌ WRONG:   functionCode: "return {};",  outputData: {}       ← meaningless placeholder
+  - ✅ CORRECT: functionCode: "return { userId: null, createdAt: new Date().toISOString() };",
+                outputData: { userId: null, createdAt: "" }       ← real initialization
+
+TASK NODE INPUT REQUIREMENT:
+- Task nodes with non-null inputData MUST reference inputData fields in functionCode.
+- ❌ FORBIDDEN: inputData: { tasks: [] } with functionCode: "return { result: [] };"
+  → inputData fields are completely ignored — this is a trivial/fabricating node
+- ✅ REQUIRED: functionCode must read from inputData (e.g., inputData.tasks, inputData.userId)
+- Exception: ServiceNodes may use fetch() without referencing inputData fields.
+- Exception: Start node children have inputData: null and initialize data from scratch.
 `;
 
 export const PARENT_CHILD_RULES = `
@@ -297,27 +332,46 @@ VALIDATION CHECKLIST (Self-Correction):
    - Do children of decision nodes have \`branchLabel\` ("yes"/"no")?
    - Do children of non-decision nodes OMIT \`branchLabel\`?
 □ **functionCode MANDATORY CHECK (CRITICAL)**:
-   - EVERY task and service node MUST have functionCode as a non-empty string
-   - ❌ Wrong: \`{ "execution": { "config": { "nodeData": {...} } } }\`  ← functionCode missing!
-   - ✅ Correct: \`{ "execution": { "config": { "functionCode": "return inputData;", "nodeData": {...} } } }\`
-   - If a node just passes data through: use \`"return inputData;"\`
-   - This applies to ALL task/service nodes — including GroupNode internal child nodes
+   - EVERY **task** node MUST have functionCode as a non-empty string
+   - ⚠️ **Service and decision nodes: functionCode is AUTO-GENERATED — do NOT include it**
+     The system generates service functionCode from \`data.http\` and decision functionCode from \`data.condition\`.
+   - ❌ Wrong (task node missing functionCode): \`{ "execution": { "config": { "nodeData": {...} } } }\`
+   - ✅ Correct (task node): \`{ "execution": { "config": { "functionCode": "return inputData;", "nodeData": {...} } } }\`
+   - This applies to ALL task nodes — including GroupNode internal child task nodes
    - NEVER use template syntax \`{{inputData.key}}\` inside nodeData.inputData/outputData samples
      (templates are ONLY for data.http.body, not for execution schema samples)
    - ❌ Wrong: \`"nodeData": { "inputData": { "taskId": "{{inputData.taskId}}" } }\`
    - ✅ Correct: \`"nodeData": { "inputData": { "taskId": "mock-task-id" } }\`
+   - ⚠️ WRONG PLACEMENT: functionCode MUST be directly inside config, NOT inside config.nodeData
+   - ❌ WRONG: \`{ "config": { "nodeData": { "functionCode": "...", "inputData": {}, "outputData": {} } } }\`
+   - ✅ CORRECT: \`{ "config": { "functionCode": "...", "nodeData": { "inputData": {}, "outputData": {} } } }\`
+□ **Task Node Existence Check (CRITICAL)**:
+   - For EACH task node: does it perform real computation (transform/filter/validate/compute)?
+     If NOT → DO NOT generate it. Delete it.
+   - Is inputData deepEqual to outputData (same keys + same sample values)?
+     If YES → The node is a trivial passthrough → DELETE it.
+   - ❌ WRONG: inputData: { tasks: [] } and outputData: { tasks: [] } with no real functionCode
+     → identical structure → meaningless node → DELETE
+   - ✅ CORRECT: Only generate a task node when it produces genuinely different output
 □ **Execution Config Check:**
    - Do Task nodes have \`execution.config.functionCode\`?
-   - Do Service nodes have \`execution.config.functionCode\`?
+   - Do Service nodes have \`execution.config.nodeData\` with inputData and outputData? (functionCode is AUTO-GENERATED — do NOT write it)
    - Are \`inputData\` and \`outputData\` samples provided?
    - Is \`functionCode\` written as function body only (no "function" or "async function" wrapper)?
-   - Does \`functionCode\` end with a \`return\` statement? (Task/Service: MUST return outputData object; Decision: MUST return boolean)
+   - Does \`functionCode\` end with a \`return\` statement? (Task: MUST return outputData object; Decision: MUST return boolean)
+□ **GroupNode Boundary Contract (CRITICAL — prevents output_boundary violations)**:
+   For EVERY GroupNode you generate:
+   a) GroupNode.nodeData.inputData MUST EXACTLY MATCH parent.outputData (same keys + values)
+   b) GroupNode.nodeData.outputData MUST EXACTLY MATCH lastChild.outputData (same keys + values)
+   PROCEDURE: Generate ALL children first. THEN set GroupNode.outputData = lastChild.outputData.
+   - ❌ WRONG: GroupNode.outputData={"tasks":[...]} when lastChild.outputData={"success":true,"taskId":"t1"}
+   - ✅ CORRECT: GroupNode.outputData={"success":true,"taskId":"t1"} (copy of lastChild.outputData)
 □ **nodeData Schema Contract (CRITICAL)**:
    - nodeData.inputData keys MUST match the \`inputData.xxx\` accesses in functionCode
    - nodeData.outputData keys MUST match what functionCode returns
-   - ❌ Wrong: functionCode reads inputData.tasks → but nodeData.inputData has { displayedTasks: [] }
-   - ✅ Correct: functionCode reads inputData.tasks → nodeData.inputData = { tasks: [] }
-              functionCode returns { displayedTasks: ... } → nodeData.outputData = { displayedTasks: [] }
+   - ❌ Wrong: functionCode reads inputData.tasks → but nodeData.inputData has { displayedTasks: [{id:"t1",content:"Buy milk",completed:false,date:"2026-01-01"},{id:"t2",content:"Read book",completed:true,date:"2026-01-01"},{id:"t3",content:"Exercise",completed:false,date:"2026-01-01"}] }
+   - ✅ Correct: functionCode reads inputData.tasks → nodeData.inputData = { tasks: [{id:"t1",content:"Buy milk",completed:false,date:"2026-01-01"},{id:"t2",content:"Read book",completed:true,date:"2026-01-01"},{id:"t3",content:"Exercise",completed:false,date:"2026-01-01"}] }
+              functionCode returns { displayedTasks: ... } → nodeData.outputData = { displayedTasks: [{id:"t1",content:"Buy milk",completed:false,date:"2026-01-01"},{id:"t2",content:"Read book",completed:true,date:"2026-01-01"},{id:"t3",content:"Exercise",completed:false,date:"2026-01-01"}] }
 □ **inputData Reference Check:**
    - Does \`functionCode\` use \`inputData.<field>\` (not bare variable names)?
    - ❌ Wrong: \`tasks.length\`, \`userId\`, \`email\`, \`endpoint\`
@@ -327,10 +381,24 @@ VALIDATION CHECKLIST (Self-Correction):
    - ❌ Wrong: \`inputData.tasks.slice(0, 3)\` — crashes if tasks is undefined!
    - ❌ Wrong: \`inputData ? inputData.tasks.slice(0, 3) : null\` — inputData truthy ≠ inputData.tasks defined!
    - ✅ Correct: \`Array.isArray(inputData?.tasks) ? inputData.tasks.slice(0, 3) : []\`
-□ **nodeData.inputData Type Defaults:**
-   - Are array fields \`[]\`, object fields \`{}\`, string fields \`""\`, number fields \`0\`?
-   - ❌ Wrong: \`"inputData": { "tasks": null }\`
-   - ✅ Correct: \`"inputData": { "tasks": [] }\`
+□ **nodeData.inputData Type Defaults (CRITICAL — arrays need EXACTLY 3+ elements):**
+   - The validator counts array length. 0, 1, or 2 elements ALL fail. You need 3 or more.
+   - ❌ Wrong: \`"inputData": { "tasks": null }\` (null placeholder for a key that should have a value)
+   - ❌ Wrong: \`"inputData": { "tasks": [] }\` (0 elements — cannot infer type)
+   - ❌ Wrong: \`"inputData": { "tasks": [{...}] }\` (1 element — STILL fails, need 3+)
+   - ❌ Wrong: \`"inputData": { "tasks": [{...},{...}] }\` (2 elements — STILL fails, need 3+)
+   - ❌ Wrong: \`"inputData": { "tasks": ["a", "b"] }\` (fewer than 3 elements)
+   - ✅ Correct: \`"inputData": { "tasks": [{id:"t1",...},{id:"t2",...},{id:"t3",...}] }\` (exactly 3+ representative elements)
+   - ✅ Correct: \`"inputData": null\` for start-node children or GET service nodes with no body params
+□ **nodeData.outputData Type Defaults (CRITICAL — same rules as inputData)**:
+   - ❌ Wrong: \`"outputData": {}\` (empty object — use null if node produces no output)
+   - ❌ Wrong: \`"outputData": { "tasks": [] }\` (empty array — cannot infer element type)
+   - ❌ Wrong: \`"outputData": { "tasks": [{}] }\` (array of empty objects — still a violation)
+   - ✅ Correct: \`"outputData": null\` when functionCode returns nothing useful
+   - ✅ Correct: \`"outputData": { "tasks": [{id:"t1",content:"Buy milk",completed:false},{id:"t2",content:"Exercise",completed:true},{id:"t3",content:"Read book",completed:false}] }\` with 3+ realistic elements
+   - CONTRACT: if functionCode returns \`{ outKey: inputData.inKey }\`, outputData[outKey] MUST mirror inputData[inKey]
+     ❌ Wrong: functionCode: \`"return { displayedTasks: inputData.tasks };"\` with outputData: \`{ displayedTasks: [] }\`
+     ✅ Correct: outputData.displayedTasks = same structure/elements as inputData.tasks
 □ **Execution Scope Check:**
    - Does functionCode ONLY use \`inputData\` and \`fetch\`?
    - Does functionCode avoid referencing \`metadata\`, \`node\`, \`config\`, or other external variables?
@@ -378,240 +446,18 @@ export const TECHNICAL_SPECIFICATION_RULES = `
    - DO NOT use lists in \`description\`. Move all sub-features to \`data.metadata\`.
    - Each key in \`metadata\` should represent a specific requirement or variable.
 
-2. **Service Node: Standardized Function Template** (MANDATORY):
-   Every Service Node's \`functionCode\` field MUST follow this EXACT template:
+2. **Service Node functionCode**: AUTO-GENERATED by system from \`data.http\`. NEVER write functionCode for service nodes — the system calls \`generatePanelCode("service", data)\` after your response.
 
-   **CRITICAL RULES:**
-   - Extract \`method\` and \`endpoint\` from the \`http\` config object (NOT from inputData)
-   - Use \`inputData\` fields ONLY for request body/query parameters
-   - Declare all variables (\`headers\`, \`body\`, \`endpoint\`, \`method\`) BEFORE the try block
-   - Include body variable declaration ONLY for non-GET methods (POST, PUT, PATCH, DELETE)
-   - Include body in fetch options ONLY for non-GET methods
-
-   **Template for GET requests:**
-   \`\`\`javascript
-   const headers = { "Content-Type": "application/json" }
-   const endpoint = "[FULL_ENDPOINT_PATH]"  // e.g., "/api/users", "/api/meals/123"
-   const method = "GET"
-
-   try {
-     const response = await fetch(endpoint, {
-       method,
-       headers,
-     })
-
-     if (!response.ok) {
-       throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)
-     }
-
-     return await response.json()
-   } catch (error) {
-     throw new Error(\`API Request Failed: \${error.message}\`)
-   }
-   \`\`\`
-
-   **Template for POST/PUT/PATCH/DELETE requests:**
-   \`\`\`javascript
-   const headers = { "Content-Type": "application/json" }
-   const body = { /* use inputData fields for dynamic values */ }
-   const endpoint = "[FULL_ENDPOINT_PATH]"  // e.g., "/api/users", "/api/meals"
-   const method = "[POST|PUT|PATCH|DELETE]"
-
-   try {
-     const response = await fetch(endpoint, {
-       method,
-       headers,
-       body: JSON.stringify(body),
-     })
-
-     if (!response.ok) {
-       throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)
-     }
-
-     return await response.json()
-   } catch (error) {
-     throw new Error(\`API Request Failed: \${error.message}\`)
-   }
-   \`\`\`
-
-   **Example - POST /api/users with dynamic data:**
-   \`\`\`javascript
-   const headers = { "Content-Type": "application/json" }
-   const body = {
-     email: inputData.email,
-     password: inputData.password
-   }
-   const endpoint = "/api/users"
-   const method = "POST"
-
-   try {
-     const response = await fetch(endpoint, {
-       method,
-       headers,
-       body: JSON.stringify(body),
-     })
-
-     if (!response.ok) {
-       throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)
-     }
-
-     return await response.json()
-   } catch (error) {
-     throw new Error(\`API Request Failed: \${error.message}\`)
-   }
-   \`\`\`
-
-2.5. **Service Node: HTTP Config Synchronization** (MANDATORY):
-   The \`data.http\` object MUST be synchronized with the \`functionCode\` variables.
-
-   **CRITICAL SYNCHRONIZATION RULES:**
-   - \`data.http.method\` MUST match the \`method\` variable in functionCode
-   - \`data.http.endpoint\` MUST match the \`endpoint\` variable in functionCode
-   - \`data.http.headers\` MUST match the \`headers\` variable in functionCode
-   - \`data.http.body\` MUST match the \`body\` variable in functionCode (for non-GET methods)
-
-   **Headers Synchronization:**
-   - Always set \`data.http.headers: { "Content-Type": "application/json" }\`
-   - This must match \`const headers = { "Content-Type": "application/json" }\` in functionCode
-
-   **Body Synchronization:**
-   - For GET requests: DO NOT include \`body\` field in \`data.http\` (omit entirely)
-   - For POST/PUT/PATCH/DELETE: Set \`data.http.body\` to match the structure in functionCode
-   - Use \`{{inputData.fieldName}}\` placeholder syntax to indicate dynamic values
-   - Example:
-     \`\`\`json
-     {
-       "http": {
-         "method": "POST",
-         "endpoint": "/api/users",
-         "headers": { "Content-Type": "application/json" },
-         "body": { "email": "{{inputData.email}}", "password": "{{inputData.password}}" }
-       },
-       "execution": {
-         "config": {
-           "functionCode": "const headers = { \\"Content-Type\\": \\"application/json\\" }\\nconst body = { email: inputData.email, password: inputData.password }\\nconst endpoint = \\"/api/users\\"\\nconst method = \\"POST\\"\\n\\ntry {\\n  const response = await fetch(endpoint, {\\n    method,\\n    headers,\\n    body: JSON.stringify(body),\\n  })\\n\\n  if (!response.ok) {\\n    throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)\\n  }\\n\\n  return await response.json()\\n} catch (error) {\\n  throw new Error(\`API Request Failed: \${error.message}\`)\\n}"
-         }
-       }
-     }
-     \`\`\`
-
-   **Endpoint and Method Synchronization:**
-   - \`data.http.endpoint\` MUST exactly match the \`endpoint\` variable value
-   - \`data.http.method\` MUST exactly match the \`method\` variable value
-   - Example:
-     \`\`\`json
-     {
-       "http": {
-         "method": "GET",
-         "endpoint": "/api/users/123"
-       },
-       "execution": {
-         "config": {
-           "functionCode": "const headers = { \\"Content-Type\\": \\"application/json\\" }\\nconst endpoint = \\"/api/users/123\\"\\nconst method = \\"GET\\"\\n\\ntry {\\n  const response = await fetch(endpoint, {\\n    method,\\n    headers,\\n  })\\n..."
-         }
-       }
-     }
-     \`\`\`
-
-   **Complete Examples:**
-
-   **GET Request:**
-   \`\`\`json
-   {
-     "http": {
-       "method": "GET",
-       "endpoint": "/api/tasks",
-       "headers": { "Content-Type": "application/json" }
-       // Note: NO body field for GET
-     },
-     "execution": {
-       "config": {
-         "functionCode": "const headers = { \\"Content-Type\\": \\"application/json\\" }\\nconst endpoint = \\"/api/tasks\\"\\nconst method = \\"GET\\"\\n\\ntry {\\n  const response = await fetch(endpoint, {\\n    method,\\n    headers,\\n  })\\n\\n  if (!response.ok) {\\n    throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)\\n  }\\n\\n  return await response.json()\\n} catch (error) {\\n  throw new Error(\`API Request Failed: \${error.message}\`)\\n}"
-       }
-     }
-   }
-   \`\`\`
-
-   **POST Request:**
-   \`\`\`json
-   {
-     "http": {
-       "method": "POST",
-       "endpoint": "/api/tasks",
-       "headers": { "Content-Type": "application/json" },
-       "body": { "tasks": "{{inputData.tasks}}" }
-     },
-     "execution": {
-       "config": {
-         "functionCode": "const headers = { \\"Content-Type\\": \\"application/json\\" }\\nconst body = { tasks: inputData.tasks }\\nconst endpoint = \\"/api/tasks\\"\\nconst method = \\"POST\\"\\n\\ntry {\\n  const response = await fetch(endpoint, {\\n    method,\\n    headers,\\n    body: JSON.stringify(body),\\n  })\\n\\n  if (!response.ok) {\\n    throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)\\n  }\\n\\n  return await response.json()\\n} catch (error) {\\n  throw new Error(\`API Request Failed: \${error.message}\`)\\n}"
-       }
-     }
-   }
-   \`\`\`
-
-3. **Decision Node: Condition Evaluation Template** (MANDATORY):
-   Every Decision Node's \`functionCode\` field MUST follow this EXACT template:
-
-   **CRITICAL RULES:**
-   - functionCode must evaluate conditions from the \`condition\` config object
-   - Supported operators: "has", "hasNot", "truthy", "falsy"
-   - MUST return an object with \`success\` boolean field (NOT just a boolean)
-   - MUST spread inputData into the output object (...inputData)
-   - Multiple conditions are combined with AND (&&) logic
-
-   **Template for single condition:**
-   \`\`\`javascript
-   // Auto-generated conditions: [operator] [fieldName]
-   const success = [CONDITION_EXPRESSION]
-
-   return {
-     ...inputData,
-     success
-   }
-   \`\`\`
-
-   **Condition expressions by operator:**
-   - \`has\` → \`(typeof inputData === "object" && inputData !== null ? ("fieldName" in inputData) : false)\`
-   - \`hasNot\` → \`(typeof inputData === "object" && inputData !== null ? !("fieldName" in inputData) : true)\`
-   - \`truthy\` → \`Boolean(inputData["fieldName"])\`
-   - \`falsy\` → \`!Boolean(inputData["fieldName"])\`
-
-   **Example - Single condition (truthy):**
-   \`\`\`javascript
-   // Auto-generated conditions: truthy isAuthenticated
-   const success = Boolean(inputData["isAuthenticated"])
-
-   return {
-     ...inputData,
-     success
-   }
-   \`\`\`
-
-   **Example - Multiple conditions (has + truthy):**
-   \`\`\`javascript
-   // Auto-generated conditions: has token, truthy isValid
-   const success = (typeof inputData === "object" && inputData !== null ? ("token" in inputData) : false) && Boolean(inputData["isValid"])
-
-   return {
-     ...inputData,
-     success
-   }
-   \`\`\`
-
-   **Example - No conditions (default false):**
-   \`\`\`javascript
-   // No conditions specified
-   return {
-     ...inputData,
-     success: false
-   }
-   \`\`\`
+3. **Decision Node functionCode**: AUTO-GENERATED by system from \`data.condition\`. NEVER write functionCode for decision nodes — the system calls \`generatePanelCode("decision", { condition })\` after your response. Only set \`data.condition\` with the correct operators.
 
 4. **Decision Node: Return Format**:
-   - Decision nodes MUST return an object with a \`success\` boolean field
-   - The workflow engine uses this field to determine branch selection (yes/no)
-   - ❌ Wrong: \`return true;\` (bare boolean)
-   - ✅ Correct: \`return { ...inputData, success: true };\` (object with success field)
+   - Decision nodes MUST return a plain boolean value (true or false)
+   - The workflow engine uses this boolean to select the yes/no branch and passes the decision's inputData to the chosen child
+   - ❌ Wrong: \`return { ...inputData, success: inputData.status === 'active' };\` (object — forbidden)
+   - ❌ Wrong: \`return { result: 'approved' };\` (object — forbidden)
+   - ✅ Correct: \`return inputData.status === 'active';\` (plain boolean)
+   - ✅ Correct: \`return Boolean(inputData.token);\` (plain boolean)
+   - Also set \`nodeData.outputData\` to \`true\` (boolean sample, NOT an object)
 
 5. **Sequential Flow for Roles**:
    - Start with a **Task Node (PRD)** defining requirements.

@@ -3,6 +3,7 @@ import type {
   ValidationResult,
   ValidationContext,
 } from "../../../types/ai/validators";
+import { applyAIFixes } from "../utils/validationUtils";
 
 function getChildren(nodes: WorkflowNode[], parentId: string): WorkflowNode[] {
   return nodes.filter((n) => n.parentNode === parentId);
@@ -118,24 +119,13 @@ export async function repairDecisionNodes(
 
       const fixPrompt = `The Decision node "${decisionNode.data.title}" (id: ${decisionNode.id}) is missing the ${missingBranches.join(" and ")} branch(es). Add the missing ${missingBranches.join("/")} branch node(s) with the correct branchLabel.`;
 
-      const editResult = await context.updateWorkflowAction(
-        decisionNode.id,
-        fixPrompt,
-        workingNodes,
-      );
-
-      if (editResult.nodes.create?.length) {
-        workingNodes = [...workingNodes, ...editResult.nodes.create];
-      }
-      editResult.nodes.update?.forEach((update) => {
-        const idx = workingNodes.findIndex((n) => n.id === update.id);
-        if (idx >= 0) {
-          workingNodes[idx] = {
-            ...workingNodes[idx],
-            data: { ...workingNodes[idx].data, ...update.data },
-          };
-        }
+      const editResult = await context.updateWorkflowAction({
+        targetNodeIds: [decisionNode.id],
+        prompt: fixPrompt,
+        nodes: workingNodes,
       });
+
+      workingNodes = applyAIFixes(workingNodes, editResult);
     }
 
     // ── POST-FIX VALIDATION: Auto-fallback (prevent infinite loops) ──

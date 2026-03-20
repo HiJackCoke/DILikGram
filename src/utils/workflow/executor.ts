@@ -349,30 +349,25 @@ export class WorkflowExecutor {
       );
     }
 
-    // Extract from outputData
-    if (typeof outputData !== "object" || outputData === null) {
-      console.warn(
-        `Decision node ${node.id}: outputData is not an object. Falling back to true.`,
-      );
-      return true;
+    // Plain boolean — new preferred return format
+    if (typeof outputData === "boolean") {
+      return outputData;
     }
 
-    if (!("success" in outputData)) {
-      console.warn(
-        `Decision node ${node.id}: outputData has no success field. Falling back to true.`,
-      );
-      return true;
-    }
-
-    const successValue = (outputData as { success: unknown }).success;
-    if (typeof successValue !== "boolean") {
+    // Legacy object format: { ...inputData, success: boolean }
+    if (typeof outputData === "object" && outputData !== null && "success" in outputData) {
+      const successValue = (outputData as { success: unknown }).success;
+      if (typeof successValue === "boolean") return successValue;
       console.warn(
         `Decision node ${node.id}: success field is not boolean (${typeof successValue}). Falling back to true.`,
       );
       return true;
     }
 
-    return successValue;
+    console.warn(
+      `Decision node ${node.id}: outputData is neither boolean nor object with success field. Falling back to true.`,
+    );
+    return true;
   }
 
   /**
@@ -521,6 +516,10 @@ export class WorkflowExecutor {
 
     // Extract success from outputData for Decision nodes
     if (node.type === "decision") {
+      // Plain boolean return → pass through inputData so children receive it
+      if (typeof outputData === "boolean") {
+        return { outputData: inputData, success: outputData };
+      }
       const success = this.extractDecisionSuccess(node, outputData);
       return { outputData, success };
     }
@@ -558,7 +557,7 @@ export class WorkflowExecutor {
     // Priority 1: nodeData.outputData
     const mockData = node.data.execution?.config?.nodeData?.outputData;
     if (mockData !== undefined) {
-      return this.extractSuccessFromOutput(node, mockData);
+      return this.extractSuccessFromOutput(node, mockData, inputData);
     }
 
     // Priority 2: Default success response
@@ -574,8 +573,13 @@ export class WorkflowExecutor {
   private extractSuccessFromOutput(
     node: WorkflowNode,
     outputData: unknown,
+    inputData?: unknown,
   ): { outputData: unknown; success: boolean } {
     if (node.type === "decision") {
+      // Plain boolean → pass through inputData so children receive the decision's input
+      if (typeof outputData === "boolean") {
+        return { outputData: inputData ?? null, success: outputData };
+      }
       const success = this.extractDecisionSuccess(node, outputData);
       return { outputData, success };
     }

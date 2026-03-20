@@ -29,7 +29,7 @@ import type {
   AnalyzePRDParams,
   AnalyzePRDResult,
 } from "@/types/ai/prdAnalysis";
-import {
+import { 
   generateWorkflowAction,
   updateWorkflowAction,
 } from "@/app/_actions/ai";
@@ -45,11 +45,7 @@ import {
 } from "@/utils/nodeLibrary";
 import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
 import { runValidationPipeline } from "./validators";
-import {
-  rebuildGroupChildren,
-  deduplicateNodesById,
-  normalizeServiceNodes,
-} from "./utils/validationUtils";
+
 import { analyzePRD } from "@/ai";
 
 interface WorkflowGeneratorProviderProps {
@@ -169,6 +165,7 @@ export function WorkflowGeneratorProvider({
         analysisResult,
       });
 
+      console.log("generated", generated);
       const sanitized = sanitizeNewNodeIds(generated.nodes);
 
       // ★ Split BEFORE validation so that per-tree orphan repair
@@ -197,9 +194,8 @@ export function WorkflowGeneratorProvider({
         );
 
         // workingNodes = normalizeServiceNodes(workingNodes);
-
-        workingNodes = rebuildGroupChildren(workingNodes);
-        workingNodes = deduplicateNodesById(workingNodes);
+        // workingNodes = rebuildGroupChildren(workingNodes);
+        // workingNodes = deduplicateNodesById(workingNodes);
 
         allValidatedNodes.push(...workingNodes);
       }

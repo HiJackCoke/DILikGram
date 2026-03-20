@@ -20,8 +20,6 @@ import type {
   WorkflowNode,
   GroupNodeData,
   ServiceNodeData,
-  DecisionNodeData,
-  GroupNode,
 } from "@/types/nodes";
 import type { TestCase } from "@/types/prd";
 
@@ -41,9 +39,11 @@ import {
   handleOpenAIError,
 } from "@/ai";
 import {
-  validateParentNodeCycles,
-  validateCircularReferences,
-} from "@/contexts/WorkflowGenerator/validators/circularReference";
+  applyDeterministicCodeGeneration,
+  deterministicRepairEmptyDataShape,
+} from "@/contexts/WorkflowGenerator/utils/validationUtils";
+import { deterministicRepairGroupBoundaries, deterministicRepairPipelineStrategyA } from "@/contexts/WorkflowGenerator/validators/groupNodePipeline";
+
 /**
  * Generate workflow from prompt using GPT-4o-mini
  *
@@ -89,65 +89,11 @@ export const generateWorkflowAction: GenerateWorkflowAction = async ({
 
     let nodes = populateGroupChildren(allNodes);
 
-    // Detect and auto-fix circular parentNode cycles (max 3 retries)
-    const MAX_CIRCULAR_FIX_RETRIES = 3;
-    for (let attempt = 0; attempt < MAX_CIRCULAR_FIX_RETRIES; attempt++) {
-      const cycleResult = validateParentNodeCycles(nodes);
-      const groupCycleResult = validateCircularReferences(nodes);
-
-      if (cycleResult.valid && groupCycleResult.valid) break;
-
-      if (attempt === MAX_CIRCULAR_FIX_RETRIES - 1) {
-        throw new Error(
-          `Failed to resolve circular parentNode cycles after ${MAX_CIRCULAR_FIX_RETRIES} retries`,
-        );
-      }
-
-      console.warn(
-        `[generateWorkflowAction] Circular parentNode cycle detected (attempt ${attempt + 1}/${MAX_CIRCULAR_FIX_RETRIES}), requesting AI fix...`,
-      );
-
-      const affectedNodes = [
-        ...(cycleResult.affectedNodes ?? []),
-        ...(groupCycleResult.affectedNodes ?? []),
-      ];
-
-      const fixPrompt = buildCircularCycleFixPrompt(nodes, affectedNodes);
-      const firstAffectedId = affectedNodes[0]?.id ?? nodes[0].id;
-
-      const editResult = await updateWorkflowAction({
-        targetNodeIds: [firstAffectedId],
-        prompt: fixPrompt,
-        nodes,
-      });
-
-      if (editResult.nodes.update?.length) {
-        editResult.nodes.update.forEach((update) => {
-          const idx = nodes.findIndex((n) => n.id === update.id);
-          if (idx >= 0) {
-            nodes[idx] = {
-              ...nodes[idx],
-              data: { ...nodes[idx].data, ...update.data },
-              parentNode: update.parentNode ?? nodes[idx].parentNode,
-            };
-          }
-        });
-      }
-      if (editResult.nodes.create?.length) {
-        nodes = [...nodes, ...editResult.nodes.create];
-      }
-      if (editResult.nodes.delete?.length) {
-        const deleteIds = new Set(editResult.nodes.delete);
-        nodes = nodes.filter((n) => !deleteIds.has(n.id));
-      }
-
-      nodes = populateGroupChildren(nodes);
-    }
-
-    nodes = removeUndersizedGroups(nodes);
     nodes = normalizeNodeDefaults(nodes);
-    nodes = normalizeStartInputData(nodes);
-    nodes = normalizeNodeChaining(nodes);
+    nodes = applyDeterministicCodeGeneration(nodes);
+    nodes = deterministicRepairEmptyDataShape(nodes);
+    nodes = deterministicRepairGroupBoundaries(nodes);
+    nodes = deterministicRepairPipelineStrategyA(nodes);
     nodes = applyPRDFallbacks(nodes);
 
     return {
@@ -203,89 +149,8 @@ function populateGroupChildren(nodes: WorkflowNode[]): WorkflowNode[] {
   });
 }
 
-function buildCircularCycleFixPrompt(
-  nodes: WorkflowNode[],
-  affectedNodes: WorkflowNode[],
-): string {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  const descriptions = affectedNodes
-    .map((node) => {
-      const parent = node.parentNode ? nodeMap.get(node.parentNode) : undefined;
-      return (
-        `- "${node.data?.title ?? node.id}" (id: ${node.id}, type: ${node.type}) ` +
-        `has parentNode → "${parent?.data?.title ?? node.parentNode}" (id: ${node.parentNode})`
-      );
-    })
-    .join("\n");
-
-  return (
-    `CRITICAL BUG: Circular parentNode cycle detected!\n\n` +
-    `The following nodes form a mutual parentNode reference cycle (A.parentNode = B, B.parentNode = A):\n` +
-    descriptions +
-    `\n\nThis causes "Maximum call stack size exceeded" during rendering.\n\n` +
-    `FIX REQUIRED: Break the cycle by removing or correcting the parentNode of one of the involved nodes.\n` +
-    `RULES:\n` +
-    `- parentNode must only point UP the hierarchy (to a containing group or task)\n` +
-    `- Two nodes must NEVER mutually reference each other as parents\n` +
-    `- Make one of the involved nodes a root node (remove its parentNode) or re-parent it to a different valid ancestor`
-  );
-}
-
-/** Remove GroupNodes with < 2 non-Decision children and re-parent their orphaned children. */
-function removeUndersizedGroups(nodes: WorkflowNode[]): WorkflowNode[] {
-  const groupChildren: Record<string, WorkflowNode[]> = {};
-  nodes.forEach((node) => {
-    if (node.parentNode) {
-      if (!groupChildren[node.parentNode]) groupChildren[node.parentNode] = [];
-      groupChildren[node.parentNode].push(node);
-    }
-  });
-
-  const invalidGroupIds = new Set(
-    nodes
-      .filter((n) => {
-        if (n.type !== "group") return false;
-        const validChildren = (groupChildren[n.id] ?? []).filter(
-          (c) => c.type !== "decision",
-        );
-        return validChildren.length < 2;
-      })
-      .map((n) => n.id),
-  );
-
-  if (invalidGroupIds.size === 0) return nodes;
-
-  const groupParentMap: Record<string, string | undefined> = {};
-  nodes
-    .filter((n) => invalidGroupIds.has(n.id))
-    .forEach((n) => {
-      groupParentMap[n.id] = n.parentNode;
-    });
-
-  const resolveParent = (id: string | undefined): string | undefined => {
-    if (!id || !invalidGroupIds.has(id)) return id;
-    return resolveParent(groupParentMap[id]);
-  };
-
-  return nodes
-    .filter((n) => !invalidGroupIds.has(n.id))
-    .map((n) => {
-      if (n.parentNode && invalidGroupIds.has(n.parentNode)) {
-        return { ...n, parentNode: resolveParent(n.parentNode) };
-      }
-      return n;
-    });
-}
-
-/** Apply type-specific defaults: ServiceNode http/retry/timeout, DecisionNode condition, GroupNode functionCode. */
+/** Apply type-specific defaults: ServiceNode http/retry/timeout, GroupNode functionCode. */
 function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
-  const VALID_CONDITION_OPERATORS = new Set([
-    "has",
-    "hasNot",
-    "truthy",
-    "falsy",
-  ]);
-
   return nodes.map((node) => {
     if (node.type === "service") {
       const serviceData = node.data as ServiceNodeData;
@@ -321,36 +186,40 @@ function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
       return { ...node, data: baseData };
     }
 
-    if (node.type === "decision") {
-      const decisionData = node.data as DecisionNodeData;
-      if (decisionData.condition) {
-        const sanitized: Record<string, string> = {};
-        for (const [key, value] of Object.entries(decisionData.condition)) {
-          if (VALID_CONDITION_OPERATORS.has(key)) {
-            sanitized[key] = value as string;
-          }
-        }
-        return {
-          ...node,
-          data: { mode: "panel", ...node.data, condition: sanitized },
-        };
-      }
-    }
-
     if (node.type === "group") {
       const hasExecutionConfig = node.data.execution?.config;
       const hasFunctionCode = hasExecutionConfig?.functionCode;
+      const existingInputData =
+        node.data.execution?.config?.nodeData?.inputData;
+      const existingOutputData =
+        node.data.execution?.config?.nodeData?.outputData;
+
+      const groupData = node.data as GroupNodeData;
+      const groups = groupData.groups || [];
+      const lastChild = groups[groups.length - 1];
+      const lastOutputData =
+        lastChild?.data?.execution?.config?.nodeData?.outputData;
+
+      // Issue 1: root group nodes must have inputData: null (key present, not missing)
+      // Issue 4: always sync group boundary to last child's outputData
+      // Use last child's outputData when available; fall back to existing; use null (not {})
+      // {} would fail Empty Data Shape validator since empty objects cannot be type-inferred
+      const effectiveOutputData =
+        lastOutputData && typeof lastOutputData === "object" && Object.keys(lastOutputData as object).length > 0
+          ? lastOutputData
+          : existingOutputData && typeof existingOutputData === "object" && Object.keys(existingOutputData as object).length > 0
+            ? existingOutputData
+            : null;
+
+      const syncedNodeData = {
+        inputData: !node.parentNode ? null : (existingInputData ?? null),
+        outputData: effectiveOutputData,
+      };
 
       if (!hasFunctionCode) {
         console.warn(
           `GroupNode ${node.id} missing functionCode. Injecting default: "return inputData;"`,
         );
-
-        const groupData = node.data as GroupNodeData;
-        const groups = groupData.groups || [];
-        const lastNode = groups[groups.length - 1];
-        const lastNodeOutputData =
-          lastNode?.data?.execution?.config?.nodeData?.outputData;
 
         return {
           ...node,
@@ -362,11 +231,23 @@ function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
                 ...hasExecutionConfig,
                 functionCode:
                   "// inputData: output from last internal node\nreturn inputData;",
-                nodeData: {
-                  inputData: node.data.execution?.config?.nodeData?.inputData,
-                  outputData: lastNodeOutputData || {},
-                },
+                nodeData: syncedNodeData,
                 lastModified: Date.now(),
+              },
+            },
+          },
+        };
+      } else {
+        // functionCode exists: keep it, but always sync boundary nodeData
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            execution: {
+              ...node.data.execution,
+              config: {
+                ...hasExecutionConfig,
+                nodeData: syncedNodeData,
               },
             },
           },
@@ -406,130 +287,6 @@ function applyPRDFallbacks(nodes: WorkflowNode[]): WorkflowNode[] {
       }),
     },
   }));
-}
-
-/** Force inputData to null for root nodes and direct children of start nodes. */
-function normalizeStartInputData(nodes: WorkflowNode[]): WorkflowNode[] {
-  return nodes.map((node) => {
-    const isRootNode = !node.parentNode;
-    const parentNode = nodes.find((n) => n.id === node.parentNode);
-    const isStartNodeChild = parentNode?.type === "start";
-
-    if (!isRootNode && !isStartNodeChild) return node;
-
-    const execution = node.data.execution;
-    const config = execution?.config;
-    const nodeData = config?.nodeData;
-
-    if (!nodeData) return node;
-
-    return {
-      ...node,
-      data: {
-        ...node.data,
-        execution: {
-          ...execution,
-          config: {
-            ...config,
-            nodeData: { ...nodeData, inputData: null },
-          },
-        },
-      },
-    };
-  });
-}
-
-/** Set nodeData.inputData on a node immutably; no-ops if config.nodeData is absent. */
-function setNodeInputData(
-  node: WorkflowNode,
-  inputData: unknown,
-): WorkflowNode {
-  if (!node.data.execution?.config?.nodeData) return node;
-  return {
-    ...node,
-    data: {
-      ...node.data,
-      execution: {
-        ...node.data.execution,
-        config: {
-          ...node.data.execution.config,
-          nodeData: {
-            ...node.data.execution.config.nodeData,
-            inputData,
-          },
-        },
-      },
-    },
-  };
-}
-
-/**
- * Enforce inputData/outputData chaining rules across all non-start nodes.
- *
- * Rules:
- *   GroupNode.nodeData.inputData        = parent.outputData
- *   groups[0].nodeData.inputData        = parent.outputData  (same as GroupNode)
- *   groups[i].nodeData.inputData (i≥1)  = groups[i-1].nodeData.outputData
- *   task/service/decision.nodeData.inputData = parent.outputData
- *
- * Nodes whose parent is start or absent are skipped (handled by normalizeStartInputData).
- * Internal group nodes in the outer array are also skipped; they are updated inside
- * the group's own processing.
- */
-function normalizeNodeChaining(nodes: WorkflowNode[]): WorkflowNode[] {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-
-  return nodes.map((node) => {
-    const parent = node.parentNode ? nodeMap.get(node.parentNode) : null;
-
-    // Root nodes and start-node children are handled by normalizeStartInputData
-    if (!parent || parent.type === "start") return node;
-
-    // Internal nodes whose parent is a group are handled within the group's own processing
-    if (parent.type === "group") return node;
-
-    const parentOutputData =
-      parent.data.execution?.config?.nodeData?.outputData ?? null;
-
-    if (node.type === "group") {
-      const groupData = node.data as GroupNodeData;
-      const originalGroups = groupData.groups || [];
-      const processedGroups: WorkflowNode[] = [];
-
-      for (let idx = 0; idx < originalGroups.length; idx++) {
-        const inputData =
-          idx === 0
-            ? parentOutputData
-            : (originalGroups[idx - 1]?.data?.execution?.config?.nodeData
-                ?.outputData ?? null);
-        processedGroups.push(setNodeInputData(originalGroups[idx], inputData));
-      }
-
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          groups: processedGroups,
-          execution: {
-            ...node.data.execution,
-            config: {
-              functionCode: "",
-              ...node.data.execution?.config,
-              nodeData: {
-                ...node.data.execution?.config?.nodeData,
-                inputData: parentOutputData,
-              },
-            },
-          },
-        },
-      } satisfies {
-        data: Partial<GroupNode["data"]>;
-      };
-    }
-
-    // task / service / decision whose parent is task / service / decision
-    return setNodeInputData(node, parentOutputData);
-  });
 }
 
 /**

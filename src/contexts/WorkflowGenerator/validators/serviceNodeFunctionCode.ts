@@ -10,13 +10,6 @@ import { generatePanelCode } from "@/utils/workflow/codeGenerators";
 function isIncomplete(node: WorkflowNode): boolean {
   if (node.type !== "service") return false;
   const config = getExecutionConfig(node);
-  console.log(
-    config?.functionCode?.trim(),
-    "-----------test",
-    !config?.functionCode?.trim() ||
-      config?.nodeData?.inputData === undefined ||
-      config?.nodeData?.outputData === undefined,
-  );
   return (
     !config?.functionCode?.trim() ||
     config?.nodeData?.inputData === undefined ||

@@ -109,11 +109,11 @@ export async function repairOutputDataTypeMismatch(
       expectedOutput,
       actualOutput,
     );
-    const editResult = await context.updateWorkflowAction(
-      node.id,
-      fixPrompt,
-      workingNodes,
-    );
+    const editResult = await context.updateWorkflowAction({
+      targetNodeIds: [node.id],
+      prompt: fixPrompt,
+      nodes: workingNodes,
+    });
 
     // Apply updates (same pattern as functionCodeMismatch.ts)
     if (editResult.nodes.update?.length) {
