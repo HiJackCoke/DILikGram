@@ -722,7 +722,6 @@ export default function WorkflowPage() {
     });
   };
 
-  console.log("generated nodes: ", nodes);
   return (
     <div
       ref={ref}

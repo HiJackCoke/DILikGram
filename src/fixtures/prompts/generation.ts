@@ -208,12 +208,6 @@ PRD-BASED WORKFLOW GENERATION RULES
    - Failure case: invalid/edge inputData → error condition (can add "error" key to expectedOutput)
    - Edge case: boundary inputData values → boundary outputData
 
-6. REUSE EXISTING NODES FROM LIBRARY
-   - Prioritize reusing nodes from the provided node library
-   - Only create new nodes if no suitable library node exists
-   - When reusing, maintain the node's structure but add/update prdReference
-   - Increment usageCount for reused nodes
-
 7. FUNCTIONAL PROGRAMMING STYLE
    - GroupNode = Feature unit (stateless, composable)
    - Internal nodes = Pure functions (task/service/decision)
@@ -1068,7 +1062,6 @@ export const GENERATION_SYSTEM_PROMPT = buildPrompt({
 export function getGenerationContent(
   prompt: GenerateWorkflowActionParams['prompt'],
   prdText?: string,
-  nodeLibrary?: GenerateWorkflowActionParams['nodeLibrary'],
 ): string {
   let content = `Create a workflow based on this request: "${prompt}"\n\n`;
 
@@ -1076,20 +1069,6 @@ export function getGenerationContent(
   if (prdText) {
     content += `${buildPRDContext(prdText)}\n\n`;
     content += `IMPORTANT: Reference specific PRD sections in prdReference field for every node.\n\n`;
-  }
-
-  // Add available reusable nodes from library
-  if (nodeLibrary && nodeLibrary.length > 0) {
-    content += `═══════════════════════════════════════════════════════════════\n`;
-    content += `AVAILABLE REUSABLE NODES FROM LIBRARY\n`;
-    content += `═══════════════════════════════════════════════════════════════\n\n`;
-    content += nodeLibrary
-      .map(
-        (node) =>
-          `- ${node.name} (${node.category}, ${node.nodeType}): ${node.description}\n  Used ${node.usageCount} time(s)`,
-      )
-      .join("\n");
-    content += `\n\nPrioritize reusing these nodes where applicable. When reusing, maintain the node structure but update prdReference to match current requirements.\n\n`;
   }
 
   content += `Remember: No Start/End nodes, No Edges. Use parentNode logic. Return your response as a JSON object.`;

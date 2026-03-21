@@ -1078,6 +1078,21 @@ export function buildBatchRepairPrompt(
         validIdLines.join("\n");
     }
 
+    // OUTPUT_DATA_TYPE_MISMATCH: inject actualOutput so AI knows exactly what functionCode returns
+    let actualOutputBlock: string | null = null;
+    if (validatorName === "outputData Type Mismatch" && result.metadata?.mismatches) {
+      type MismatchEntry = { node: { id: string }; inputData: unknown; expectedOutput: unknown; actualOutput: unknown };
+      const mismatches = result.metadata.mismatches as MismatchEntry[];
+      if (mismatches.length > 0) {
+        const lines = mismatches.map((m) =>
+          `      { nodeId: "${m.node.id}", actualOutput: ${JSON.stringify(m.actualOutput)}, expectedOutput: ${JSON.stringify(m.expectedOutput)} }`,
+        );
+        actualOutputBlock =
+          `    ACTUAL EXECUTION RESULTS (what functionCode ACTUALLY returns — update outputData to match this):\n` +
+          lines.join("\n");
+      }
+    }
+
     // GroupNode Pipelines: show full sorted pipeline for each affected GroupNode
     let pipelineContextBlock: string | null = null;
     if (validatorName === "GroupNode Pipelines" && allNodes && result.affectedNodes) {
@@ -1137,6 +1152,7 @@ export function buildBatchRepairPrompt(
       validNodeIdsBlock,
       pipelineContextBlock,
       parentContextBlock,
+      actualOutputBlock,
       `    ISSUE: ${result.errorMessage ?? `Error type: ${result.errorType}`}`,
       `    FIX REQUIRED: ${guidance}`,
     ]

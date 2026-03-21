@@ -1,5 +1,4 @@
 import type { WorkflowNode } from "@/types";
-import { ReusableNodeTemplate } from "../prd";
 import type { AnalyzePRDResult } from "./prdAnalysis";
 
 export interface GenerateWorkflowResponse {
@@ -10,14 +9,11 @@ export interface GenerateWorkflowResponse {
     estimatedComplexity: "simple" | "moderate" | "complex";
     /** AI-generated summary of PRD requirements */
     prdSummary?: string;
-    /** IDs of nodes reused from library */
-    reusedNodes?: string[];
   };
 }
 
 export type GenerateWorkflowActionParams = {
   prompt: string;
-  nodeLibrary?: ReusableNodeTemplate[];
   analysisResult?: AnalyzePRDResult | null;
 };
 

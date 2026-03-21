@@ -11,7 +11,6 @@ import OpenAI from "openai";
 import { v4 as uuid } from "uuid";
 import type {
   GenerateWorkflowAction,
-  GenerateWorkflowActionParams,
   GenerateWorkflowResponse,
   UpdateWorkflowAction,
   UpdateWorkflowResponse,
@@ -54,7 +53,6 @@ import { deterministicRepairGroupBoundaries, deterministicRepairPipelineStrategy
  */
 export const generateWorkflowAction: GenerateWorkflowAction = async ({
   prompt,
-  nodeLibrary,
   analysisResult,
 }) => {
   // if (!prompt || !prompt.trim()) {
@@ -80,7 +78,6 @@ export const generateWorkflowAction: GenerateWorkflowAction = async ({
         openai,
         prompt,
         contexts[i],
-        nodeLibrary,
       );
       allNodes.push(...nodes);
     }
@@ -296,13 +293,12 @@ async function generatePageNodes(
   openai: OpenAI,
   prompt: string,
   enrichedPrdText: string | undefined,
-  nodeLibrary: GenerateWorkflowActionParams["nodeLibrary"],
 ): Promise<WorkflowNode[]> {
   const response = await openai.responses.create({
     model: "gpt-4o-mini",
     temperature: 0.3,
     instructions: GENERATION_SYSTEM_PROMPT,
-    input: getGenerationContent(prompt, enrichedPrdText, nodeLibrary),
+    input: getGenerationContent(prompt, enrichedPrdText),
     text: { format: { type: "json_object" } },
   });
 

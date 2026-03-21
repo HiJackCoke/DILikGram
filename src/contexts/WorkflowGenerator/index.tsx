@@ -38,11 +38,6 @@ import {
   sanitizeNewNodeIds,
   splitIntoWorkflowTrees,
 } from "@/utils/ai/workflowProcessor";
-import {
-  loadNodeLibrary,
-  saveToNodeLibrary,
-  extractReusableNodes,
-} from "@/utils/nodeLibrary";
 import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
 import { runValidationPipeline } from "./validators";
 
@@ -157,11 +152,8 @@ export function WorkflowGeneratorProvider({
     });
 
     try {
-      const nodeLibrary = loadNodeLibrary();
-
       const generated = await generateWorkflowAction({
         prompt: pendingPromptRef.current,
-        nodeLibrary,
         analysisResult,
       });
 
@@ -210,12 +202,6 @@ export function WorkflowGeneratorProvider({
         allValidatedNodes,
         existingNodesRef.current,
       );
-
-      const reusableNodes = extractReusableNodes(allFinalNodes);
-      if (reusableNodes.length > 0) {
-        saveToNodeLibrary(reusableNodes);
-        console.log(`Saved ${reusableNodes.length} reusable nodes to library`);
-      }
 
       listeners.current.forEach((listener) =>
         listener(allFinalNodes, allFinalEdges),

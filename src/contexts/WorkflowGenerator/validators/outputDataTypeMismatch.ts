@@ -90,6 +90,104 @@ export async function validateOutputDataTypeMismatch(
 }
 
 /**
+ * Deterministic repair: if functionCode executes successfully and its actual return value
+ * has a different shape than declared outputData, update outputData to match the actual result.
+ *
+ * Safe because:
+ * - outputData is a sample/schema declaration, not a runtime contract
+ * - We preserve 3+ element arrays from existing outputData when actual has fewer (to avoid EMPTY_DATA_SHAPE)
+ * - We never change functionCode
+ */
+export async function deterministicRepairOutputDataTypeMismatch(
+  nodes: WorkflowNode[],
+): Promise<WorkflowNode[]> {
+  const result = [...nodes];
+
+  for (let i = 0; i < result.length; i++) {
+    const node = result[i];
+    // Only task nodes have user-written functionCode (service/decision are auto-generated)
+    if (node.type !== "task") continue;
+
+    const config = getExecutionConfig(node);
+    if (!config?.functionCode?.trim()) continue;
+
+    const expectedOutput = config.nodeData?.outputData;
+    // Only fix when outputData is declared as a non-null object (has keys to compare)
+    if (
+      expectedOutput === null ||
+      expectedOutput === undefined ||
+      typeof expectedOutput !== "object" ||
+      Array.isArray(expectedOutput)
+    ) continue;
+
+    try {
+      const executorFn = compileExecutor(config, node.type);
+      const execResult = await executeFunction(
+        executorFn,
+        config.nodeData?.inputData ?? null,
+        5000,
+      );
+
+      if (!execResult.success) continue; // runtime error — leave for AI
+      if (
+        execResult.data === null ||
+        execResult.data === undefined ||
+        typeof execResult.data !== "object" ||
+        Array.isArray(execResult.data)
+      ) continue;
+
+      if (typeShapeMatches(expectedOutput, execResult.data)) continue; // already correct
+
+      const actualData = execResult.data as Record<string, unknown>;
+      const expectedObj = expectedOutput as Record<string, unknown>;
+
+      // Build new outputData using actual structure, preserving rich sample arrays from existing outputData
+      const newOutputData: Record<string, unknown> = {};
+      for (const [key, actualValue] of Object.entries(actualData)) {
+        const existingValue = expectedObj[key];
+        // Preserve existing array when it has 3+ items and actual has fewer (same element type)
+        if (
+          Array.isArray(actualValue) &&
+          actualValue.length < 3 &&
+          Array.isArray(existingValue) &&
+          existingValue.length >= 3 &&
+          (actualValue.length === 0 || getDataType(actualValue[0]) === getDataType(existingValue[0]))
+        ) {
+          newOutputData[key] = existingValue;
+        } else {
+          newOutputData[key] = actualValue;
+        }
+      }
+
+      result[i] = {
+        ...node,
+        data: {
+          ...node.data,
+          execution: {
+            ...node.data.execution,
+            config: {
+              ...config,
+              nodeData: {
+                ...config.nodeData,
+                outputData: newOutputData,
+              },
+            },
+          },
+        },
+      };
+
+      console.log(
+        `[deterministicRepairOutputDataTypeMismatch] Fixed outputData keys for ${node.id}: ${Object.keys(actualData).join(", ")} (was: ${Object.keys(expectedObj).join(", ")})`,
+      );
+    } catch {
+      continue;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Repair outputData type mismatches by asking AI to fix the discrepancy
  */
 export async function repairOutputDataTypeMismatch(

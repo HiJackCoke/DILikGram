@@ -2,8 +2,6 @@
  * PRD (Product Requirements Document) related type definitions
  */
 
-import type { WorkflowNode, WorkflowNodeType } from "./nodes";
-
 /**
  * PRD Reference metadata for nodes
  * Links node implementation to specific PRD requirements
@@ -40,40 +38,40 @@ export type TestCase = {
   lastRun?: number;
 };
 
-/**
- * Node library category for auto-categorization
- */
-export type NodeCategory =
-  | "validation"
-  | "api"
-  | "data-processing"
-  | "authentication"
-  | "notification"
-  | "payment"
-  | "database"
-  | "custom";
+// /**
+//  * Node library category for auto-categorization
+//  */
+// export type NodeCategory =
+//   | "validation"
+//   | "api"
+//   | "data-processing"
+//   | "authentication"
+//   | "notification"
+//   | "payment"
+//   | "database"
+//   | "custom";
 
-/**
- * Reusable node template stored in library
- * Auto-extracted from generated workflows
- */
-export type ReusableNodeTemplate = {
-  /** Unique template identifier */
-  id: string;
-  /** Auto-detected category */
-  category: NodeCategory;
-  /** Template name */
-  name: string;
-  /** Template description */
-  description: string;
-  /** Node type */
-  nodeType: WorkflowNodeType;
-  /** Node template (without id and position) */
-  template: Omit<WorkflowNode, "id" | "position">;
-  /** Number of times this template has been used */
-  usageCount: number;
-  /** Timestamp when template was created */
-  createdAt: number;
-  /** Keywords extracted from node for search */
-  tags: string[];
-};
+// /**
+//  * Reusable node template stored in library
+//  * Auto-extracted from generated workflows
+//  */
+// export type ReusableNodeTemplate = {
+//   /** Unique template identifier */
+//   id: string;
+//   /** Auto-detected category */
+//   category: NodeCategory;
+//   /** Template name */
+//   name: string;
+//   /** Template description */
+//   description: string;
+//   /** Node type */
+//   nodeType: WorkflowNodeType;
+//   /** Node template (without id and position) */
+//   template: Omit<WorkflowNode, "id" | "position">;
+//   /** Number of times this template has been used */
+//   usageCount: number;
+//   /** Timestamp when template was created */
+//   createdAt: number;
+//   /** Keywords extracted from node for search */
+//   tags: string[];
+// };

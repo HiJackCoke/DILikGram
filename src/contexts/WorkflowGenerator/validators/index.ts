@@ -16,7 +16,7 @@ import { validateRootGroupNodes } from "./rootGroupNode";
 import { validateFunctionCodeInputData } from "./functionCodeMismatch";
 import { validateStartNodeChildren } from "./startNodeChild";
 import { validateSyncOnlyNodes } from "./syncOnlyNodes";
-import { validateOutputDataTypeMismatch } from "./outputDataTypeMismatch";
+import { validateOutputDataTypeMismatch, deterministicRepairOutputDataTypeMismatch } from "./outputDataTypeMismatch";
 import { validateServiceNodeFunctionCode } from "./serviceNodeFunctionCode";
 import { validateServiceNodeSimulation } from "./serviceNodeSimulation";
 import { validateServiceNodeRuntime } from "./serviceNodeRuntime";
@@ -73,6 +73,7 @@ export async function runValidationPipeline(
   // ─────────────────────────────────────────────────────────────────────────
   workingNodes = applyDeterministicCodeGeneration(workingNodes);
   workingNodes = deterministicRepairEmptyDataShape(workingNodes);
+  workingNodes = await deterministicRepairOutputDataTypeMismatch(workingNodes);
   workingNodes = deterministicRepairGroupBoundaries(workingNodes);
   workingNodes = deterministicRepairPipelineStrategyA(workingNodes);
 
@@ -239,6 +240,7 @@ export async function runValidationPipeline(
     // Re-apply deterministic passes after AI fix
     workingNodes = applyDeterministicCodeGeneration(workingNodes);
     workingNodes = deterministicRepairEmptyDataShape(workingNodes);
+    workingNodes = await deterministicRepairOutputDataTypeMismatch(workingNodes);
     workingNodes = deterministicRepairGroupBoundaries(workingNodes);
     workingNodes = deterministicRepairPipelineStrategyA(workingNodes);
 
