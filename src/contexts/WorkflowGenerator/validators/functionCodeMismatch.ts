@@ -62,11 +62,27 @@ export function validateFunctionCodeInputData(
     return { valid: true };
   }
 
+  const details = nodesWithMismatch.map((n) => {
+    const config = getExecutionConfig(n);
+    const referencedFields = extractInputDataReferences(config?.functionCode ?? "");
+    const missingFields = findMissingFields(referencedFields, config?.nodeData?.inputData);
+    const availableKeys = config?.nodeData?.inputData
+      ? Object.keys(config.nodeData.inputData as object)
+      : [];
+    return `"${n.data.title ?? n.id}" (${n.id}): functionCode references [${missingFields.join(", ")}] but inputData only has [${availableKeys.join(", ") || "null/none"}]`;
+  });
+
   return {
     valid: false,
     errorType: "FUNCTIONCODE_INPUTDATA_MISMATCH",
-    errorMessage: `Found ${nodesWithMismatch.length} nodes with functionCode/inputData mismatch`,
+    errorMessage: `Found ${nodesWithMismatch.length} nodes with functionCode/inputData mismatch: ${details.join(" | ")}`,
     affectedNodes: nodesWithMismatch,
+    metadata: { mismatches: nodesWithMismatch.map((n) => {
+      const config = getExecutionConfig(n);
+      const referencedFields = extractInputDataReferences(config?.functionCode ?? "");
+      const missingFields = findMissingFields(referencedFields, config?.nodeData?.inputData);
+      return { nodeId: n.id, missingFields, availableKeys: config?.nodeData?.inputData ? Object.keys(config.nodeData.inputData as object) : [] };
+    })},
   };
 }
 
@@ -146,32 +162,42 @@ export async function repairFunctionCodeMismatch(
       // Check if node is inside a GroupNode
       const parentNode = workingNodes.find((n) => n.id === node.parentNode);
       if (parentNode?.type === "group") {
+        const groupInputData = getExecutionConfig(parentNode)?.nodeData?.inputData;
         if (!inputData) {
-          // GroupNode child missing inputData
-          fixPrompt = `The node "${node.data.title ?? "Untitled"}" (id: ${node.id}) is inside a GroupNode but is MISSING execution.config.nodeData.inputData.
+          if (!groupInputData) {
+            // GroupNode itself has null inputData → boundary sync will wipe any inputData we add.
+            // The correct fix: REWRITE functionCode to not reference inputData at all.
+            fixPrompt = `The node "${node.data.title ?? "Untitled"}" (id: ${node.id}) is inside a GroupNode, but both the node AND the GroupNode have inputData=null.
 
+functionCode: ${functionCode} (INCORRECT — references inputData fields: ${Array.from(referencedFields).join(", ")})
+
+SITUATION: The GroupNode.inputData is null, so boundary sync will ALWAYS set this node's inputData to null.
+Adding fields to inputData is FUTILE — they get wiped every repair cycle.
+
+RULE: REWRITE functionCode to NOT reference inputData at all.
+Instead, simulate the operation with hardcoded or context-derived data (no inputData reads).
+
+EXAMPLES:
+- "Delete Macro" → return { success: true, deletedMacroId: "macro-001", message: "Macro deleted" };
+- "Remove Item" → return { success: true, itemId: "item-001" };
+- "Clear Selection" → return { cleared: true };
+
+DO NOT add inputData. DO NOT reference inputData.anything. Return a hardcoded result that makes semantic sense.`;
+          } else {
+            // GroupNode child missing inputData but GroupNode has inputData
+            fixPrompt = `The node "${node.data.title ?? "Untitled"}" (id: ${node.id}) is inside a GroupNode but is MISSING execution.config.nodeData.inputData.
+
+GroupNode.inputData: ${JSON.stringify(groupInputData)} (THIS IS THE AUTHORITATIVE SOURCE — match exactly)
 functionCode: ${functionCode} (references inputData fields)
 
-RULE: You MUST add execution.config.nodeData.inputData with all fields that functionCode references.
+RULE: Set execution.config.nodeData.inputData to EXACTLY MATCH GroupNode.inputData (same keys + representative values).
+Then update functionCode to ONLY use those GroupNode.inputData keys.
 
-Extract fields from functionCode and analyze how they are used:
+CRITICAL: Match the VALUE TYPE and STRUCTURE from GroupNode.inputData.
+DO NOT add keys that are NOT in GroupNode.inputData — they get wiped by boundary sync.
 
-- Example 1: if functionCode uses "inputData.tasks.filter(t => t.completed)"
-  → tasks is an array of objects with "completed" property
-  → Add: execution.config.nodeData.inputData = { tasks: [{ completed: false }] }
-
-- Example 2: if functionCode uses "inputData.tasks.slice(0, 3)"
-  → tasks is an array (infer structure from context)
-  → Add: execution.config.nodeData.inputData = { tasks: [{ id: "1", content: "..." }] }
-
-- Example 3: if functionCode uses "inputData.date.toString()"
-  → date is a Date or string
-  → Add: execution.config.nodeData.inputData = { date: "2024-01-01" }
-
-CRITICAL: Match the VALUE TYPE and STRUCTURE that functionCode expects.
-DO NOT use [null] or empty arrays if functionCode expects specific properties.
-
-This inputData should match what the previous node in the GroupNode outputs.`;
+This inputData should match what the GroupNode receives from its parent.`;
+          }
         } else {
           // GroupNode child has inputData but functionCode references wrong fields
           // After !inputData check above, inputData is guaranteed to be Record<string, unknown>

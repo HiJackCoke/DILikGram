@@ -399,6 +399,10 @@ VALIDATION CHECKLIST (Self-Correction):
    - CONTRACT: if functionCode returns \`{ outKey: inputData.inKey }\`, outputData[outKey] MUST mirror inputData[inKey]
      ❌ Wrong: functionCode: \`"return { displayedTasks: inputData.tasks };"\` with outputData: \`{ displayedTasks: [] }\`
      ✅ Correct: outputData.displayedTasks = same structure/elements as inputData.tasks
+   - NESTED ARRAYS RULE (CRITICAL): Arrays nested inside objects of other arrays MUST ALSO have 3+ elements.
+     ❌ Wrong: \`{ games: [{id:"g1", participants:[]}, {id:"g2", participants:[]}, {id:"g3", participants:[]}] }\`
+     ✅ Correct: \`{ games: [{id:"g1", participants:[{userId:"u1",name:"Alice"},{userId:"u2",name:"Bob"},{userId:"u3",name:"Carol"}]}, {id:"g2", participants:[{userId:"u4",name:"Dan"},{userId:"u5",name:"Eve"},{userId:"u6",name:"Frank"}]}, {id:"g3", participants:[{userId:"u7",name:"Gina"},{userId:"u8",name:"Hank"},{userId:"u9",name:"Iris"}]}] }\`
+     This applies to ALL nested arrays: members[], participants[], items[], comments[], tags[], etc.
 □ **Execution Scope Check:**
    - Does functionCode ONLY use \`inputData\` and \`fetch\`?
    - Does functionCode avoid referencing \`metadata\`, \`node\`, \`config\`, or other external variables?

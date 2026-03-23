@@ -318,6 +318,25 @@ PRD-BASED WORKFLOW GENERATION RULES
      nodeData.inputData (i.e. the parent node's outputData). Use node[0].functionCode to reshape
      if needed — do NOT rely on initFunctionCode for this.
 
+   ⛔ STEP-BY-STEP CHAIN GENERATION — MANDATORY ORDER:
+   When generating 2+ nodes inside a GroupNode, follow this exact order:
+   1. Generate node[0] with outputData  (decide what it produces)
+   2. Copy node[0].outputData EXACTLY → use as node[1].inputData  (same keys, same sample values)
+   3. Write node[1].functionCode using ONLY keys from node[1].inputData
+   4. Derive node[1].outputData from what node[1].functionCode returns
+   5. Repeat 2→4 for node[2], node[3], etc.
+   DO NOT invent new keys for node[i].inputData — they MUST come from node[i-1].outputData.
+
+   ❌ KEY MISMATCH ANTI-PATTERN (most common generation error):
+     service/node[0]: outputData = { recognizedFood: [{name:"Apple",calories:95},...] }
+     task/node[1]:    inputData  = { meals: [{...}] }  ← WRONG: "meals" is invented — not in service output
+     task/node[1]:    functionCode: "return { logged: inputData.meals.map(...) };"  ← WRONG: inputData.meals doesn't exist
+
+   ✅ CORRECT (inputData copied from previous node's outputData):
+     service/node[0]: outputData = { recognizedFood: [{name:"Apple",calories:95},{name:"Banana",calories:89},{name:"Orange",calories:62}] }
+     task/node[1]:    inputData  = { recognizedFood: [{name:"Apple",calories:95},{name:"Banana",calories:89},{name:"Orange",calories:62}] }  ← EXACT COPY
+     task/node[1]:    functionCode: "return { logResult: inputData.recognizedFood.map(f => f.name).join(', ') };"
+
    - ❌ Wrong (node[0] outputs tasks, but node[1] reads displayedTasks):
      node[0].functionCode: "return { tasks: [...] };"
      node[1].functionCode: "return { result: inputData.displayedTasks.length };"

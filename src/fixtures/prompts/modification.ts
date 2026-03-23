@@ -619,10 +619,37 @@ function getFixGuidance(
       return [
         "FIX RULE: functionCode must only reference fields that exist in inputData.",
         "",
-        "TWO OPTIONS — choose based on whether inputData is authoritative:",
-        "  OPTION A (inputData is authoritative — node is inside a GroupNode):",
-        "    → REWRITE functionCode to only use the fields that ARE in inputData.",
-        "    → DO NOT add fields to inputData that don't exist there — inputData is set by the pipeline.",
+        "⛔ SERVICE NODE SPECIAL CASE (functionCode is AUTO-GENERATED from data.http):",
+        "  Service node functionCode is generated from data.http template variables like {{inputData.X}}.",
+        "  You CANNOT rewrite functionCode for service nodes — do NOT change functionCode.",
+        "  The MISMATCH means data.http uses {{inputData.X}} for a key X that is NOT in inputData.",
+        "",
+        "  ⚠️ BOUNDARY SYNC CYCLE WARNING:",
+        "  If this service node is INSIDE A GROUPNODE, the GroupNode boundary sync will OVERWRITE",
+        "  the service's inputData with GroupNode.inputData every repair cycle.",
+        "  Adding the missing key to inputData ALONE will NEVER work — it gets wiped by boundary sync.",
+        "",
+        "  PERMANENT FIX for service nodes with template var mismatches:",
+        "  OPTION 1 (RECOMMENDED — breaks the cycle):",
+        "    1. Find {{inputData.missingKey}} in data.http.body/url/headers",
+        "    2. Replace it with a hardcoded test value (e.g., {{inputData.image}} → 'https://example.com/test.jpg')",
+        "    3. Remove the template var entirely — use literal strings",
+        "    4. Set service.inputData = null (self-contained, exempt from boundary sync)",
+        "    Example: data.http.body = { 'image': 'https://example.com/food-test.jpg', 'userId': '{{inputData.userId}}' }",
+        "             → service.inputData = null (if no more template vars that need pipeline data)",
+        "             → OR service.inputData = { userId: 'user-123' } (only keys still used by templates)",
+        "  OPTION 2 (chain fix — complex, avoid if parent doesn't naturally produce the key):",
+        "    Add the missing key to BOTH GroupNode.inputData AND GroupNode's parent outputData.",
+        "    This ensures the key flows from parent → group → service correctly.",
+        "    Do NOT use this if the parent has no natural way to produce that key.",
+        "",
+        "CRITICAL RULE: If inputData has [field1, field2] (non-null), the node is INSIDE A GROUPNODE → USE OPTION A ONLY.",
+        "  DO NOT use OPTION B for nodes inside GroupNodes — it will create a cycle (boundary sync removes added fields).",
+        "",
+        "TWO OPTIONS for TASK nodes — choose based on whether inputData is authoritative:",
+        "  OPTION A (inputData is authoritative — node is inside a GroupNode, inputData is NON-NULL with fields):",
+        "    → REWRITE functionCode to only use the fields that ARE in inputData. DO NOT add missing fields.",
+        "    → The missing fields (e.g., filters, conditions, criteria) have no upstream source — CANNOT be in inputData.",
         "    ⚠️ CRUD TASK PATTERN — if inputData={tasks:[...]} but functionCode uses inputData.taskId, inputData.content, etc.:",
         "       Those fields DON'T exist in {tasks:[...]}. DO NOT add taskId/content to inputData.",
         "       Instead, derive them FROM the array:",
@@ -630,8 +657,18 @@ function getFixGuidance(
         "         - content: use inputData.tasks[0].content OR hardcode 'Updated Task'",
         "         - new item: hardcode it — { content: 'New Task', date: '2026-01-04' }",
         "       ✅ Rewrite functionCode: return { taskId: inputData.tasks[0].id, content: 'Updated Task' };",
+        "    ⚠️ FILTER/CRITERIA PATTERN — if inputData={courts:[...]} but functionCode uses inputData.filters or inputData.conditions:",
+        "       Filter criteria are NOT in inputData (no upstream produces them). DO NOT add 'filters' or 'conditions' to inputData.",
+        "       Instead, either filter by available fields OR hardcode the criteria INSIDE functionCode:",
+        "       ✅ Option 1 (filter by location): return { filteredCourts: inputData.courts.filter(c => c.location && c.location.lat) };",
+        "       ✅ Option 2 (hardcode criteria): const criteria = {crowd:'any', surface:'any'}; return { filteredCourts: inputData.courts.filter(c => c.crowd !== 'overcrowded') };",
+        "       ✅ Option 3 (pass-through with transform): return { filteredCourts: inputData.courts.map(c => ({ ...c, distance: Math.abs(c.location.lat - inputData.currentLocation.lat) })) };",
+        "       ❌ WRONG: Adding 'filters: {}' or 'conditions: {}' to inputData — these get removed by boundary sync and cause cycles.",
+        "    ⚠️ JOIN/SELECT PATTERN — if inputData={games:[...]} but functionCode uses inputData.gameId:",
+        "       ✅ Use inputData.games[0] directly: const game = inputData.games[0]; return { joinedGame: game, success: true };",
         "",
-        "  OPTION B (functionCode is authoritative — root node or standalone node):",
+        "  OPTION B (functionCode is authoritative — ONLY for root/standalone nodes with null inputData):",
+        "    → ONLY use this when inputData is null AND the node is NOT inside a GroupNode.",
         "    → Add the missing fields to inputData so functionCode can reference them.",
         "    → Match the value type that functionCode expects.",
       ].join("\n");
@@ -719,18 +756,42 @@ function getFixGuidance(
         "GROUPNODE CHILD SPECIAL RULE:",
         "  If the child is a GroupNode, updating GroupNode.inputData is NOT enough:",
         "  → Also update GroupNode's firstChild.inputData to match the new GroupNode.inputData",
-        "  → Also update GroupNode's firstChild.functionCode to use the new keys",
-        "  Fix parent → GroupNode → firstChild all in ONE response.",
+        "  → Also REWRITE GroupNode's firstChild.functionCode to ONLY use the new inputData keys",
+        "  → CRITICAL: Do NOT keep referencing removed keys in functionCode — rewrite from scratch",
+        "  ❌ WRONG: GroupNode.inputData={courts,currentLocation} but firstChild.functionCode still uses inputData.conditions",
+        "  ✅ CORRECT: firstChild.functionCode only references inputData.courts and inputData.currentLocation",
+        "  Fix parent → GroupNode → firstChild (data+functionCode) all in ONE response.",
+        "",
+        "USER-INPUT FIELDS (conditions, criteria, preferences, filters) — DO NOT add to inputData:",
+        "  Filter criteria, configuration objects, and user-preference fields do NOT belong in inputData.",
+        "  They have no upstream source → adding them breaks Parent-Child Data Flow + causes cycles.",
+        "  ❌ WRONG: inputData={courts:[...], conditions:{crowd:'low'}} — conditions has no upstream source",
+        "  ✅ CORRECT: inputData={courts:[...]}, functionCode: 'const filtered = inputData.courts.filter(c => c.crowd !== \"crowded\"); return { filteredCourts: filtered };'",
+        "  Hardcode filter criteria INSIDE functionCode, not as inputData keys.",
       ].join("\n");
     case "TASK_NODE_IGNORES_INPUTDATA":
       return [
         "Decision node has non-null inputData but functionCode never references it.",
-        "Decision nodes MUST derive their boolean return value from inputData condition.",
-        "FIX: Rewrite functionCode to evaluate a condition on inputData fields and return true/false:",
-        "  1. Identify the relevant field in inputData (e.g., inputData.status, inputData.approved)",
-        "  2. Write a boolean expression: return inputData.fieldName === expectedValue",
-        "  3. Ensure outputData: true (boolean sample)",
-        "❌ BANNED: return true; (with non-null inputData — hardcoded, ignores inputData)",
+        "Decision nodes MUST derive their boolean return value from inputData fields.",
+        "",
+        "OPTION 1 (if inputData has real data to evaluate):",
+        "  → Rewrite functionCode to reference inputData with DOT NOTATION (NOT destructuring):",
+        "  ✅ CORRECT: return inputData.reviews !== null && inputData.reviews.length > 0;",
+        "  ✅ CORRECT: return inputData.success === true;",
+        "  ✅ CORRECT: return inputData.status === 'active';",
+        "  ❌ WRONG: const { reviews } = inputData; return reviews !== null;  (destructuring not detected)",
+        "  ❌ WRONG: return true; (hardcoded, ignores inputData)",
+        "  Use inputData.fieldName directly — ALWAYS access fields as inputData.key (never via destructuring).",
+        "  Ensure outputData: true (boolean sample).",
+        "",
+        "OPTION 2 (if inputData only contains null values — no usable data):",
+        "  → Set inputData = null AND write a meaningful default boolean:",
+        "  ✅ CORRECT: inputData: null, functionCode: 'return false;' (e.g., Handle Fetch Error → always error)",
+        "  ✅ CORRECT: inputData: null, functionCode: 'return true;'  (e.g., always proceed)",
+        "  This is valid when the decision result is always the same (error handler, constant gate).",
+        "",
+        "CHOOSE OPTION 1 when inputData has fields with real values (arrays, strings, booleans).",
+        "CHOOSE OPTION 2 when inputData only has null-value fields (the node doesn't need input).",
       ].join("\n");
     case "FUNCTION_CODE_REQUIRED":
       return [
@@ -770,6 +831,15 @@ function getFixGuidance(
         "  → OR: hardcode X as output (user input capture pattern) — do NOT read it from inputData",
         "  ❌ WRONG: inputData={tasks:[...]}, functionCode: 'return { isValid: inputData.energyScore >= 0 };'",
         "  ✅ FIX: inputData={tasks:[...],energyScore:5}, functionCode: 'const isValid = inputData.energyScore >= 0; return { isValid };'",
+        "",
+        "⚠️ JOIN/SELECT PATTERN — do NOT add selection ID fields to inputData:",
+        "  When a node 'joins', 'selects', or 'opens' one item from a list available in inputData:",
+        "  ❌ WRONG: add 'gameId', 'userId', 'itemId', 'selectedXId' to inputData — these break data flow",
+        "     ❌ inputData={gameId:'g1'}, functionCode: 'return { game: ... gameId ... }'",
+        "  ✅ CORRECT: use the FIRST item from the available array directly",
+        "     ✅ inputData={games:[{id:'g1',...},{id:'g2',...},{id:'g3',...}]}, functionCode: 'const game = inputData.games[0]; return { joinedGame: game, success: true };'",
+        "  The key rule: inputData for a join/select node MUST match the predecessor's outputData keys exactly.",
+        "  Do NOT replace the array with a single-ID field — that destroys the data flow contract.",
         "",
         "⚠️ DO NOT add 'return inputData;' — this is a trivial passthrough → DELETE instead.",
         "⚠️ Service/decision nodes have functionCode AUTO-GENERATED — do NOT add functionCode to them.",
@@ -813,7 +883,11 @@ function getFixGuidance(
         "      inputData array MUST have 4+ elements so outputData after removal still has 3+",
         "      ❌ WRONG: inputData.tasks=[t1,t2,t3] → filter removes 1 → outputData.tasks=[t2,t3] (2 elements, FAILS)",
         "      ✅ CORRECT: inputData.tasks=[t1,t2,t3,t4] → filter removes 1 → outputData.tasks=[t2,t3,t4] (3 elements, passes)",
-        "(3) Apply recursively — nested objects and arrays must ALSO be non-empty.",
+        "(3) Apply recursively — nested objects and arrays INSIDE other arrays must ALSO be non-empty.",
+        "    ⛔ CRITICAL NESTED ARRAY RULE: If outputData has games:[{..., participants:[]}], ALL participants arrays must have 3+ elements.",
+        "    ❌ Wrong: { games: [{id:'g1', participants:[]}, {id:'g2', participants:[]}, {id:'g3', participants:[]}] }",
+        "    ✅ Correct: { games: [{id:'g1', participants:[{userId:'u1',name:'Alice'},{userId:'u2',name:'Bob'},{userId:'u3',name:'Carol'}]}, ...] }",
+        "    Fill EVERY empty array in EVERY object element — not just the outer array.",
         "(4) After filling shapes, ensure chaining keys still match adjacent nodes.",
         "",
         "UPDATE FORMAT reminder: use flat format { \"inputData\": {...}, \"outputData\": {...} } — NOT nested execution.config.",
@@ -848,7 +922,7 @@ function stripUIFields(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 function extractNodeExecutionContext(node: WorkflowNode) {
-  const relevantData = stripUIFields(node.data as Record<string, unknown>);
+  const relevantData = stripUIFields((node.data ?? {}) as Record<string, unknown>);
 
   if (Array.isArray(relevantData.groups)) {
     relevantData.groups = (
@@ -881,7 +955,7 @@ function extractParentContext(
   if (!node.parentNode) return null;
   const parent = allNodes.find((n) => n.id === node.parentNode);
   if (!parent) return null;
-  const parentData = parent.data as Record<string, unknown>;
+  const parentData = (parent.data ?? {}) as Record<string, unknown>;
   const execution = parentData.execution as { config?: { nodeData?: { outputData?: unknown } } } | undefined;
   return {
     parentId: parent.id,
@@ -910,6 +984,7 @@ export function buildBatchRepairPrompt(
   const hasEmptyShape = violationNames.has("Empty Data Shape");
   const hasMinChildren = violationNames.has("GroupNode Min Children");
   const hasParentNodeStructure = violationNames.has("Parent Node Structure");
+  const hasFunctionCodeMismatch = violationNames.has("functionCode Mismatch");
 
   // Build cross-violation note
   let crossViolationNote = "";
@@ -1002,6 +1077,170 @@ export function buildBatchRepairPrompt(
     }
   }
 
+  if (hasGroupPipeline && hasFunctionCodeMismatch && !hasParentChild) {
+    // Check if the pipeline violation involves a task→service pair
+    const pipelineMsg = violations.find(v => v.validatorName === "GroupNode Pipelines")?.result.errorMessage ?? "";
+    const isTaskToServicePipeline = /\[type=task\][^\n]*→[^\n]*\[type=service\]/.test(pipelineMsg);
+    if (isTaskToServicePipeline) {
+      crossViolationNote +=
+        "\n⚠️ COMBINED FIX REQUIRED: GroupNode Pipeline break + functionCode Mismatch (TASK → SERVICE pair).\n" +
+        "   CAUSE: The task node (prevNode) outputs the wrong keys — service node (nextNode) needs specific keys.\n" +
+        "   SERVICE NODES cannot change their inputData freely — they are bound by data.http template vars.\n" +
+        "   The CORRECT fix: redesign prevNode (the TASK) to output what the service needs.\n" +
+        "   STEP 1: Look at the broken pair: taskNode → serviceNode (listed in GroupNode Pipelines issue).\n" +
+        "   STEP 2: Read serviceNode.nodeData.inputData — these are the ONLY keys the service can receive.\n" +
+        "   STEP 3: Redesign taskNode to produce those keys from its own inputData:\n" +
+        "     (a) Update taskNode.functionCode to extract/prepare fields the service needs\n" +
+        "         e.g., if taskNode.inputData={meals:[...]}, extract: return { content: inputData.meals[0].content, calories: inputData.meals[0].calories };\n" +
+        "     (b) Update taskNode.nodeData.outputData to match what the new functionCode returns\n" +
+        "     (c) Do NOT change serviceNode.inputData or serviceNode.functionCode\n" +
+        "   BOUNDARY SYNC: if taskNode is the last child → update GroupNode.outputData to match taskNode's new outputData.\n" +
+        "   DO NOT change prevNode (taskNode) inputData — it is governed by group boundary sync.\n" +
+        "   DO NOT change nextNode (serviceNode) inputData — it must match data.http template vars.\n";
+    } else {
+      crossViolationNote +=
+        "\n⚠️ COMBINED FIX REQUIRED: GroupNode Pipeline break + functionCode Mismatch on the SAME node.\n" +
+        "   CAUSE: A pipeline node's functionCode references keys that are NOT in the previous node's output.\n" +
+        "   The CORRECT fix (do ALL 3 in this response):\n" +
+        "   STEP 1: Find the broken pipeline pair (prevNode → nextNode, listed in GroupNode Pipelines issue).\n" +
+        "   STEP 2: Read prevNode.nodeData.outputData — these are the ONLY keys nextNode may receive.\n" +
+        "   STEP 3: Update nextNode ALL AT ONCE:\n" +
+        "     (a) set nextNode.inputData = prevNode.outputData exactly (same keys + sample values)\n" +
+        "     (b) rewrite nextNode.functionCode to ONLY read from those keys\n" +
+        "     (c) update nextNode.outputData to match what the new functionCode returns\n" +
+        "   DO NOT change prevNode — it is the authoritative source.\n" +
+        "   DO NOT keep referencing keys that are not in prevNode.outputData.\n";
+    }
+  }
+
+  // Pure GroupNode Pipeline violation (no functionCode Mismatch co-violation) — check for task→service
+  if (hasGroupPipeline && !hasFunctionCodeMismatch && allNodes) {
+    const pipelineViolation = violations.find(v => v.validatorName === "GroupNode Pipelines");
+    const pipelineMsg = pipelineViolation?.result.errorMessage ?? "";
+    const isTaskToServicePipeline = /\[type=task\][^\n]*→[^\n]*\[type=service\]/.test(pipelineMsg);
+    if (isTaskToServicePipeline) {
+      // Extract actual broken pairs from the affected nodes for concrete guidance
+      const affectedNodes = pipelineViolation?.result.affectedNodes ?? [];
+      const brokenPairLines: string[] = [];
+      for (let i = 0; i < affectedNodes.length - 1; i++) {
+        const prevN = affectedNodes[i];
+        const nextN = affectedNodes[i + 1];
+        if (prevN?.type !== "task" || nextN?.type !== "service") continue;
+        const prevOut = (prevN.data as { execution?: { config?: { nodeData?: { outputData?: unknown } } } })
+          ?.execution?.config?.nodeData?.outputData;
+        const nextIn = (nextN.data as { execution?: { config?: { nodeData?: { inputData?: unknown } } } })
+          ?.execution?.config?.nodeData?.inputData;
+        const prevKeys = (prevOut && typeof prevOut === "object" && !Array.isArray(prevOut))
+          ? Object.keys(prevOut as object) : [];
+        const nextKeys = (nextIn && typeof nextIn === "object" && !Array.isArray(nextIn))
+          ? Object.keys(nextIn as object) : [];
+        // Also extract template vars from the service's data.http for specific guidance
+        const serviceHttp = (nextN.data as { http?: Record<string, unknown> })?.http;
+        const httpStr = serviceHttp ? JSON.stringify(serviceHttp) : "";
+        const templateVarMatches = httpStr.match(/\{\{inputData\.(\w+)\}\}/g) ?? [];
+        const templateVarNames = [...new Set(templateVarMatches.map(m => m.replace(/\{\{inputData\.|\}\}/g, "")))];
+
+        if (prevKeys.length > 0 || nextKeys.length > 0) {
+          const serviceNeedsStr = templateVarNames.length > 0
+            ? `[${templateVarNames.join(", ")}] (from data.http template vars {{inputData.x}})`
+            : `[${nextKeys.join(", ")}]`;
+          const prevOut_record = (prevOut && typeof prevOut === "object" && !Array.isArray(prevOut))
+            ? (prevOut as Record<string, unknown>) : {};
+          const exampleReturn = (templateVarNames.length > 0 ? templateVarNames : nextKeys)
+            .map(k => {
+              const srcKey = prevKeys[0];
+              const srcVal = srcKey ? prevOut_record[srcKey] : undefined;
+              if (Array.isArray(srcVal)) return `${k}: inputData.${srcKey}[0].id ?? inputData.${srcKey}[0]`;
+              return `${k}: inputData.${prevKeys[0] ?? "data"}`;
+            }).join(", ");
+          brokenPairLines.push(
+            `   • "${(prevN.data as { title?: string }).title ?? prevN.id}" outputs: [${prevKeys.join(", ")}]\n` +
+            `     "${(nextN.data as { title?: string }).title ?? nextN.id}" service needs: ${serviceNeedsStr}\n` +
+            `     → The service.inputData keys come from data.http template vars — DO NOT change them.\n` +
+            `     → Rewrite ONLY the task's functionCode to produce those service keys:\n` +
+            `       e.g., return { ${exampleReturn} };\n` +
+            `       (adjust based on what's actually available in task.inputData)\n` +
+            `     → Update task.outputData to match the new functionCode return value.`,
+          );
+        }
+      }
+      crossViolationNote +=
+        "\n⚠️ TASK → SERVICE PIPELINE (apply Strategy C — redesign prevNode to match service inputData):\n" +
+        "   The service node's inputData keys are FIXED (bound to data.http template variables).\n" +
+        "   DO NOT change the service's inputData. Instead, redesign the TASK (prevNode) to output those keys.\n" +
+        (brokenPairLines.length > 0
+          ? "   ACTUAL BROKEN PAIRS (fix these specifically):\n" + brokenPairLines.join("\n") + "\n"
+          : "   COMMON PATTERNS:\n" +
+            "   • Service needs {gameId, currentUser} but task outputs {games, currentUser}:\n" +
+            "     → Rewrite task: return { gameId: inputData.games[0].id, currentUser: inputData.currentUser };\n" +
+            "     → Update task.outputData to match: { gameId: 'game-001', currentUser: { id: 'u1', name: 'Alice' } }\n" +
+            "   • Service needs {taskId} but task outputs {tasks:[...]}:\n" +
+            "     → Rewrite task: return { taskId: inputData.tasks[0].id };\n") +
+        "   AFTER fixing prevNode: also update GroupNode.outputData if prevNode is the last child.\n";
+    }
+  }
+
+  // Standalone functionCode Mismatch (no GroupNode Pipeline co-violation) — GroupNode children with non-null inputData
+  if (hasFunctionCodeMismatch && !hasGroupPipeline && allNodes) {
+    const mismatchViolation = violations.find(v => v.validatorName === "functionCode Mismatch");
+    // Only flag nodes that are (1) inside a GroupNode AND (2) have non-null inputData.
+    // If inputData is null, OPTION B (add fields) may be appropriate — don't force OPTION A.
+    const groupNodeChildrenWithData = (mismatchViolation?.result.affectedNodes ?? []).filter(n => {
+      if (!allNodes.some(p => p.id === n.parentNode && p.type === "group")) return false;
+      const inputData = (n.data as { execution?: { config?: { nodeData?: { inputData?: unknown } } } })
+        ?.execution?.config?.nodeData?.inputData;
+      return inputData !== null && inputData !== undefined;
+    });
+    if (groupNodeChildrenWithData.length > 0) {
+      const nodeNames = groupNodeChildrenWithData.map(n => `"${(n.data as { title?: string }).title ?? n.id}" (${n.id})`).join(", ");
+      // For each affected node, detect if the missingFields are not in the GroupNode's inputData either
+      // (meaning they truly don't exist anywhere in the pipeline)
+      const nodesWithOrphanedFields = groupNodeChildrenWithData.filter(n => {
+        const parentGroup = allNodes!.find(p => p.id === n.parentNode && p.type === "group");
+        if (!parentGroup) return false;
+        const groupInputData = (parentGroup.data as { execution?: { config?: { nodeData?: { inputData?: unknown } } } })
+          ?.execution?.config?.nodeData?.inputData;
+        const groupKeys = (groupInputData && typeof groupInputData === "object" && !Array.isArray(groupInputData))
+          ? new Set(Object.keys(groupInputData as object)) : new Set<string>();
+        const nodeInputData = (n.data as { execution?: { config?: { nodeData?: { inputData?: unknown } } } })
+          ?.execution?.config?.nodeData?.inputData;
+        const nodeInputKeys = (nodeInputData && typeof nodeInputData === "object" && !Array.isArray(nodeInputData))
+          ? new Set(Object.keys(nodeInputData as object)) : new Set<string>();
+        const nodeFC = (n.data as { execution?: { config?: { functionCode?: string } } })?.execution?.config?.functionCode ?? "";
+        const refs = nodeFC.match(/inputData\??\.(\w+)/g)?.map(m => m.replace(/inputData\??\./, "")) ?? [];
+        const missingRefs = refs.filter(f => !nodeInputKeys.has(f));
+        // If any missingRef is not in group.inputData keys → it's truly absent
+        return missingRefs.some(f => !groupKeys.has(f));
+      });
+      crossViolationNote +=
+        `\n⚠️ FUNCTIONCODE MISMATCH — GroupNode children with non-null inputData: ${nodeNames}\n` +
+        "   These nodes are INSIDE a GroupNode. inputData is governed by GroupNode boundary sync (NOT negotiable).\n" +
+        "   MANDATORY: Use OPTION A → REWRITE functionCode to use ONLY the fields already in inputData.\n" +
+        "   DO NOT add missing fields to inputData — boundary sync will remove them every retry.\n" +
+        "   ❌ BANNED: Adding 'filters', 'conditions', 'criteria', 'gameId', 'userId', etc. to inputData.\n" +
+        "   ✅ CORRECT: Hardcode filter criteria inside functionCode, or derive values from existing inputData arrays.\n" +
+        "     e.g., inputData={courts:[...]} → const filtered = inputData.courts.filter(c => c.available !== false);\n" +
+        "     e.g., inputData={games:[...]} → const game = inputData.games[0]; return { joinedGame: game };\n";
+      if (nodesWithOrphanedFields.length > 0) {
+        const orphanedNames = nodesWithOrphanedFields.map(n => {
+          const nodeInputData = (n.data as { execution?: { config?: { nodeData?: { inputData?: unknown } } } })
+            ?.execution?.config?.nodeData?.inputData;
+          const availableKeys = (nodeInputData && typeof nodeInputData === "object" && !Array.isArray(nodeInputData))
+            ? Object.keys(nodeInputData as object) : [];
+          return `"${(n.data as { title?: string }).title ?? n.id}" (available inputData fields: [${availableKeys.join(", ")}])`;
+        }).join(", ");
+        crossViolationNote +=
+          `   🚨 CRITICAL: These nodes reference fields that DO NOT EXIST ANYWHERE in the pipeline: ${orphanedNames}\n` +
+          "   The referenced fields were never created by any upstream node. You CANNOT add them.\n" +
+          "   REQUIRED ACTION — rewrite functionCode to ONLY use the AVAILABLE inputData fields listed above:\n" +
+          "   • If inputData has {success}: check success → if (!inputData.success) return { result: false, error: 'failed' }; return { result: true };\n" +
+          "   • If inputData has {items:[...]}: operate on the array → return { count: inputData.items.length, processed: inputData.items.map(i => ({...i, done: true})) };\n" +
+          "   • If inputData has {userId, token}: use those → return { authorized: !!inputData.token, userId: inputData.userId };\n" +
+          "   ALSO update nodeData.outputData to match what the new functionCode returns.\n";
+      }
+    }
+  }
+
   // Compute MIN_CHILDREN deficit map and inject into note for any min-children violation
   if (hasMinChildren && allNodes) {
     const minChildViolation = violations.find(v => v.validatorName === "GroupNode Min Children");
@@ -1013,6 +1252,8 @@ export function buildBatchRepairPrompt(
       let totalCreatesNeeded = 0;
       const deficitLines: string[] = [];
       for (const group of minChildViolation.result.affectedNodes) {
+        // Only compute deficit for actual group nodes (affectedNodes also includes children for context)
+        if (group.type !== "group") continue;
         const current = childCounts.get(group.id) ?? 0;
         const needed = Math.max(0, 2 - current);
         if (needed > 0) {
@@ -1093,6 +1334,54 @@ export function buildBatchRepairPrompt(
       }
     }
 
+    // FunctionCode Required: show pipeline context for affected nodes inside GroupNodes
+    // This helps AI write functionCode that's compatible with the pipeline (correct input/output keys)
+    let functionCodePipelineBlock: string | null = null;
+    if (validatorName === "FunctionCode Required" && allNodes && result.affectedNodes) {
+      const groupNodeAffected = result.affectedNodes.filter(n => {
+        const parentNode = allNodes.find(p => p.id === n.parentNode);
+        return parentNode?.type === "group";
+      });
+      if (groupNodeAffected.length > 0) {
+        const groupIds = new Set(groupNodeAffected.map(n => n.parentNode!));
+        const pipelineContexts = [...groupIds].map(groupId => {
+          const groupNode = allNodes.find(n => n.id === groupId);
+          const gd = groupNode?.data as Record<string, unknown> | undefined;
+          const gCfg = (gd?.execution as { config?: { nodeData?: { inputData?: unknown; outputData?: unknown } } } | undefined)?.config;
+          const children = allNodes
+            .filter(n => n.parentNode === groupId && n.type !== "decision")
+            .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+            .map(c => {
+              const cd = (c.data ?? {}) as Record<string, unknown>;
+              const cfg = (cd.execution as { config?: { nodeData?: { inputData?: unknown; outputData?: unknown }; functionCode?: string } } | undefined)?.config;
+              return {
+                id: c.id,
+                type: c.type,
+                title: cd.title,
+                needsFunctionCode: groupNodeAffected.some(a => a.id === c.id),
+                inputData: cfg?.nodeData?.inputData,
+                outputData: cfg?.nodeData?.outputData,
+                hasFunctionCode: !!cfg?.functionCode?.toString().trim(),
+              };
+            });
+          return {
+            groupId,
+            groupTitle: (gd?.title as string) ?? "Untitled Group",
+            groupInputData: gCfg?.nodeData?.inputData,
+            groupOutputData: gCfg?.nodeData?.outputData,
+            pipeline: children,
+          };
+        });
+        functionCodePipelineBlock =
+          `    PIPELINE CONTEXT (write functionCode compatible with these input/output contracts):\n` +
+          `    RULE: Your functionCode MUST return keys that match the NEXT node's inputData keys (listed above).\n` +
+          JSON.stringify(pipelineContexts, null, 2)
+            .split("\n")
+            .map((l) => `      ${l}`)
+            .join("\n");
+      }
+    }
+
     // GroupNode Pipelines: show full sorted pipeline for each affected GroupNode
     let pipelineContextBlock: string | null = null;
     if (validatorName === "GroupNode Pipelines" && allNodes && result.affectedNodes) {
@@ -1111,7 +1400,7 @@ export function buildBatchRepairPrompt(
             .filter((n) => n.parentNode === groupId && n.type !== "decision")
             .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
             .map((c) => {
-              const cd = c.data as Record<string, unknown>;
+              const cd = (c.data ?? {}) as Record<string, unknown>;
               const cfg = (cd.execution as { config?: { nodeData?: { inputData?: unknown; outputData?: unknown }; functionCode?: string } } | undefined)?.config;
               return {
                 id: c.id,
@@ -1150,6 +1439,7 @@ export function buildBatchRepairPrompt(
             .join("\n")}`
         : null,
       validNodeIdsBlock,
+      functionCodePipelineBlock,
       pipelineContextBlock,
       parentContextBlock,
       actualOutputBlock,

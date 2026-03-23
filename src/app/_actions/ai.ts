@@ -293,6 +293,7 @@ async function generatePageNodes(
   openai: OpenAI,
   prompt: string,
   enrichedPrdText: string | undefined,
+  retryCount = 0,
 ): Promise<WorkflowNode[]> {
   const response = await openai.responses.create({
     model: "gpt-4o-mini",
@@ -305,8 +306,16 @@ async function generatePageNodes(
   const content = response.output_text;
   if (!content) throw new Error("No response from OpenAI");
 
-  const workflow = JSON.parse(content) as GenerateWorkflowResponse;
-  return workflow.nodes ?? [];
+  try {
+    const workflow = JSON.parse(content) as GenerateWorkflowResponse;
+    return workflow.nodes ?? [];
+  } catch (err) {
+    // JSON parse error: response was likely truncated (hit token limit). Retry up to 3 times.
+    if (retryCount < 3 && err instanceof SyntaxError) {
+      return generatePageNodes(openai, prompt, enrichedPrdText, retryCount + 1);
+    }
+    throw err;
+  }
 }
 
 /**

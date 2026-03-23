@@ -8,6 +8,7 @@ import { validateParentNodeStructure } from "./parentNodeStructure";
 import {
   validateCircularReferences,
   validateParentNodeCycles,
+  deterministicRepairParentNodeCycles,
 } from "./circularReference";
 import { validateDecisionNodes, repairDecisionNodes } from "./decisionNode";
 import { validateGroupNodePipelines, deterministicRepairGroupBoundaries, deterministicRepairPipelineStrategyA } from "./groupNodePipeline";
@@ -31,6 +32,11 @@ import {
   checkAIResponseSanity,
   applyDeterministicCodeGeneration,
   deterministicRepairEmptyDataShape,
+  deterministicRepairFunctionCodeMismatch,
+  deterministicRepairTrivialDecisionNodes,
+  deterministicRepairParentChildDataFlow,
+  deterministicRepairDuplicateGroupChildren,
+  deterministicRepairInvalidParentNodes,
   getExecutionConfig,
 } from "../utils/validationUtils";
 
@@ -72,10 +78,26 @@ export async function runValidationPipeline(
   //      Both are pure schema alignment ops that preserve AI intent.
   // ─────────────────────────────────────────────────────────────────────────
   workingNodes = applyDeterministicCodeGeneration(workingNodes);
+  // Remove AI-created duplicate-title children before pipeline repairs
+  workingNodes = deterministicRepairDuplicateGroupChildren(workingNodes);
+  // Clear dangling parentNode references (pointing to non-existent nodes)
+  // Must run AFTER duplicate removal (which may remove group nodes leaving orphans)
+  workingNodes = deterministicRepairInvalidParentNodes(workingNodes);
+  // Break circular parentNode cycles (A→B→...→A) by clearing cycle entry parentNodes
+  workingNodes = deterministicRepairParentNodeCycles(workingNodes);
   workingNodes = deterministicRepairEmptyDataShape(workingNodes);
-  workingNodes = await deterministicRepairOutputDataTypeMismatch(workingNodes);
   workingNodes = deterministicRepairGroupBoundaries(workingNodes);
   workingNodes = deterministicRepairPipelineStrategyA(workingNodes);
+  workingNodes = deterministicRepairFunctionCodeMismatch(workingNodes);
+  workingNodes = deterministicRepairTrivialDecisionNodes(workingNodes);
+  // Run after Strategy A so any passthrough-injected functionCode mismatches are fixed
+  workingNodes = await deterministicRepairOutputDataTypeMismatch(workingNodes);
+  // Align task/service child.inputData to parent.outputData (stops cycling)
+  workingNodes = deterministicRepairParentChildDataFlow(workingNodes);
+  // Re-sync group boundaries after parent-child repair (GroupNode.inputData may have just changed)
+  workingNodes = deterministicRepairGroupBoundaries(workingNodes);
+  // Re-run code generation after http.body changes from parent-child repair
+  workingNodes = applyDeterministicCodeGeneration(workingNodes);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Step 2: Mandatory Critical Gate — all validators except decisionNode
@@ -176,7 +198,7 @@ export async function runValidationPipeline(
   //   }
   // }
 
-  const MAX_RETRIES = 5;
+  const MAX_RETRIES = 12;
   let retryCount = 0;
 
   while (mandatoryViolations.length > 0) {
@@ -207,14 +229,25 @@ export async function runValidationPipeline(
       `[DIAG] Retry #${retryCount + 1} violations: [${mandatoryViolations.map((v) => v.validatorName).join(", ")}]`,
     );
 
-    const aiResponse = await context.updateWorkflowAction({
-      targetNodeIds:
-        allAffectedIds.length > 0
-          ? allAffectedIds
-          : [workingNodes[0]?.id ?? ""],
-      prompt: batchPrompt,
-      nodes: workingNodes,
-    });
+    let aiResponse;
+    try {
+      aiResponse = await context.updateWorkflowAction({
+        targetNodeIds:
+          allAffectedIds.length > 0
+            ? allAffectedIds
+            : [workingNodes[0]?.id ?? ""],
+        prompt: batchPrompt,
+        nodes: workingNodes,
+      });
+    } catch (err) {
+      // AI call failed (e.g., JSON parse error from truncated response, network error)
+      console.warn(
+        `[Mandatory] AI call failed on retry #${retryCount + 1}: ${String(err)}. Retrying...`,
+      );
+      retryCount++;
+      if (retryCount >= MAX_RETRIES) break;
+      continue;
+    }
 
     // ── DIAGNOSTIC: log AI response summary ──
     console.log(
@@ -239,10 +272,22 @@ export async function runValidationPipeline(
     workingNodes = applyAIFixes(workingNodes, aiResponse);
     // Re-apply deterministic passes after AI fix
     workingNodes = applyDeterministicCodeGeneration(workingNodes);
+    workingNodes = deterministicRepairDuplicateGroupChildren(workingNodes);
+    // Clear dangling parentNode references (AI may create nodes with non-existent parentNode IDs)
+    workingNodes = deterministicRepairInvalidParentNodes(workingNodes);
+    // Break circular parentNode cycles created by AI fix
+    workingNodes = deterministicRepairParentNodeCycles(workingNodes);
     workingNodes = deterministicRepairEmptyDataShape(workingNodes);
-    workingNodes = await deterministicRepairOutputDataTypeMismatch(workingNodes);
     workingNodes = deterministicRepairGroupBoundaries(workingNodes);
     workingNodes = deterministicRepairPipelineStrategyA(workingNodes);
+    workingNodes = deterministicRepairFunctionCodeMismatch(workingNodes);
+    workingNodes = deterministicRepairTrivialDecisionNodes(workingNodes);
+    // Run after Strategy A so any passthrough-injected functionCode mismatches are fixed
+    workingNodes = await deterministicRepairOutputDataTypeMismatch(workingNodes);
+    workingNodes = deterministicRepairParentChildDataFlow(workingNodes);
+    // Re-sync group boundaries after parent-child repair (GroupNode.inputData may have just changed)
+    workingNodes = deterministicRepairGroupBoundaries(workingNodes);
+    workingNodes = applyDeterministicCodeGeneration(workingNodes);
 
     // Re-validate all mandatory validators
     mandatoryViolations = [];

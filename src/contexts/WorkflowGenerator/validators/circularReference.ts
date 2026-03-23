@@ -59,21 +59,21 @@ export function validateParentNodeCycles(
   };
 }
 
-// export function deterministicRepairParentNodeCycles(
-//   nodes: WorkflowNode[],
-// ): WorkflowNode[] {
-//   const cycleEntries = detectParentNodeCycleEntries(nodes);
-//   if (cycleEntries.size === 0) return nodes;
+export function deterministicRepairParentNodeCycles(
+  nodes: WorkflowNode[],
+): WorkflowNode[] {
+  const cycleEntries = detectParentNodeCycleEntries(nodes);
+  if (cycleEntries.size === 0) return nodes;
 
-//   console.log(
-//     "[deterministicRepairParentNodeCycles] Breaking cycles at:",
-//     [...cycleEntries],
-//   );
+  console.log(
+    "[deterministicRepairParentNodeCycles] Breaking cycles at:",
+    [...cycleEntries],
+  );
 
-//   return nodes.map((n) =>
-//     cycleEntries.has(n.id) ? { ...n, parentNode: undefined } : n,
-//   );
-// }
+  return nodes.map((n) =>
+    cycleEntries.has(n.id) ? { ...n, parentNode: undefined } : n,
+  );
+}
 
 // export async function repairParentNodeCycles(
 //   context: ValidationContext,

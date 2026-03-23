@@ -6,6 +6,7 @@ import type {
 import {
   getExecutionConfig,
   hasSameTopLevelKeys,
+  extractInputDataReferences,
 } from "../utils/validationUtils";
 
 /**
@@ -198,8 +199,21 @@ function detectBoundaryViolations(
       // Their null inputData is intentional — they fetch data from external APIs without input.
       // The Group passes its inputData context, but the service doesn't consume it.
       // This is NOT a boundary violation; skip to avoid false positives.
-      if (firstChild.type === "service" && firstInputData === null) {
-        // intentional: service node fetches data independently (no input required)
+      //
+      // Also exempt: service nodes whose functionCode references keys not in group.inputData.
+      // These services have independent input requirements (e.g., needs 'image' but group has 'meals').
+      // Enforcing boundary sync would cause a cycle: sync overwrites service inputData → mismatch →
+      // AI adds key → sync removes it → cycle. Exempt them to let them manage their own inputData.
+      let isServiceExempt = firstChild.type === "service" && firstInputData === null;
+      if (!isServiceExempt && firstChild.type === "service" && groupInputData && typeof groupInputData === "object") {
+        const svcConfig = getExecutionConfig(firstChild);
+        const svcFnCode = svcConfig?.functionCode ?? "";
+        const svcReferencedKeys = extractInputDataReferences(svcFnCode);
+        const groupInputKeys = new Set(Object.keys(groupInputData as object));
+        isServiceExempt = [...svcReferencedKeys].some(k => !groupInputKeys.has(k));
+      }
+      if (isServiceExempt) {
+        // intentional: service node fetches data independently (no input required or has own requirements)
       } else {
         violations.push({
           groupNode,
@@ -414,6 +428,40 @@ function setNodeInputData(
   };
 }
 
+/**
+ * Set inputData AND clear functionCode (to "") for a node.
+ *
+ * Used by Strategy D (cycle-break):
+ * When prevNode.outputData has no overlap with nextNode.inputData AND nextNode.functionCode
+ * references keys not in prevNode.outputData, we are in a deadlock where no existing strategy
+ * can fix the pipeline break without creating a functionCode mismatch.
+ *
+ * Clearing functionCode triggers FunctionCode Required → AI rewrites with correct inputData context.
+ */
+function setNodeInputDataAndClearFunctionCode(
+  node: WorkflowNode,
+  inputData: unknown,
+): WorkflowNode {
+  const exec = node.data?.execution;
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      execution: {
+        ...exec,
+        config: {
+          ...(exec?.config ?? {}),
+          functionCode: "", // cleared → triggers FunctionCode Required → AI rewrites with correct inputData
+          nodeData: {
+            ...((exec?.config as { nodeData?: unknown })?.nodeData ?? {}),
+            inputData,
+          },
+        },
+      },
+    },
+  };
+}
+
 function setNodeOutputData(
   node: WorkflowNode,
   outputData: unknown,
@@ -509,10 +557,48 @@ export function deterministicRepairGroupBoundaries(
     // Overwriting firstChild's (possibly correct) inputData with null would cascade into
     // functionCode Mismatch / outputData Type Mismatch violations. Let the AI fix the group
     // inputData first, then the deterministic repair will sync firstChild on the next pass.
+
+    // ── Service node exemption (prevents boundary sync cycle) ───────
+    // Service nodes with http template vars (e.g. {{inputData.image}}) reference keys
+    // that may not be in the group's inputData (set from parent outputData).
+    // Overwriting service.inputData with group.inputData would remove those keys, causing
+    // functionCode mismatch → AI adds them back → boundary sync removes them → cycle.
+    // Exempt: service firstChild whose functionCode references keys not in group.inputData
+    // (self-contained with its own test data for those keys; boundary validation is also skipped).
+    let skipInputBoundarySync = false;
+    if (firstChild.type === "service" && groupInputData && typeof groupInputData === "object") {
+      const svcFnCode = firstConfig?.functionCode ?? "";
+      const svcReferencedKeys = extractInputDataReferences(svcFnCode);
+      const groupInputKeys = new Set(Object.keys(groupInputData as object));
+      const hasMissingKeys = [...svcReferencedKeys].some(k => !groupInputKeys.has(k));
+      if (hasMissingKeys) {
+        skipInputBoundarySync = true;
+        console.log(
+          `[deterministicRepairGroupBoundaries] Skipping input_boundary sync for service node ${firstChild.id} ` +
+          `(references keys not in group.inputData: [${[...svcReferencedKeys].filter(k => !groupInputKeys.has(k)).join(", ")}])`,
+        );
+      }
+    }
+
+    // Also sync when keys match but GroupNode has richer arrays where firstChild has empty arrays.
+    // (hasSameTopLevelKeys returns true for {trips:[{...}]} vs {trips:[]} — same keys, different values)
+    const firstChildHasEmptyWhereGroupHasRich =
+      hasSameTopLevelKeys(groupInputData, firstInputData) &&
+      groupInputData !== null &&
+      typeof groupInputData === "object" &&
+      firstInputData !== null &&
+      typeof firstInputData === "object" &&
+      Object.keys(groupInputData as object).some((key) => {
+        const gVal = (groupInputData as Record<string, unknown>)[key];
+        const fVal = (firstInputData as Record<string, unknown>)[key];
+        return Array.isArray(gVal) && gVal.length >= 3 && Array.isArray(fVal) && fVal.length === 0;
+      });
+
     if (
+      !skipInputBoundarySync &&
       groupInputData &&
       typeof groupInputData === "object" &&
-      !hasSameTopLevelKeys(groupInputData, firstInputData)
+      (!hasSameTopLevelKeys(groupInputData, firstInputData) || firstChildHasEmptyWhereGroupHasRich)
     ) {
       nodeMap.set(children[0].id, setNodeInputData(firstChild, groupInputData));
     }
@@ -613,10 +699,10 @@ export function deterministicRepairPipelineStrategyA(
         const nextInput = nextConfig?.nodeData?.inputData;
         const prevInput = prevConfig?.nodeData?.inputData;
 
-        // Strategy C: nextNode has null inputData but its functionCode references inputData
-        // (e.g. service node with body template vars like "{{ inputData.taskId }}").
-        // Safe: just set nextNode.inputData = prevNode.outputData (pure schema alignment).
-        // This resolves the chain break without changing any functional code.
+        // Strategy C: nextNode has null inputData but prevNode produces output.
+        // Safe: set nextNode.inputData = prevNode.outputData (pure schema alignment).
+        // For task nodes with no functionCode inputData reference: also inject a passthrough
+        // so the pipeline is valid without requiring an AI rewrite cycle.
         if (
           (nextInput === null || nextInput === undefined) &&
           prevOutput &&
@@ -624,14 +710,56 @@ export function deterministicRepairPipelineStrategyA(
           Object.keys(prevOutput as object).length > 0
         ) {
           const nextFnCode = nextConfig?.functionCode ?? "";
-          if (/\binputData\b/.test(nextFnCode)) {
+          const fnRefsInputData = /\binputData\b/.test(nextFnCode);
+
+          // Service node exemption: if the service's functionCode references keys that are
+          // NOT in prevNode.outputData, skip Strategy C — the service's data.http template
+          // vars require specific keys that prevNode doesn't supply. Overriding inputData
+          // would cause functionCode Mismatch. Leave for AI to redesign the pipeline.
+          if (nextNode.type === "service") {
+            if (fnRefsInputData) {
+              const svcReferencedKeys = extractInputDataReferences(nextFnCode);
+              const prevOutputKeys = new Set(Object.keys(prevOutput as object));
+              const hasMissingKeys = [...svcReferencedKeys].some(k => !prevOutputKeys.has(k));
+              if (hasMissingKeys) {
+                console.log(
+                  `[deterministicRepairPipelineStrategyA] Skipping Strategy C for service node ${nextNode.id} ` +
+                  `(references keys not in prevNode outputData: [${[...svcReferencedKeys].filter(k => !prevOutputKeys.has(k)).join(", ")}])`,
+                );
+                continue;
+              }
+              const updatedNextNode = setNodeInputData(nextNode, prevOutput);
+              nodeMap.set(nextNode.id, updatedNextNode);
+              children[i + 1] = updatedNextNode;
+              anyChanged = true;
+              console.log(`[deterministicRepairPipelineStrategyA] Strategy C: ${nextNode.id} inputData set from prevNode ${prevNode.id} outputData`);
+            }
+            continue;
+          }
+
+          // Task node with null inputData: always fix (validator requires non-null when prevNode has output)
+          if (nextNode.type === "task") {
+            let updatedNextNode: WorkflowNode;
+            if (!fnRefsInputData && nextFnCode.trim()) {
+              // functionCode exists but doesn't use inputData — inject passthrough to resolve pipeline
+              updatedNextNode = setNodeInputDataAndClearFunctionCode(nextNode, prevOutput);
+              console.log(`[deterministicRepairPipelineStrategyA] Strategy C (task null-inputData passthrough): ${nextNode.id} inputData set + functionCode cleared for AI rewrite`);
+            } else {
+              updatedNextNode = setNodeInputData(nextNode, prevOutput);
+              console.log(`[deterministicRepairPipelineStrategyA] Strategy C: ${nextNode.id} inputData set from prevNode ${prevNode.id} outputData`);
+            }
+            nodeMap.set(nextNode.id, updatedNextNode);
+            children[i + 1] = updatedNextNode;
+            anyChanged = true;
+            continue;
+          }
+
+          if (fnRefsInputData) {
             const updatedNextNode = setNodeInputData(nextNode, prevOutput);
             nodeMap.set(nextNode.id, updatedNextNode);
             children[i + 1] = updatedNextNode;
             anyChanged = true;
-            console.log(
-              `[deterministicRepairPipelineStrategyA] Strategy C: ${nextNode.id} inputData set from prevNode ${prevNode.id} outputData`,
-            );
+            console.log(`[deterministicRepairPipelineStrategyA] Strategy C: ${nextNode.id} inputData set from prevNode ${prevNode.id} outputData`);
           }
           continue;
         }
@@ -656,6 +784,189 @@ export function deterministicRepairPipelineStrategyA(
         const allMissingInPrevInput = missingKeys.every(
           (k) => k in prevInputRecord,
         );
+
+        // Strategy B: complete schema mismatch on task nodes — replace nextNode.inputData
+        // with prevNode.outputData when nextNode.inputData has ZERO overlap with prevNode.outputData.
+        // Safe condition: 0 shared keys means the node was generated with wrong context.
+        // Guard: skip if nextNode.functionCode references keys not in prevNode.outputData —
+        // replacing inputData would create a functionCode mismatch → cycle.
+        if (!allMissingInPrevInput && nextNode.type === "task") {
+          const outputKeySet = new Set(Object.keys(prevOutput as object));
+          const nextInputKeys = Object.keys(nextInput as object);
+          const hasAnyOverlap = nextInputKeys.some((k) => outputKeySet.has(k));
+          if (!hasAnyOverlap && outputKeySet.size > 0 && nextInputKeys.length > 0) {
+            const nextFnCode = nextConfig?.functionCode ?? "";
+            const referencedKeys = extractInputDataReferences(nextFnCode);
+            const wouldMismatch = [...referencedKeys].some((k) => !outputKeySet.has(k));
+            if (!wouldMismatch) {
+              const updatedNextNode = setNodeInputData(nextNode, prevOutput);
+              nodeMap.set(nextNode.id, updatedNextNode);
+              children[i + 1] = updatedNextNode;
+              anyChanged = true;
+              console.log(
+                `[deterministicRepairPipelineStrategyA] Strategy B (complete mismatch): ${nextNode.id} inputData replaced with ${prevNode.id} outputData`,
+              );
+            } else {
+              // Strategy D: cycle-break — pipeline break + functionCode mismatch deadlock.
+              // Both Strategy B and functionCode guard are active: no way to fix the pipeline
+              // without creating a mismatch. Resolution: align inputData to prevNode.outputData
+              // AND clear functionCode → FunctionCode Required fires → AI rewrites fresh code
+              // with the correct (now-aligned) inputData context.
+              const updatedNextNode = setNodeInputDataAndClearFunctionCode(nextNode, prevOutput);
+              nodeMap.set(nextNode.id, updatedNextNode);
+              children[i + 1] = updatedNextNode;
+              anyChanged = true;
+              console.log(
+                `[deterministicRepairPipelineStrategyA] Strategy D (cycle-break B): ${nextNode.id} inputData aligned to ${prevNode.id} outputData, functionCode cleared for AI rewrite`,
+              );
+            }
+            continue;
+          }
+        }
+
+        // Strategy G: task → service complete mismatch.
+        // Service's inputData keys are FIXED (bound to http.body template vars).
+        // The task before the service must be redesigned to output the service's expected keys.
+        // We write a placeholder functionCode that maps available inputData keys to the service's
+        // expected keys — this satisfies FunctionCode Required and prevents cycling where the
+        // Fallback spread-passthrough keeps overwriting the aligned outputData.
+        if (
+          !allMissingInPrevInput &&
+          prevNode.type === "task" &&
+          nextNode.type === "service"
+        ) {
+          const nextInputKeys = Object.keys(nextInput as object);
+          const hasZeroOverlap = nextInputKeys.every((k) => !outputKeys.has(k));
+          if (hasZeroOverlap && nextInputKeys.length > 0) {
+            // Build a placeholder functionCode that maps prevNode's inputData → service's expected keys.
+            // Using actual inputData key names ensures no "missing field" mismatch — the function
+            // references valid inputData keys and returns the shape the service expects.
+            const prevConfig = getExecutionConfig(prevNode);
+            const prevInputData = prevConfig?.nodeData?.inputData;
+            const prevInputKeys = Object.keys(
+              prevInputData && typeof prevInputData === "object" && !Array.isArray(prevInputData)
+                ? (prevInputData as Record<string, unknown>)
+                : {},
+            );
+            const pairs = nextInputKeys
+              .map((outKey, idx) => {
+                const inKey = prevInputKeys[idx % Math.max(1, prevInputKeys.length)];
+                return inKey ? `${outKey}: inputData.${inKey}` : `${outKey}: null`;
+              })
+              .join(", ");
+            const placeholderCode = `// TODO: transform inputData to match service contract\nreturn { ${pairs} };`;
+
+            // Set task's outputData = service's inputData so pipeline validator sees alignment
+            const exec = prevNode.data?.execution;
+            const updatedPrevNode: WorkflowNode = {
+              ...prevNode,
+              data: {
+                ...prevNode.data,
+                execution: {
+                  ...exec,
+                  config: {
+                    ...(exec?.config ?? {}),
+                    functionCode: placeholderCode,
+                    nodeData: {
+                      ...((exec?.config as { nodeData?: unknown })?.nodeData ?? {}),
+                      outputData: nextInput, // task must produce what service needs
+                    },
+                  },
+                },
+              },
+            };
+            nodeMap.set(prevNode.id, updatedPrevNode);
+            children[i] = updatedPrevNode;
+            anyChanged = true;
+            console.log(
+              `[deterministicRepairPipelineStrategyA] Strategy G (task→service align): ${prevNode.id} outputData aligned to ${nextNode.id} inputData, placeholder functionCode generated`,
+            );
+            continue;
+          }
+        }
+
+        // Strategy E: Group Context Propagation — when some missing keys are NOT in prevNode.inputData
+        // but ARE in the GROUP's inputData, add them to prevNode.inputData so Strategy A can passthrough.
+        // Safe: group.inputData already has these keys; we're ensuring they flow through the chain.
+        // Only applies when there IS some overlap (partial mismatch) — zero overlap cases handled by Strategy B/D.
+        if (!allMissingInPrevInput) {
+          const groupId = children[0]?.parentNode;
+          if (groupId) {
+            const groupNode = nodeMap.get(groupId);
+            const groupConfig = getExecutionConfig(groupNode);
+            const groupInput = groupConfig?.nodeData?.inputData;
+            if (groupInput && typeof groupInput === "object") {
+              const groupInputRecord = groupInput as Record<string, unknown>;
+              const keysFromGroup = missingKeys.filter(
+                (k) => !(k in prevInputRecord) && k in groupInputRecord,
+              );
+              if (keysFromGroup.length > 0) {
+                // Add group-level keys to prevNode's inputData (enables Strategy A passthrough)
+                const augmentedInput = {
+                  ...(prevInput as Record<string, unknown>),
+                  ...Object.fromEntries(keysFromGroup.map((k) => [k, groupInputRecord[k]])),
+                };
+                const augmentedPrevNode = setNodeInputData(prevNode, augmentedInput);
+                nodeMap.set(prevNode.id, augmentedPrevNode);
+                children[i] = augmentedPrevNode;
+                anyChanged = true;
+                console.log(
+                  `[deterministicRepairPipelineStrategyA] Strategy E (group context propagation): added [${keysFromGroup.join(", ")}] to ${prevNode.id} inputData from group ${groupId}`,
+                );
+                // Re-fetch updated prevNode context and continue to Strategy A
+                // (the while loop will retry this pair with augmented inputData)
+                break; // restart the children loop to pick up the updated prevNode
+              }
+            }
+          }
+        }
+
+        // Strategy F: Remove truly orphaned keys from nextNode.inputData.
+        // When missing keys have NO upstream source (not in prevOutput, prevInput, or groupInput),
+        // they are hallucinated/UI-only keys that can never be resolved by chaining.
+        // Safe: removing a key that has no valid upstream source is purely structural cleanup.
+        // After removal, if functionCode references the removed keys → cleared for AI rewrite.
+        // SKIP service nodes: their functionCode is auto-generated from data.http config.
+        // Clearing it doesn't help since applyDeterministicCodeGeneration regenerates it.
+        // The parentChildDataFlow or functionCode Mismatch validators will handle service nodes.
+        if (!allMissingInPrevInput && nextNode.type !== "service") {
+          const groupId2 = children[i]?.parentNode;
+          const groupNode2 = groupId2 ? nodeMap.get(groupId2) : undefined;
+          const groupConfig2 = getExecutionConfig(groupNode2);
+          const groupInputRecord2 =
+            groupConfig2?.nodeData?.inputData &&
+            typeof groupConfig2.nodeData.inputData === "object"
+              ? (groupConfig2.nodeData.inputData as Record<string, unknown>)
+              : {};
+
+          const trulyOrphanedKeys = missingKeys.filter(
+            (k) => !(k in prevInputRecord) && !(k in groupInputRecord2),
+          );
+
+          if (trulyOrphanedKeys.length > 0) {
+            const cleanedInput = { ...(nextInput as Record<string, unknown>) };
+            for (const k of trulyOrphanedKeys) delete cleanedInput[k];
+
+            // Check if functionCode references the orphaned keys (will need rewrite)
+            const nextFnCode = nextConfig?.functionCode ?? "";
+            const referencesOrphaned = trulyOrphanedKeys.some((k) =>
+              new RegExp(`\\binputData\\.${k}\\b`).test(nextFnCode),
+            );
+
+            const updatedNextNode = referencesOrphaned
+              ? setNodeInputDataAndClearFunctionCode(nextNode, cleanedInput)
+              : setNodeInputData(nextNode, cleanedInput);
+            nodeMap.set(nextNode.id, updatedNextNode);
+            children[i + 1] = updatedNextNode;
+            anyChanged = true;
+            console.log(
+              `[deterministicRepairPipelineStrategyA] Strategy F (remove orphaned keys): removed [${trulyOrphanedKeys.join(", ")}] from ${nextNode.id} inputData` +
+                (referencesOrphaned ? " + cleared functionCode for AI rewrite" : ""),
+            );
+            break; // restart to re-evaluate with cleaned nextNode
+          }
+        }
+
         if (!allMissingInPrevInput) continue;
 
         // Strategy A: safe passthrough — extend prevNode's outputData
@@ -670,7 +981,45 @@ export function deterministicRepairPipelineStrategyA(
           (k) => !new RegExp(`\\b${k}\\s*:`).test(functionCode),
         );
         if (keysToAdd.length > 0) {
-          functionCode = injectPassthroughKeys(functionCode, keysToAdd);
+          const injected = injectPassthroughKeys(functionCode, keysToAdd);
+          if (injected === functionCode) {
+            // Injection failed (no `return {` found in functionCode, e.g. service node auto-generated code).
+            // Skip Strategy A to avoid outputData/functionCode mismatch.
+            // Fall back to Strategy B: adapt nextNode to use prevNode's actual outputData instead.
+            // Guard: skip if nextNode.functionCode references keys not in prevNode.outputData —
+            // replacing inputData would create a functionCode mismatch → cycle.
+            if (nextNode.type === "task") {
+              const nextFnCode = nextConfig?.functionCode ?? "";
+              const referencedKeys = extractInputDataReferences(nextFnCode);
+              const outputKeySet = new Set(Object.keys(prevOutput as object));
+              const wouldMismatch = [...referencedKeys].some((k) => !outputKeySet.has(k));
+              if (!wouldMismatch) {
+                const updatedNextNode = setNodeInputData(nextNode, prevOutput);
+                nodeMap.set(nextNode.id, updatedNextNode);
+                children[i + 1] = updatedNextNode;
+                anyChanged = true;
+                console.log(
+                  `[deterministicRepairPipelineStrategyA] Strategy A→B fallback: ${nextNode.id} inputData set from ${prevNode.id} outputData (injection failed)`,
+                );
+              } else {
+                // Strategy D: cycle-break — injection failed AND functionCode references wrong keys.
+                // Clear functionCode so FunctionCode Required fires → AI rewrites with correct inputData.
+                const updatedNextNode = setNodeInputDataAndClearFunctionCode(nextNode, prevOutput);
+                nodeMap.set(nextNode.id, updatedNextNode);
+                children[i + 1] = updatedNextNode;
+                anyChanged = true;
+                console.log(
+                  `[deterministicRepairPipelineStrategyA] Strategy D (cycle-break A→B): ${nextNode.id} inputData aligned to ${prevNode.id} outputData, functionCode cleared for AI rewrite`,
+                );
+              }
+            } else {
+              console.log(
+                `[deterministicRepairPipelineStrategyA] Strategy A skipped (no return {} to inject into) for ${prevNode.id}`,
+              );
+            }
+            continue;
+          }
+          functionCode = injected;
         }
 
         const updatedPrevNode: WorkflowNode = {

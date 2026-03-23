@@ -15,6 +15,15 @@ export function handleOpenAIError(error: unknown): never {
       );
     }
     if (error.status === 429) {
+      // Distinguish between rate limiting (temporary) and quota exhaustion (billing)
+      const isQuotaExhausted =
+        error.message?.includes("insufficient_quota") ||
+        error.message?.includes("exceeded your current quota");
+      if (isQuotaExhausted) {
+        throw new Error(
+          "OpenAI API quota exhausted. Please check your billing at platform.openai.com and add credits to continue.",
+        );
+      }
       throw new Error(
         "OpenAI rate limit exceeded. Please try again in a moment.",
       );

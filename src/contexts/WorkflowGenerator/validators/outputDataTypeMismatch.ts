@@ -141,6 +141,19 @@ export async function deterministicRepairOutputDataTypeMismatch(
       const actualData = execResult.data as Record<string, unknown>;
       const expectedObj = expectedOutput as Record<string, unknown>;
 
+      // Guard: if functionCode is a passthrough of inputData while declared outputData has keys
+      // NOT in inputData, the declared outputData was set as a schema hint (e.g., Strategy G).
+      // Reverting it would undo the pipeline alignment — skip and let AI write the real logic.
+      const inputData = config.nodeData?.inputData;
+      if (inputData !== null && typeof inputData === "object" && !Array.isArray(inputData)) {
+        const inputKeys = new Set(Object.keys(inputData as object));
+        const actualKeys = Object.keys(actualData);
+        const expectedKeys = Object.keys(expectedObj);
+        const isActualSubsetOfInput = actualKeys.every(k => inputKeys.has(k));
+        const expectedHasNonInputKeys = expectedKeys.some(k => !inputKeys.has(k));
+        if (isActualSubsetOfInput && expectedHasNonInputKeys) continue;
+      }
+
       // Build new outputData using actual structure, preserving rich sample arrays from existing outputData
       const newOutputData: Record<string, unknown> = {};
       for (const [key, actualValue] of Object.entries(actualData)) {
