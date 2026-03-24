@@ -5,11 +5,13 @@ import {
   TestTube,
   FlaskConical,
   Beaker,
+  Eye,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
+import { useUIPreview } from "@/contexts/UIPreview";
 import UndoRedoButtons from "./UndoRedoButtons";
 
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
@@ -24,8 +26,9 @@ interface Props {
 }
 
 export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
-  const { open: openGenerator } = useWorkflowGenerator();
+  const { open: openGenerator, lastGenerationMeta } = useWorkflowGenerator();
   const { open: openHistory } = useWorkflowVersioning();
+  const { open: openUIPreview } = useUIPreview();
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
@@ -101,6 +104,26 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
         >
           Generate with AI
         </Button>
+
+        {/* View UI Preview Button */}
+        {lastGenerationMeta && (
+          <Button
+            palette="secondary"
+            variant="outline"
+            icon={<Eye />}
+            iconPosition="left"
+            onClick={() =>
+              openUIPreview({
+                nodes,
+                analysisResult: lastGenerationMeta.analysisResult,
+                sampleId: lastGenerationMeta.sampleId,
+              })
+            }
+            disabled={isExecuting}
+          >
+            View UI
+          </Button>
+        )}
 
         {/* History Button */}
         <Button

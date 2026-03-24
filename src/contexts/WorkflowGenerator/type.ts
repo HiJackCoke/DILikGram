@@ -5,6 +5,13 @@
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 import type { ValidationProgress } from "../../types/ai/validators";
+import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
+
+/** Persisted after successful generation so UI Preview can use it without re-analyzing */
+export interface LastGenerationMeta {
+  analysisResult: AnalyzePRDResult;
+  sampleId: string | null;
+}
 
 /**
  * Callback function called when workflow is generated
@@ -42,4 +49,6 @@ export interface WorkflowGeneratorContextValue {
    * @param nodes - Current nodes on the canvas
    */
   setExistingNodes: (nodes: WorkflowNode[]) => void;
+  /** Non-null after a successful generation; used by UIPreview to call generateUIAction */
+  lastGenerationMeta: LastGenerationMeta | null;
 }

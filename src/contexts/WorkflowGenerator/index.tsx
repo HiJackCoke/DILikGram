@@ -23,6 +23,7 @@ import type { WorkflowNode } from "@/types/nodes";
 import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
+  LastGenerationMeta,
 } from "./type";
 import type { ValidationProgress } from "../../types/ai/validators";
 import type {
@@ -70,6 +71,8 @@ export function WorkflowGeneratorProvider({
   const [analysisResult, setAnalysisResult] = useState<AnalyzePRDResult | null>(
     null,
   );
+  const [lastGenerationMeta, setLastGenerationMeta] =
+    useState<LastGenerationMeta | null>(null);
 
   const open = useCallback(() => {
     setShow(true);
@@ -219,6 +222,10 @@ export function WorkflowGeneratorProvider({
             existingNodesRef.current,
           );
 
+          setLastGenerationMeta({
+            analysisResult: sample.analysisResult,
+            sampleId: selectedSampleIdRef.current,
+          });
           listeners.current.forEach((listener) =>
             listener(allFinalNodes, allFinalEdges),
           );
@@ -296,6 +303,10 @@ export function WorkflowGeneratorProvider({
         existingNodesRef.current,
       );
 
+      setLastGenerationMeta({
+        analysisResult: analysisResult!,
+        sampleId: selectedSampleIdRef.current,
+      });
       listeners.current.forEach((listener) =>
         listener(allFinalNodes, allFinalEdges),
       );
@@ -321,6 +332,7 @@ export function WorkflowGeneratorProvider({
         isGenerating,
         error,
         validationProgress,
+        lastGenerationMeta,
       }}
     >
       {children}

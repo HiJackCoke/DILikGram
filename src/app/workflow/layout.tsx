@@ -8,6 +8,7 @@ import { PropertiesPanelProvider } from "@/contexts/PropertiesPanel";
 import { WorkflowExecutionProvider } from "@/contexts/WorkflowExecution";
 import { WorkflowGeneratorProvider } from "@/contexts/WorkflowGenerator";
 import { WorkflowVersioningProvider } from "@/contexts/WorkflowVersioning";
+import { UIPreviewProvider } from "@/contexts/UIPreview";
 // import DialogProvider from "@/contexts/Dialog";
 // import ToastProvider from "@/contexts/Toast";
 
@@ -25,10 +26,13 @@ export default function WorkflowLayout({
               <AIWorkflowEditorProvider>
                 <WorkflowGeneratorProvider>
                   <WorkflowVersioningProvider>
-                    <div className="modal-root" id="workflow-generator-modal" />
-                    <div className="modal-root" id="workflow-summary-modal" />
+                    <UIPreviewProvider>
+                      <div className="modal-root" id="workflow-generator-modal" />
+                      <div className="modal-root" id="workflow-summary-modal" />
+                      <div id="ui-preview-modal" />
 
-                    {children}
+                      {children}
+                    </UIPreviewProvider>
                   </WorkflowVersioningProvider>
                 </WorkflowGeneratorProvider>
               </AIWorkflowEditorProvider>
