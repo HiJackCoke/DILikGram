@@ -68,23 +68,22 @@ export function WorkflowVersioningProvider({
   // Restore callbacks
   const restoreCallbacksRef = useRef<Set<OnRestoreCallback>>(new Set());
 
-  // Track if this is the initial load
+  // Track if the initial localStorage → state hydration has been replayed
   const isInitialLoadRef = useRef(true);
 
   /**
-   * Trigger onRestore callbacks on initial load
+   * On refresh: currentVersion transitions null → non-null after useBrowserState
+   * hydrates from localStorage. Fire callbacks exactly once for this case.
    */
   useEffect(() => {
-    // Only trigger on initial load when currentVersion first becomes available
     if (isInitialLoadRef.current && currentVersion) {
       isInitialLoadRef.current = false;
-
-      // Notify all restore listeners with initial data
       restoreCallbacksRef.current.forEach((callback) => {
         callback(currentVersion.nodes, currentVersion.edges);
       });
     }
   }, [currentVersion]);
+
 
   /**
    * Update storage statistics
@@ -302,16 +301,25 @@ export function WorkflowVersioningProvider({
   };
 
   /**
-   * Register a restore callback
+   * Register a restore callback.
+   * Immediately replays the current version so consumers that register
+   * after the initial render (or re-mount after navigation) get the data.
    */
-  const registerOnRestore = useCallback((handler: OnRestoreCallback) => {
-    restoreCallbacksRef.current.add(handler);
+  const registerOnRestore = useCallback(
+    (handler: OnRestoreCallback) => {
+      restoreCallbacksRef.current.add(handler);
 
-    // Return cleanup function
-    return () => {
-      restoreCallbacksRef.current.delete(handler);
-    };
-  }, []);
+      // Replay current version for late or re-registering consumers
+      if (currentVersion) {
+        handler(currentVersion.nodes, currentVersion.edges);
+      }
+
+      return () => {
+        restoreCallbacksRef.current.delete(handler);
+      };
+    },
+    [currentVersion],
+  );
 
   /**
    * Open history panel

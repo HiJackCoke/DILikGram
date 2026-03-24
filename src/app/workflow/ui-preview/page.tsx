@@ -50,10 +50,7 @@ export default function UIPreviewPage() {
   }, []);
 
   const addLog = (msg: string) =>
-    setLog((prev) => [
-      `[${new Date().toLocaleTimeString()}] ${msg}`,
-      ...prev,
-    ]);
+    setLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
 
   const handleTestSample = async (sampleId: string) => {
     setLoading(true);
@@ -92,7 +89,8 @@ export default function UIPreviewPage() {
     setActiveSample(null);
   };
 
-  const safeActivePage = pages.length > 0 ? Math.min(activePage, pages.length - 1) : 0;
+  const safeActivePage =
+    pages.length > 0 ? Math.min(activePage, pages.length - 1) : 0;
   const activePageData = pages[safeActivePage];
   const isWorkflowMode = storedPages !== null && storedPages.length > 0;
 
@@ -121,7 +119,10 @@ export default function UIPreviewPage() {
       >
         {/* Back link */}
         <div
-          style={{ padding: "12px 10px 8px", borderBottom: "1px solid #334155" }}
+          style={{
+            padding: "12px 10px 8px",
+            borderBottom: "1px solid #334155",
+          }}
         >
           <Link
             href="/workflow"
@@ -136,7 +137,7 @@ export default function UIPreviewPage() {
             }}
           >
             <ArrowLeft size={14} />
-            워크플로우로
+            To. Workflow
           </Link>
         </div>
 
@@ -181,7 +182,9 @@ export default function UIPreviewPage() {
                 </button>
               ))}
             </div>
-            <div style={{ padding: "8px 10px", borderTop: "1px solid #334155" }}>
+            <div
+              style={{ padding: "8px 10px", borderTop: "1px solid #334155" }}
+            >
               <button
                 onClick={handleClearAndUseSamples}
                 style={{
@@ -225,8 +228,7 @@ export default function UIPreviewPage() {
                     cursor: "pointer",
                     fontSize: 13,
                     fontWeight: 600,
-                    background:
-                      activeSample === s.id ? "#3b82f6" : "#334155",
+                    background: activeSample === s.id ? "#3b82f6" : "#334155",
                     color: activeSample === s.id ? "#fff" : "#cbd5e1",
                   }}
                 >
@@ -279,7 +281,12 @@ export default function UIPreviewPage() {
 
       {/* ── Main area ── */}
       <div
-        style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
       >
         {/* Toolbar */}
         <div
@@ -303,7 +310,9 @@ export default function UIPreviewPage() {
           </span>
 
           {loading && (
-            <span style={{ fontSize: 12, color: "#818cf8" }}>⏳ 생성 중...</span>
+            <span style={{ fontSize: 12, color: "#818cf8" }}>
+              ⏳ 생성 중...
+            </span>
           )}
 
           {activePageData && (
@@ -365,10 +374,7 @@ export default function UIPreviewPage() {
             }}
           >
             {activePageData ? (
-              <UIPreviewFrame
-                code={activePageData.code}
-                viewport={viewport}
-              />
+              <UIPreviewFrame code={activePageData.code} viewport={viewport} />
             ) : (
               <div
                 style={{
@@ -380,8 +386,12 @@ export default function UIPreviewPage() {
               >
                 <div style={{ textAlign: "center", color: "#475569" }}>
                   <div style={{ fontSize: 48, marginBottom: 12 }}>📱</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#64748b" }}>
-                    {isWorkflowMode ? "페이지를 선택하세요" : "샘플을 선택하세요"}
+                  <div
+                    style={{ fontSize: 15, fontWeight: 600, color: "#64748b" }}
+                  >
+                    {isWorkflowMode
+                      ? "페이지를 선택하세요"
+                      : "샘플을 선택하세요"}
                   </div>
                 </div>
               </div>
