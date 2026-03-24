@@ -45,6 +45,7 @@ import { useExecutionSummary } from "@/contexts/ExecutionSummary";
 import { useAIWorkflowEditor } from "@/contexts/AIWorkflowEditor";
 import { useGlobalKeyHandler } from "@/hooks/useGlobalKeyHandler";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
+import type { GenerationMeta } from "@/types/version";
 
 import ExecutionHeader from "@/app/workflow/_layout/Header";
 
@@ -407,6 +408,7 @@ export default function WorkflowPage() {
   function handleWorkflowGenerator(
     newNodes: WorkflowNode[],
     newEdges: WorkflowEdge[],
+    generationMeta?: GenerationMeta,
   ) {
     const updatedNodes = [...nodes, ...newNodes];
     const updatedEdges = [...edges, ...newEdges];
@@ -414,11 +416,13 @@ export default function WorkflowPage() {
     setNodes(updatedNodes);
     setEdges(updatedEdges);
 
-    // Auto-save version after workflow generation
-    save(updatedNodes, updatedEdges, {
-      changeType: "generated",
-      description: "Generated workflow from AI",
-    });
+    // Auto-save version after workflow generation (include generationMeta so "View UI" is tied to this snapshot)
+    save(
+      updatedNodes,
+      updatedEdges,
+      { changeType: "generated", description: "Generated workflow from AI" },
+      generationMeta,
+    );
   }
 
   // Handle execution config save

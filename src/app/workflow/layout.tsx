@@ -29,7 +29,6 @@ export default function WorkflowLayout({
                     <UIPreviewProvider>
                       <div className="modal-root" id="workflow-generator-modal" />
                       <div className="modal-root" id="workflow-summary-modal" />
-                      <div id="ui-preview-modal" />
 
                       {children}
                     </UIPreviewProvider>

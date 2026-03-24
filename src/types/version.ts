@@ -4,6 +4,13 @@
 
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
+import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
+
+/** Metadata from AI generation — stored per-version so UI Preview is tied to the right workflow snapshot */
+export interface GenerationMeta {
+  analysisResult: AnalyzePRDResult;
+  sampleId: string | null;
+}
 
 /**
  * Type of change that created this version
@@ -45,6 +52,8 @@ export interface WorkflowVersion {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   metadata: VersionMetadata;
+  /** Only present on AI-generated versions; used to drive "View UI" for this snapshot */
+  generationMeta?: GenerationMeta;
 }
 
 /**

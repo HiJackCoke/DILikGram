@@ -4,9 +4,10 @@ import { createContext, useState, useCallback, use } from "react";
 import type { ReactNode } from "react";
 import type { WorkflowNode } from "@/types/nodes";
 import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
-import type { GeneratedUIPage } from "@/types/ai/uiGeneration";
 import { generateUIAction } from "@/app/_actions/ai";
-import UIPreviewModal from "./Modal";
+
+/** sessionStorage key used to persist generated pages across navigation */
+export const UI_PREVIEW_SESSION_KEY = "dg:ui-preview-pages";
 
 export interface OpenUIPreviewParams {
   nodes: WorkflowNode[];
@@ -15,21 +16,19 @@ export interface OpenUIPreviewParams {
 }
 
 interface UIPreviewContextValue {
-  open: (params: OpenUIPreviewParams) => void;
-  close: () => void;
+  /** Generate pages, store in sessionStorage, then caller can navigate */
+  open: (params: OpenUIPreviewParams) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const UIPreviewContext = createContext<UIPreviewContextValue | null>(null);
 
 export function UIPreviewProvider({ children }: { children: ReactNode }) {
-  const [show, setShow] = useState(false);
-  const [pages, setPages] = useState<GeneratedUIPage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const open = useCallback(async (params: OpenUIPreviewParams) => {
-    setShow(true);
-    setPages([]);
     setError(null);
     setIsLoading(true);
 
@@ -39,29 +38,22 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
         nodes: params.nodes,
         sampleId: params.sampleId ?? undefined,
       });
-      setPages(result.pages);
+      sessionStorage.setItem(
+        UI_PREVIEW_SESSION_KEY,
+        JSON.stringify(result.pages),
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "UI 생성에 실패했습니다");
+      const msg = err instanceof Error ? err.message : "UI 생성에 실패했습니다";
+      setError(msg);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const close = useCallback(() => {
-    setShow(false);
-  }, []);
-
   return (
-    <UIPreviewContext value={{ open, close }}>
+    <UIPreviewContext value={{ open, isLoading, error }}>
       {children}
-
-      <UIPreviewModal
-        show={show}
-        pages={pages}
-        isLoading={isLoading}
-        error={error}
-        onClose={close}
-      />
     </UIPreviewContext>
   );
 }

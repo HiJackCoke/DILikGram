@@ -10,6 +10,7 @@ import type {
   WorkflowVersion,
   WorkflowVersionHistory,
   VersionMetadata,
+  GenerationMeta,
 } from "@/types/version";
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
@@ -136,6 +137,7 @@ export class WorkflowVersionStorage {
     nodes: WorkflowNode[],
     edges: WorkflowEdge[],
     metadata: Omit<VersionMetadata, "stats">,
+    generationMeta?: GenerationMeta,
   ): WorkflowVersion {
     return {
       id: uuid(),
@@ -149,6 +151,7 @@ export class WorkflowVersionStorage {
           edgeCount: edges.length,
         },
       },
+      ...(generationMeta ? { generationMeta } : {}),
     };
   }
 
@@ -326,6 +329,13 @@ export class WorkflowVersionStorage {
       console.error("Emergency cleanup failed:", error);
       return null;
     }
+  }
+
+  /**
+   * Read UI generation metadata for the current version (null when not yet generated).
+   */
+  getGenerationMeta(): GenerationMeta | null {
+    return this.getCurrentVersion()?.generationMeta ?? null;
   }
 
   /**

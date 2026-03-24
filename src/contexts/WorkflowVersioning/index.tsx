@@ -18,7 +18,7 @@ import { useBrowserState } from "@/hooks/useBrowserState";
 import { workflowVersionStorage } from "@/utils/workflow/versionStorage";
 import VersionHistoryPanel from "@/contexts/WorkflowVersioning/VersionHistoryPanel";
 import type { WorkflowVersioningContextValue, OnRestoreCallback } from "./type";
-import type { WorkflowVersion, VersionDiff } from "@/types/version";
+import type { WorkflowVersion, VersionDiff, GenerationMeta } from "@/types/version";
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 
@@ -101,11 +101,13 @@ export function WorkflowVersioningProvider({
     nodes: WorkflowNode[],
     edges: WorkflowEdge[],
     metadata: Omit<WorkflowVersion["metadata"], "stats">,
+    generationMeta?: GenerationMeta,
   ) => {
     const newVersion = workflowVersionStorage.createVersion(
       nodes,
       edges,
       metadata,
+      generationMeta,
     );
 
     const success = workflowVersionStorage.appendVersion(newVersion);

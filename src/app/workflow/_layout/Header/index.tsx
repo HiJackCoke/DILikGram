@@ -5,13 +5,17 @@ import {
   TestTube,
   FlaskConical,
   Beaker,
-  Eye,
+  Monitor,
+  Loader2,
 } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
 import { useUIPreview } from "@/contexts/UIPreview";
+
 import UndoRedoButtons from "./UndoRedoButtons";
 
 import type { ExecutionData, WorkflowEdge, WorkflowNode } from "@/types";
@@ -26,9 +30,12 @@ interface Props {
 }
 
 export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
-  const { open: openGenerator, lastGenerationMeta } = useWorkflowGenerator();
-  const { open: openHistory } = useWorkflowVersioning();
+  const { open: openGenerator } = useWorkflowGenerator();
+  const { open: openHistory, currentVersion } = useWorkflowVersioning();
+  const generationMeta = currentVersion?.generationMeta ?? null;
   const { open: openUIPreview } = useUIPreview();
+  const router = useRouter();
+  const [isGeneratingUI, setIsGeneratingUI] = useState(false);
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
@@ -106,22 +113,34 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
         </Button>
 
         {/* View UI Preview Button */}
-        {lastGenerationMeta && (
+        {generationMeta && (
           <Button
             palette="secondary"
-            variant="outline"
-            icon={<Eye />}
-            iconPosition="left"
-            onClick={() =>
-              openUIPreview({
-                nodes,
-                analysisResult: lastGenerationMeta.analysisResult,
-                sampleId: lastGenerationMeta.sampleId,
-              })
+            variant="solid"
+            icon={
+              isGeneratingUI ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Monitor />
+              )
             }
-            disabled={isExecuting}
+            iconPosition="left"
+            onClick={async () => {
+              setIsGeneratingUI(true);
+              try {
+                await openUIPreview({
+                  nodes,
+                  analysisResult: generationMeta.analysisResult,
+                  sampleId: generationMeta.sampleId,
+                });
+                router.push("/workflow/ui-preview");
+              } finally {
+                setIsGeneratingUI(false);
+              }
+            }}
+            disabled={isExecuting || isGeneratingUI}
           >
-            View UI
+            {isGeneratingUI ? "생성 중..." : "View UI"}
           </Button>
         )}
 

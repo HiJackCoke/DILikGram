@@ -19,18 +19,16 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { WorkflowNode } from "@/types/nodes";
-
 import type {
   WorkflowGeneratorContextValue,
   RegisterOnWorkflowGenerated,
-  LastGenerationMeta,
 } from "./type";
 import type { ValidationProgress } from "../../types/ai/validators";
 import type {
   AnalyzePRDParams,
   AnalyzePRDResult,
 } from "@/types/ai/prdAnalysis";
-import { 
+import {
   generateWorkflowAction,
   updateWorkflowAction,
 } from "@/app/_actions/ai";
@@ -71,8 +69,6 @@ export function WorkflowGeneratorProvider({
   const [analysisResult, setAnalysisResult] = useState<AnalyzePRDResult | null>(
     null,
   );
-  const [lastGenerationMeta, setLastGenerationMeta] =
-    useState<LastGenerationMeta | null>(null);
 
   const open = useCallback(() => {
     setShow(true);
@@ -222,12 +218,12 @@ export function WorkflowGeneratorProvider({
             existingNodesRef.current,
           );
 
-          setLastGenerationMeta({
+          const sampleMeta = {
             analysisResult: sample.analysisResult,
             sampleId: selectedSampleIdRef.current,
-          });
+          };
           listeners.current.forEach((listener) =>
-            listener(allFinalNodes, allFinalEdges),
+            listener(allFinalNodes, allFinalEdges, sampleMeta),
           );
           close();
         } catch (err) {
@@ -303,12 +299,12 @@ export function WorkflowGeneratorProvider({
         existingNodesRef.current,
       );
 
-      setLastGenerationMeta({
+      const generationMeta = {
         analysisResult: analysisResult!,
         sampleId: selectedSampleIdRef.current,
-      });
+      };
       listeners.current.forEach((listener) =>
-        listener(allFinalNodes, allFinalEdges),
+        listener(allFinalNodes, allFinalEdges, generationMeta),
       );
       close();
     } catch (err) {
@@ -332,7 +328,6 @@ export function WorkflowGeneratorProvider({
         isGenerating,
         error,
         validationProgress,
-        lastGenerationMeta,
       }}
     >
       {children}

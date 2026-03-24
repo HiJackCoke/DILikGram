@@ -437,38 +437,131 @@ export const updateWorkflowAction: UpdateWorkflowAction = async ({
 import type {
   GenerateUIActionParams,
   GenerateUIResponse,
+  GeneratedUIPage,
 } from "@/types/ai/uiGeneration";
+import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
 import { getUIPreviewBySampleId } from "@/fixtures/uiPreviews";
-// UI_GENERATION_SYSTEM_PROMPT and getUIGenerationContent will be used when real API is wired up
-// import { UI_GENERATION_SYSTEM_PROMPT, getUIGenerationContent } from "@/fixtures/prompts/uiGeneration";
+import {
+  UI_GENERATION_SYSTEM_PROMPT,
+  getUIGenerationContent,
+  type UIPageContext,
+} from "@/fixtures/prompts/uiGeneration";
+
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Generates React component code for each page in the workflow.
+ * Build the prompt context for one page by extracting field names and
+ * service endpoints from the workflow nodes (shared across all pages —
+ * provides data-shape hints to the model).
+ */
+function buildPageContext(
+  page: AnalyzePRDResult["pages"][number],
+  goal: string,
+  nodes: WorkflowNode[],
+): UIPageContext {
+  const dataFieldsSet = new Set<string>();
+  const endpoints: UIPageContext["endpoints"] = [];
+
+  for (const node of nodes) {
+    const nodeData = node.data.execution?.config?.nodeData;
+    if (nodeData?.inputData && typeof nodeData.inputData === "object") {
+      Object.keys(nodeData.inputData as object).forEach((k) =>
+        dataFieldsSet.add(k),
+      );
+    }
+    if (nodeData?.outputData && typeof nodeData.outputData === "object") {
+      Object.keys(nodeData.outputData as object).forEach((k) =>
+        dataFieldsSet.add(k),
+      );
+    }
+
+    if (node.type === "service") {
+      const http = (node.data as ServiceNodeData).http;
+      const endpoint = http?.endpoint;
+      if (endpoint && !endpoints.some((e) => e.endpoint === endpoint)) {
+        endpoints.push({ method: http?.method ?? "POST", endpoint });
+      }
+    }
+  }
+
+  return {
+    pageName: page.name,
+    pagePath: page.path,
+    goal,
+    features: page.features,
+    dataFields: [...dataFieldsSet].slice(0, 20),
+    endpoints: endpoints.slice(0, 10),
+  };
+}
+
+/**
+ * Call OpenAI once for the given page context and return the generated code.
+ * Strips markdown fences in case the model includes them despite instructions.
+ */
+async function generatePageCode(
+  openai: OpenAI,
+  ctx: UIPageContext,
+): Promise<string> {
+  const response = await openai.responses.create({
+    model: "gpt-4o-mini",
+    temperature: 0.4,
+    instructions: UI_GENERATION_SYSTEM_PROMPT,
+    input: getUIGenerationContent(ctx),
+  });
+
+  const raw = response.output_text ?? "";
+  // Strip markdown fences if the model included them
+  return raw
+    .replace(/^```(?:jsx?|tsx?|javascript)?\n?/m, "")
+    .replace(/\n?```\s*$/m, "")
+    .trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Generates a self-contained React component for each page in the workflow.
  *
- * During development: if sampleId is provided, returns pre-built fixture data.
- * In production: calls OpenAI to generate component code per page.
+ * - If sampleId is provided: returns pre-built fixture data (no API call).
+ * - Otherwise: calls OpenAI sequentially per page using the analysis result
+ *   and workflow node data as context.
  */
 export const generateUIAction = async ({
   analysisResult,
+  nodes,
   sampleId,
 }: GenerateUIActionParams): Promise<GenerateUIResponse> => {
   // Sample bypass — return pre-built fixture without calling OpenAI
   if (sampleId) {
     const pages = getUIPreviewBySampleId(sampleId);
-    if (pages) {
-      return { pages };
-    }
+    if (pages) return { pages };
   }
 
-  // TODO: real OpenAI implementation (post-development)
-  // For now, fall back to a placeholder when no fixture is available
-  const pages = analysisResult.pages.map((page) => ({
-    pageId: page.id,
-    pageName: page.name,
-    pagePath: page.path,
-    code: `function App() { return <div style={{padding:32,fontFamily:'system-ui',color:'#374151'}}><h2>${page.name}</h2><p>UI generation coming soon.</p></div>; }`,
-    status: "done" as const,
-  }));
+  const openai = getOpenAIClient();
+  const pages: GeneratedUIPage[] = [];
+
+  for (const page of analysisResult.pages) {
+    const ctx = buildPageContext(page, analysisResult.goal, nodes);
+    try {
+      const code = await generatePageCode(openai, ctx);
+      pages.push({
+        pageId: page.id,
+        pageName: page.name,
+        pagePath: page.path,
+        code,
+        status: "done",
+      });
+    } catch (err) {
+      pages.push({
+        pageId: page.id,
+        pageName: page.name,
+        pagePath: page.path,
+        code: `function App() { return <div style={{padding:32,fontFamily:'system-ui',color:'#ef4444'}}><h2>${page.name}</h2><p>${err instanceof Error ? err.message : "Generation failed"}</p></div>; }`,
+        status: "error",
+        error: err instanceof Error ? err.message : "Generation failed",
+      });
+    }
+  }
 
   return { pages };
 };

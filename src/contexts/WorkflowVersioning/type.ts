@@ -2,7 +2,7 @@
  * Type definitions for WorkflowVersioning context
  */
 
-import type { WorkflowVersion, VersionDiff } from "@/types/version";
+import type { WorkflowVersion, VersionDiff, GenerationMeta } from "@/types/version";
 import type { WorkflowNode } from "@/types/nodes";
 import type { WorkflowEdge } from "@/types/edges";
 
@@ -40,6 +40,7 @@ export interface WorkflowVersioningContextValue {
     nodes: WorkflowNode[],
     edges: WorkflowEdge[],
     metadata: Omit<WorkflowVersion["metadata"], "stats">,
+    generationMeta?: GenerationMeta,
   ) => void;
   restore: (versionId: string) => void;
   delete: (versionId: string) => void;
