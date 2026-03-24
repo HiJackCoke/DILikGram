@@ -431,3 +431,44 @@ export const updateWorkflowAction: UpdateWorkflowAction = async ({
     handleOpenAIError(error);
   }
 };
+
+// ─── UI Preview Generation ────────────────────────────────────────────────────
+
+import type {
+  GenerateUIActionParams,
+  GenerateUIResponse,
+} from "@/types/ai/uiGeneration";
+import { getUIPreviewBySampleId } from "@/fixtures/uiPreviews";
+// UI_GENERATION_SYSTEM_PROMPT and getUIGenerationContent will be used when real API is wired up
+// import { UI_GENERATION_SYSTEM_PROMPT, getUIGenerationContent } from "@/fixtures/prompts/uiGeneration";
+
+/**
+ * Generates React component code for each page in the workflow.
+ *
+ * During development: if sampleId is provided, returns pre-built fixture data.
+ * In production: calls OpenAI to generate component code per page.
+ */
+export const generateUIAction = async ({
+  analysisResult,
+  sampleId,
+}: GenerateUIActionParams): Promise<GenerateUIResponse> => {
+  // Sample bypass — return pre-built fixture without calling OpenAI
+  if (sampleId) {
+    const pages = getUIPreviewBySampleId(sampleId);
+    if (pages) {
+      return { pages };
+    }
+  }
+
+  // TODO: real OpenAI implementation (post-development)
+  // For now, fall back to a placeholder when no fixture is available
+  const pages = analysisResult.pages.map((page) => ({
+    pageId: page.id,
+    pageName: page.name,
+    pagePath: page.path,
+    code: `function App() { return <div style={{padding:32,fontFamily:'system-ui',color:'#374151'}}><h2>${page.name}</h2><p>UI generation coming soon.</p></div>; }`,
+    status: "done" as const,
+  }));
+
+  return { pages };
+};
