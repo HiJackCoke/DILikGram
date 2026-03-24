@@ -1,0 +1,4204 @@
+{
+  "capturedAt": "2026-03-24T00:48:59.185Z",
+  "scenario": "fitness",
+  "analysisResult": {
+    "goal": "To provide a mobile app for fitness enthusiasts to efficiently track diet, calories, macros, and progress.",
+    "pages": [
+      {
+        "id": "page-1",
+        "name": "Meal Logging",
+        "path": "/meal-logging",
+        "features": [
+          {
+            "id": "feat-1-1",
+            "name": "Quick Meal Entry",
+            "description": "Allow users to log meals quickly through a streamlined interface.",
+            "priority": "must"
+          },
+          {
+            "id": "feat-1-2",
+            "name": "AI-Assisted Food Recognition",
+            "description": "Utilize AI to recognize food items from images for automatic logging.",
+            "priority": "must"
+          },
+          {
+            "id": "feat-1-3",
+            "name": "Macro Tracking",
+            "description": "Enable users to track their macro intake for each logged meal.",
+            "priority": "must"
+          },
+          {
+            "id": "feat-1-4",
+            "name": "Error Handling",
+            "description": "Provide feedback and error messages for invalid meal entries.",
+            "priority": "must"
+          }
+        ]
+      },
+      {
+        "id": "page-2",
+        "name": "Progress Analytics",
+        "path": "/progress-analytics",
+        "features": [
+          {
+            "id": "feat-2-1",
+            "name": "Weekly Insights",
+            "description": "Display weekly insights on diet and performance metrics.",
+            "priority": "must"
+          },
+          {
+            "id": "feat-2-2",
+            "name": "Goal Tracking",
+            "description": "Allow users to set and track their fitness goals over time.",
+            "priority": "must"
+          },
+          {
+            "id": "feat-2-3",
+            "name": "Data Visualization",
+            "description": "Provide visual representations of progress through charts and graphs.",
+            "priority": "should"
+          },
+          {
+            "id": "feat-2-4",
+            "name": "Export Data",
+            "description": "Allow users to export their progress data for external analysis.",
+            "priority": "could"
+          }
+        ]
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "p1-node-task-meal-logging-001",
+      "type": "task",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "title": "Meal Logging",
+        "description": "Initialize meal logging context",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { meals: [], currentDate: new Date().toISOString().split('T')[0] };",
+            "nodeData": {
+              "inputData": null,
+              "outputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ],
+                "currentDate": "2023-10-01"
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Initialize meal logging context",
+          "rationale": "This task sets up the initial state for meal logging."
+        },
+        "testCases": [
+          {
+            "id": "test-3f776567-55d4-426e-b021-c82305f7caba",
+            "name": "Success case",
+            "description": "Test successful execution of Meal Logging",
+            "inputData": {},
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-7274328c-0c13-4982-8e4d-948dd08b2cb2",
+            "name": "Failure case",
+            "description": "Test error handling in Meal Logging",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-bca127a5-57a1-46f3-a1cb-64abaa6f293c",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Meal Logging",
+            "inputData": {},
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-group-quick-meal-entry-002",
+      "type": "group",
+      "parentNode": "p1-node-task-meal-logging-001",
+      "position": {
+        "x": -300,
+        "y": 100
+      },
+      "data": {
+        "title": "Quick Meal Entry",
+        "description": "Allow users to log meals quickly through a streamlined interface.",
+        "groups": [
+          {
+            "id": "p1-node-task-log-meal-003",
+            "type": "task",
+            "parentNode": "p1-node-group-quick-meal-entry-002",
+            "position": {
+              "x": -300,
+              "y": 250
+            },
+            "data": {
+              "title": "Log Meal",
+              "description": "Add a new meal to the logging system.",
+              "assignee": "",
+              "estimatedTime": 5,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "const updatedMeals = [...inputData.meals, inputData.newMeal]; return { meals: updatedMeals };",
+                  "nodeData": {
+                    "inputData": {
+                      "meals": [],
+                      "newMeal": {
+                        "id": "meal-001",
+                        "content": "Salad",
+                        "calories": 150
+                      }
+                    },
+                    "outputData": {
+                      "meals": [
+                        {
+                          "id": "meal-001",
+                          "content": "Salad",
+                          "calories": 150
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "Quick Meal Entry",
+                "rationale": "This task logs a new meal into the system."
+              }
+            }
+          },
+          {
+            "id": "p1-node-task-display-meals-004",
+            "type": "task",
+            "parentNode": "p1-node-group-quick-meal-entry-002",
+            "position": {
+              "x": -300,
+              "y": 400
+            },
+            "data": {
+              "title": "Display Logged Meals",
+              "description": "Show the list of logged meals to the user.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { displayedMeals: inputData.meals };",
+                  "nodeData": {
+                    "inputData": {
+                      "meals": [
+                        {
+                          "id": "meal-001",
+                          "content": "Salad",
+                          "calories": 150
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "displayedMeals": [
+                        {
+                          "id": "meal-001",
+                          "content": "Salad",
+                          "calories": 150
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "Quick Meal Entry",
+                "rationale": "This task displays the meals that have been logged."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedMeals": [
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  },
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  },
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Quick Meal Entry",
+          "rationale": "This group allows users to log meals quickly."
+        },
+        "testCases": [
+          {
+            "id": "test-0e3d0574-d32b-4931-bc32-ac69fbb659f3",
+            "name": "Success case",
+            "description": "Test successful execution of Quick Meal Entry",
+            "inputData": {
+              "meals": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-c6667582-ba87-467f-9ad9-d9a9562da699",
+            "name": "Failure case",
+            "description": "Test error handling in Quick Meal Entry",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-1020f4b3-e0a2-4f13-8df0-5056d31f056e",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Quick Meal Entry",
+            "inputData": {
+              "meals": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-log-meal-003",
+      "type": "task",
+      "parentNode": "p1-node-group-quick-meal-entry-002",
+      "position": {
+        "x": -300,
+        "y": 250
+      },
+      "data": {
+        "title": "Log Meal",
+        "description": "Add a new meal to the logging system.",
+        "assignee": "",
+        "estimatedTime": 5,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { ...inputData, processed: true };",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ],
+                "processed": true
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Quick Meal Entry",
+          "rationale": "This task logs a new meal into the system."
+        },
+        "testCases": [
+          {
+            "id": "test-0451fadf-80b4-40e3-a814-91cbaeb313d4",
+            "name": "Success case",
+            "description": "Test successful execution of Log Meal",
+            "inputData": {
+              "meals": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-3a714279-d47d-4b4a-b9c2-c4147a83e07e",
+            "name": "Failure case",
+            "description": "Test error handling in Log Meal",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-4c2890e8-0a5e-43ee-905c-d6d922d3a989",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Log Meal",
+            "inputData": {
+              "meals": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-display-meals-004",
+      "type": "task",
+      "parentNode": "p1-node-group-quick-meal-entry-002",
+      "position": {
+        "x": -300,
+        "y": 400
+      },
+      "data": {
+        "title": "Display Logged Meals",
+        "description": "Show the list of logged meals to the user.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { displayedMeals: inputData.meals };",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  },
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  },
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedMeals": [
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  },
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  },
+                  {
+                    "id": "meal-001",
+                    "content": "Salad",
+                    "calories": 150
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Quick Meal Entry",
+          "rationale": "This task displays the meals that have been logged."
+        },
+        "testCases": [
+          {
+            "id": "test-51477d8f-686d-422d-8b5b-fb1c778e6fa7",
+            "name": "Success case",
+            "description": "Test successful execution of Display Logged Meals",
+            "inputData": {
+              "meals": [
+                {
+                  "id": "meal-001",
+                  "content": "Salad",
+                  "calories": 150
+                },
+                {
+                  "id": "meal-001",
+                  "content": "Salad",
+                  "calories": 150
+                },
+                {
+                  "id": "meal-001",
+                  "content": "Salad",
+                  "calories": 150
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-afbe377b-d767-4643-a1ea-7d3324b23146",
+            "name": "Failure case",
+            "description": "Test error handling in Display Logged Meals",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-f36f99ea-a9cc-4295-b61f-01691949c598",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Display Logged Meals",
+            "inputData": {
+              "meals": [
+                {
+                  "id": "meal-001",
+                  "content": "Salad",
+                  "calories": 150
+                },
+                {
+                  "id": "meal-001",
+                  "content": "Salad",
+                  "calories": 150
+                },
+                {
+                  "id": "meal-001",
+                  "content": "Salad",
+                  "calories": 150
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-group-ai-food-recognition-005",
+      "type": "group",
+      "parentNode": "p1-node-task-meal-logging-001",
+      "position": {
+        "x": 0,
+        "y": 100
+      },
+      "data": {
+        "title": "AI-Assisted Food Recognition",
+        "description": "Utilize AI to recognize food items from images for automatic logging.",
+        "groups": [
+          {
+            "id": "p1-node-service-recognize-food-006",
+            "type": "service",
+            "parentNode": "p1-node-group-ai-food-recognition-005",
+            "position": {
+              "x": 0,
+              "y": 250
+            },
+            "data": {
+              "title": "Recognize Food API",
+              "description": "Call AI service to recognize food items from images.",
+              "mode": "panel",
+              "serviceType": "api",
+              "timeout": 10000,
+              "retry": {
+                "retry": 0,
+                "delay": 3000
+              },
+              "http": {
+                "method": "POST",
+                "endpoint": "/api/recognize-food",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "image": "{{inputData.image}}"
+                }
+              },
+              "execution": {
+                "config": {
+                  "isAsync": true,
+                  "nodeData": {
+                    "inputData": {
+                      "image": "base64-image-data"
+                    },
+                    "outputData": {
+                      "recognizedFood": [
+                        {
+                          "name": "Pasta",
+                          "calories": 300
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "AI-Assisted Food Recognition",
+                "rationale": "This service calls the API to recognize food items."
+              }
+            }
+          },
+          {
+            "id": "p1-node-task-log-recognized-food-007",
+            "type": "task",
+            "parentNode": "p1-node-group-ai-food-recognition-005",
+            "position": {
+              "x": 0,
+              "y": 400
+            },
+            "data": {
+              "title": "Log Recognized Food",
+              "description": "Add recognized food items to the meal log.",
+              "assignee": "",
+              "estimatedTime": 5,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "const updatedMeals = [...inputData.meals, ...inputData.recognizedFood]; return { meals: updatedMeals };",
+                  "nodeData": {
+                    "inputData": {
+                      "meals": [],
+                      "recognizedFood": [
+                        {
+                          "name": "Pasta",
+                          "calories": 300
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "meals": [
+                        {
+                          "name": "Pasta",
+                          "calories": 300
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "AI-Assisted Food Recognition",
+                "rationale": "This task logs the food recognized by AI."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ],
+                "currentDate": "2023-10-01"
+              },
+              "outputData": {
+                "meals": [
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "AI-Assisted Food Recognition",
+          "rationale": "This group allows users to log meals automatically using AI."
+        },
+        "testCases": [
+          {
+            "id": "test-5db1e05d-6747-46d8-86a0-9089b23666f8",
+            "name": "Success case",
+            "description": "Test successful execution of AI-Assisted Food Recognition",
+            "inputData": {
+              "image": "base64-image-data"
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-f9966493-86e0-4ba2-a563-2766e3529f53",
+            "name": "Failure case",
+            "description": "Test error handling in AI-Assisted Food Recognition",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-6d3c43f3-a277-4573-93a7-790cf3e0d56c",
+            "name": "Edge case",
+            "description": "Test boundary conditions in AI-Assisted Food Recognition",
+            "inputData": {
+              "image": "base64-image-data"
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-service-recognize-food-006",
+      "type": "service",
+      "parentNode": "p1-node-group-ai-food-recognition-005",
+      "position": {
+        "x": 0,
+        "y": 250
+      },
+      "data": {
+        "mode": "panel",
+        "title": "Recognize Food API",
+        "description": "Call AI service to recognize food items from images.",
+        "serviceType": "api",
+        "timeout": 10000,
+        "retry": {
+          "retry": 0,
+          "delay": 3000
+        },
+        "http": {
+          "method": "POST",
+          "endpoint": "/api/recognize-food",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "image": "{{inputData.image}}"
+          }
+        },
+        "execution": {
+          "config": {
+            "isAsync": true,
+            "nodeData": {
+              "inputData": {
+                "image": "base64-image-data"
+              },
+              "outputData": {
+                "recognizedFood": [
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  }
+                ]
+              }
+            },
+            "functionCode": "const headers = {\n  \"Content-Type\": \"application/json\"\n}\nconst body = {\n  \"image\": inputData.image\n}\nconst endpoint = \"/api/recognize-food\"\nconst method = \"POST\"\n\ntry {\n  const response = await fetch(endpoint, {\n    method,\n    headers,\n    body: JSON.stringify(body),\n  })\n\n  if (!response.ok) {\n    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)\n  }\n\n  return await response.json()\n} catch (error) {\n  throw new Error(`API Request Failed: ${error.message}`)\n}\n"
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "AI-Assisted Food Recognition",
+          "rationale": "This service calls the API to recognize food items."
+        },
+        "testCases": [
+          {
+            "id": "test-e2bfc3b4-0eb7-4e6a-8c0b-b620204824da",
+            "name": "Success case",
+            "description": "Test successful execution of Recognize Food API",
+            "inputData": {
+              "image": "base64-image-data"
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-6ee6ff55-6be2-408e-8d0a-f9408f095df1",
+            "name": "Failure case",
+            "description": "Test error handling in Recognize Food API",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-f962fad2-4a3c-4941-95fa-7bb9262f162e",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Recognize Food API",
+            "inputData": {
+              "image": "base64-image-data"
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-log-recognized-food-007",
+      "type": "task",
+      "parentNode": "p1-node-group-ai-food-recognition-005",
+      "position": {
+        "x": 0,
+        "y": 400
+      },
+      "data": {
+        "title": "Log Recognized Food",
+        "description": "Add recognized food items to the meal log.",
+        "assignee": "",
+        "estimatedTime": 5,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { meals: inputData.recognizedFood };",
+            "nodeData": {
+              "inputData": {
+                "recognizedFood": [
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  }
+                ]
+              },
+              "outputData": {
+                "meals": [
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "AI-Assisted Food Recognition",
+          "rationale": "This task logs the food recognized by AI."
+        },
+        "testCases": [
+          {
+            "id": "test-247ce6ca-a153-42d3-a518-7c115183b7f9",
+            "name": "Success case",
+            "description": "Test successful execution of Log Recognized Food",
+            "inputData": {
+              "recognizedFood": [
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-3256b795-f5e1-4af2-97c5-ac91e98fc1ea",
+            "name": "Failure case",
+            "description": "Test error handling in Log Recognized Food",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-b2c12e16-323a-4e7d-bed8-71cbfd7484ad",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Log Recognized Food",
+            "inputData": {
+              "recognizedFood": [
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-group-macro-tracking-008",
+      "type": "group",
+      "parentNode": "p1-node-task-meal-logging-001",
+      "position": {
+        "x": 300,
+        "y": 100
+      },
+      "data": {
+        "title": "Macro Tracking",
+        "description": "Enable users to track their macro intake for each logged meal.",
+        "groups": [
+          {
+            "id": "p1-node-task-calculate-macros-009",
+            "type": "task",
+            "parentNode": "p1-node-group-macro-tracking-008",
+            "position": {
+              "x": 300,
+              "y": 250
+            },
+            "data": {
+              "title": "Calculate Macros",
+              "description": "Compute macro values for logged meals.",
+              "assignee": "",
+              "estimatedTime": 5,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "const totalMacros = { protein: 0, carbs: 0, fat: 0 }; inputData.meals.forEach(meal => { totalMacros.protein += meal.protein || 0; totalMacros.carbs += meal.carbs || 0; totalMacros.fat += meal.fat || 0; }); return { macros: totalMacros };",
+                  "nodeData": {
+                    "inputData": {
+                      "meals": [
+                        {
+                          "name": "Pasta",
+                          "calories": 300,
+                          "protein": 10,
+                          "carbs": 50,
+                          "fat": 5
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "macros": {
+                        "protein": 10,
+                        "carbs": 50,
+                        "fat": 5
+                      }
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "Macro Tracking",
+                "rationale": "This task calculates the macro values for meals."
+              }
+            }
+          },
+          {
+            "id": "p1-node-task-display-macros-010",
+            "type": "task",
+            "parentNode": "p1-node-group-macro-tracking-008",
+            "position": {
+              "x": 300,
+              "y": 400
+            },
+            "data": {
+              "title": "Display Macros",
+              "description": "Show macro information to the user.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { displayedMacros: inputData.macros };",
+                  "nodeData": {
+                    "inputData": {
+                      "macros": {
+                        "protein": 10,
+                        "carbs": 50,
+                        "fat": 5
+                      }
+                    },
+                    "outputData": {
+                      "displayedMacros": {
+                        "protein": 10,
+                        "carbs": 50,
+                        "fat": 5
+                      }
+                    }
+                  },
+                  "isAsync": false
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "Macro Tracking",
+                "rationale": "This task displays the macro information to the user."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedMacros": {
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                }
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Macro Tracking",
+          "rationale": "This group allows users to track their macro intake."
+        },
+        "testCases": [
+          {
+            "id": "test-3e195753-4890-4f4d-bff5-981b1bcf29f0",
+            "name": "Success case",
+            "description": "Test successful execution of Macro Tracking",
+            "inputData": {
+              "meals": [
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-774beabd-e5ad-4389-9017-a1939b590455",
+            "name": "Failure case",
+            "description": "Test error handling in Macro Tracking",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-bc6f2b87-6f47-4484-b8af-3c88a649b071",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Macro Tracking",
+            "inputData": {
+              "meals": [
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-calculate-macros-009",
+      "type": "task",
+      "parentNode": "p1-node-group-macro-tracking-008",
+      "position": {
+        "x": 300,
+        "y": 250
+      },
+      "data": {
+        "title": "Calculate Macros",
+        "description": "Compute macro values for logged meals.",
+        "assignee": "",
+        "estimatedTime": 5,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "const totalMacros = { protein: 0, carbs: 0, fat: 0 }; inputData.meals.forEach(meal => { totalMacros.protein += meal.protein || 0; totalMacros.carbs += meal.carbs || 0; totalMacros.fat += meal.fat || 0; }); return { macros: totalMacros };",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "name": "Pasta",
+                    "calories": 300,
+                    "protein": 10,
+                    "carbs": 50,
+                    "fat": 5
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300,
+                    "protein": 10,
+                    "carbs": 50,
+                    "fat": 5
+                  },
+                  {
+                    "name": "Pasta",
+                    "calories": 300,
+                    "protein": 10,
+                    "carbs": 50,
+                    "fat": 5
+                  }
+                ]
+              },
+              "outputData": {
+                "macros": {
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                }
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Macro Tracking",
+          "rationale": "This task calculates the macro values for meals."
+        },
+        "testCases": [
+          {
+            "id": "test-d7edc462-bdd5-41ed-b54d-2bc469838488",
+            "name": "Success case",
+            "description": "Test successful execution of Calculate Macros",
+            "inputData": {
+              "meals": [
+                {
+                  "name": "Pasta",
+                  "calories": 300,
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300,
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300,
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-1d6990e8-6240-4e9a-a0b7-33b96197fc73",
+            "name": "Failure case",
+            "description": "Test error handling in Calculate Macros",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-b1a24e72-58c9-42f0-802d-420b1166f781",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Calculate Macros",
+            "inputData": {
+              "meals": [
+                {
+                  "name": "Pasta",
+                  "calories": 300,
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300,
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                },
+                {
+                  "name": "Pasta",
+                  "calories": 300,
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-display-macros-010",
+      "type": "task",
+      "parentNode": "p1-node-group-macro-tracking-008",
+      "position": {
+        "x": 300,
+        "y": 400
+      },
+      "data": {
+        "title": "Display Macros",
+        "description": "Show macro information to the user.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { displayedMacros: inputData.macros };",
+            "nodeData": {
+              "inputData": {
+                "macros": {
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                }
+              },
+              "outputData": {
+                "displayedMacros": {
+                  "protein": 10,
+                  "carbs": 50,
+                  "fat": 5
+                }
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Macro Tracking",
+          "rationale": "This task displays the macro information to the user."
+        },
+        "testCases": [
+          {
+            "id": "test-db86b78d-718a-40bf-9da1-7a343e7f17a1",
+            "name": "Success case",
+            "description": "Test successful execution of Display Macros",
+            "inputData": {
+              "macros": {
+                "protein": 10,
+                "carbs": 50,
+                "fat": 5
+              }
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-b25bafe5-3b15-4000-83b0-093ec0c3b4ce",
+            "name": "Failure case",
+            "description": "Test error handling in Display Macros",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-40f07f85-caec-42a9-9813-5b4333765d42",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Display Macros",
+            "inputData": {
+              "macros": {
+                "protein": 10,
+                "carbs": 50,
+                "fat": 5
+              }
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-group-error-handling-011",
+      "type": "group",
+      "parentNode": "p1-node-task-meal-logging-001",
+      "position": {
+        "x": 600,
+        "y": 100
+      },
+      "data": {
+        "title": "Error Handling",
+        "description": "Provide feedback and error messages for invalid meal entries.",
+        "groups": [
+          {
+            "id": "p1-node-task-handle-error-013",
+            "type": "task",
+            "parentNode": "p1-node-group-error-handling-011",
+            "position": {
+              "x": 600,
+              "y": 400
+            },
+            "data": {
+              "title": "Handle Error",
+              "description": "Provide feedback for invalid meal entries.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { message: `Error: ${inputData.error}` };",
+                  "nodeData": {
+                    "inputData": {
+                      "error": "Invalid meal entry."
+                    },
+                    "outputData": {
+                      "message": "Error: Invalid meal entry."
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "Error Handling",
+                "rationale": "This task handles errors and provides feedback."
+              }
+            }
+          },
+          {
+            "id": "p1-node-task-continue-014",
+            "type": "task",
+            "parentNode": "p1-node-group-error-handling-011",
+            "position": {
+              "x": 600,
+              "y": 500
+            },
+            "data": {
+              "title": "Continue Logging",
+              "description": "Allow user to continue logging meals after error.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { continue: true };",
+                  "nodeData": {
+                    "inputData": {
+                      "error": null
+                    },
+                    "outputData": {
+                      "continue": true
+                    }
+                  },
+                  "isAsync": false
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Meal Logging",
+                "requirement": "Error Handling",
+                "rationale": "This task allows users to continue logging meals after an error."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ],
+                "currentDate": "2023-10-01"
+              },
+              "outputData": {
+                "continue": true
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Error Handling",
+          "rationale": "This group provides error handling for invalid meal entries."
+        },
+        "testCases": [
+          {
+            "id": "test-e1abb6a7-4e51-405b-8e18-e8c681ca67e7",
+            "name": "Success case",
+            "description": "Test successful execution of Error Handling",
+            "inputData": {
+              "error": null
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-a663f22b-6eda-402e-8990-257c40c4277c",
+            "name": "Failure case",
+            "description": "Test error handling in Error Handling",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-977c06da-0191-485f-9d0d-c6093bc1bec4",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Error Handling",
+            "inputData": {
+              "error": null
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-decision-check-error-012",
+      "type": "decision",
+      "parentNode": "p1-node-group-error-handling-011",
+      "position": {
+        "x": 600,
+        "y": 250
+      },
+      "data": {
+        "title": "Check for Errors",
+        "description": "Determine if there are errors in meal entries.",
+        "condition": {
+          "truthy": "error"
+        },
+        "mode": "panel",
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "yes",
+            "position": "right",
+            "type": "source",
+            "label": "Yes"
+          },
+          {
+            "id": "no",
+            "position": "bottom",
+            "type": "source",
+            "label": "No"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Error Handling",
+          "rationale": "This decision checks for errors in meal entries."
+        },
+        "testCases": [
+          {
+            "id": "test-6378f8e0-1105-4ac2-bcf0-50083a31b68d",
+            "name": "Success case",
+            "description": "Test successful execution of Check for Errors",
+            "inputData": {},
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-428c356a-1ddb-4012-80ad-8df76cbe1036",
+            "name": "Failure case",
+            "description": "Test error handling in Check for Errors",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-77bacba3-02cf-4533-a60a-b1862bab166f",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Check for Errors",
+            "inputData": {},
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-handle-error-013",
+      "type": "task",
+      "parentNode": "p1-node-group-error-handling-011",
+      "position": {
+        "x": 600,
+        "y": 400
+      },
+      "data": {
+        "title": "Handle Error",
+        "description": "Provide feedback for invalid meal entries.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { message: 'Error: Invalid meal entry.' };",
+            "nodeData": {
+              "inputData": {
+                "meals": [
+                  {
+                    "id": "meals-item-001"
+                  },
+                  {
+                    "id": "meals-item-002"
+                  },
+                  {
+                    "id": "meals-item-003"
+                  }
+                ],
+                "currentDate": "2023-10-01"
+              },
+              "outputData": {
+                "message": "Error: Invalid meal entry."
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Error Handling",
+          "rationale": "This task handles errors and provides feedback."
+        },
+        "testCases": [
+          {
+            "id": "test-44dbef67-0848-4d1c-b201-2dee55abcbe0",
+            "name": "Success case",
+            "description": "Test successful execution of Handle Error",
+            "inputData": {
+              "error": "Invalid meal entry."
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-ef52501e-d6af-41ba-ae02-2955b8ced656",
+            "name": "Failure case",
+            "description": "Test error handling in Handle Error",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-a292ea41-118f-48fc-ab5b-207599c76203",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Handle Error",
+            "inputData": {
+              "error": "Invalid meal entry."
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p1-node-task-continue-014",
+      "type": "task",
+      "parentNode": "p1-node-group-error-handling-011",
+      "position": {
+        "x": 600,
+        "y": 500
+      },
+      "data": {
+        "title": "Continue Logging",
+        "description": "Allow user to continue logging meals after error.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { continue: true };",
+            "nodeData": {
+              "inputData": {
+                "message": "Error: Invalid meal entry."
+              },
+              "outputData": {
+                "continue": true
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Meal Logging",
+          "requirement": "Error Handling",
+          "rationale": "This task allows users to continue logging meals after an error."
+        },
+        "testCases": [
+          {
+            "id": "test-b452902d-ac92-45b0-a6bf-e92da9f0dcab",
+            "name": "Success case",
+            "description": "Test successful execution of Continue Logging",
+            "inputData": {
+              "error": null
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-bd9d1093-05af-4107-a461-9c63f0f84132",
+            "name": "Failure case",
+            "description": "Test error handling in Continue Logging",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-b3e2ad33-6151-43fa-9cc7-48c911fe8d54",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Continue Logging",
+            "inputData": {
+              "error": null
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-progress-analytics-001",
+      "type": "task",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "title": "Progress Analytics",
+        "description": "Initialize progress analytics context",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { weeklyInsights: [], goals: [], visualizations: [], exportData: [] };",
+            "nodeData": {
+              "inputData": null,
+              "outputData": {
+                "weeklyInsights": [
+                  {
+                    "id": "weeklyInsights-item-001"
+                  },
+                  {
+                    "id": "weeklyInsights-item-002"
+                  },
+                  {
+                    "id": "weeklyInsights-item-003"
+                  }
+                ],
+                "goals": [
+                  {
+                    "id": "goals-item-001"
+                  },
+                  {
+                    "id": "goals-item-002"
+                  },
+                  {
+                    "id": "goals-item-003"
+                  }
+                ],
+                "visualizations": [
+                  {
+                    "id": "visualizations-item-001"
+                  },
+                  {
+                    "id": "visualizations-item-002"
+                  },
+                  {
+                    "id": "visualizations-item-003"
+                  }
+                ],
+                "exportData": [
+                  {
+                    "id": "exportData-item-001"
+                  },
+                  {
+                    "id": "exportData-item-002"
+                  },
+                  {
+                    "id": "exportData-item-003"
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Initialize progress analytics context",
+          "rationale": "This task sets up the initial state for the progress analytics feature."
+        },
+        "testCases": [
+          {
+            "id": "test-b03a8fde-c382-4438-ba72-999d8dc51be1",
+            "name": "Success case",
+            "description": "Test successful execution of Progress Analytics",
+            "inputData": {},
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-051eb858-ff5f-47c1-8854-6bbb2ad6d3c0",
+            "name": "Failure case",
+            "description": "Test error handling in Progress Analytics",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-09ed0bcc-004c-44f9-92c9-e422f5339bed",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Progress Analytics",
+            "inputData": {},
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-group-weekly-insights-002",
+      "type": "group",
+      "parentNode": "p2-node-task-progress-analytics-001",
+      "position": {
+        "x": -300,
+        "y": 150
+      },
+      "data": {
+        "title": "Weekly Insights",
+        "description": "Display weekly insights on diet and performance metrics.",
+        "groups": [
+          {
+            "id": "p2-node-task-fetch-weekly-insights-003",
+            "type": "task",
+            "parentNode": "p2-node-group-weekly-insights-002",
+            "position": {
+              "x": -300,
+              "y": 300
+            },
+            "data": {
+              "title": "Fetch Weekly Insights",
+              "description": "Retrieve weekly insights from the database.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { weeklyInsights: [{ week: 'Week 1', caloriesConsumed: 15000, caloriesBurned: 12000, macros: { protein: 150, carbs: 200, fats: 50 } }] };",
+                  "nodeData": {
+                    "inputData": {
+                      "weeklyInsights": []
+                    },
+                    "outputData": {
+                      "weeklyInsights": [
+                        {
+                          "week": "Week 1",
+                          "caloriesConsumed": 15000,
+                          "caloriesBurned": 12000,
+                          "macros": {
+                            "protein": 150,
+                            "carbs": 200,
+                            "fats": 50
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Display weekly insights on diet and performance metrics.",
+                "rationale": "This task retrieves the latest weekly insights for display."
+              }
+            }
+          },
+          {
+            "id": "p2-node-task-display-weekly-insights-004",
+            "type": "task",
+            "parentNode": "p2-node-group-weekly-insights-002",
+            "position": {
+              "x": -300,
+              "y": 450
+            },
+            "data": {
+              "title": "Display Weekly Insights",
+              "description": "Render the weekly insights on the UI.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { displayedInsights: inputData.weeklyInsights };",
+                  "nodeData": {
+                    "inputData": {
+                      "weeklyInsights": [
+                        {
+                          "week": "Week 1",
+                          "caloriesConsumed": 15000,
+                          "caloriesBurned": 12000,
+                          "macros": {
+                            "protein": 150,
+                            "carbs": 200,
+                            "fats": 50
+                          }
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "displayedInsights": [
+                        {
+                          "week": "Week 1",
+                          "caloriesConsumed": 15000,
+                          "caloriesBurned": 12000,
+                          "macros": {
+                            "protein": 150,
+                            "carbs": 200,
+                            "fats": 50
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Display weekly insights on diet and performance metrics.",
+                "rationale": "This task renders the insights for user visibility."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "weeklyInsights": [
+                  {
+                    "id": "weeklyInsights-item-001"
+                  },
+                  {
+                    "id": "weeklyInsights-item-002"
+                  },
+                  {
+                    "id": "weeklyInsights-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedInsights": [
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Display weekly insights on diet and performance metrics.",
+          "rationale": "This group node aggregates and displays weekly insights for users."
+        },
+        "testCases": [
+          {
+            "id": "test-a2b0ded7-635b-4640-b4b4-11794ce7002a",
+            "name": "Success case",
+            "description": "Test successful execution of Weekly Insights",
+            "inputData": {
+              "weeklyInsights": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-a03e7fa5-7442-43d3-9bd9-29009f596940",
+            "name": "Failure case",
+            "description": "Test error handling in Weekly Insights",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-0ae7be35-c74c-4a55-bd64-9aa1a0164c36",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Weekly Insights",
+            "inputData": {
+              "weeklyInsights": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-fetch-weekly-insights-003",
+      "type": "task",
+      "parentNode": "p2-node-group-weekly-insights-002",
+      "position": {
+        "x": -300,
+        "y": 300
+      },
+      "data": {
+        "title": "Fetch Weekly Insights",
+        "description": "Retrieve weekly insights from the database.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { weeklyInsights: [{ week: 'Week 1', caloriesConsumed: 15000, caloriesBurned: 12000, macros: { protein: 150, carbs: 200, fats: 50 } }] };",
+            "nodeData": {
+              "inputData": {
+                "weeklyInsights": [
+                  {
+                    "id": "weeklyInsights-item-001"
+                  },
+                  {
+                    "id": "weeklyInsights-item-002"
+                  },
+                  {
+                    "id": "weeklyInsights-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "weeklyInsights": [
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Display weekly insights on diet and performance metrics.",
+          "rationale": "This task retrieves the latest weekly insights for display."
+        },
+        "testCases": [
+          {
+            "id": "test-b4c9565d-cda4-48d7-a5b7-cf5193ffcba9",
+            "name": "Success case",
+            "description": "Test successful execution of Fetch Weekly Insights",
+            "inputData": {
+              "weeklyInsights": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-2a475efd-93f5-4725-b379-96872de5e495",
+            "name": "Failure case",
+            "description": "Test error handling in Fetch Weekly Insights",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-365820b6-476c-4a13-a623-f7434947d6b8",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Fetch Weekly Insights",
+            "inputData": {
+              "weeklyInsights": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-display-weekly-insights-004",
+      "type": "task",
+      "parentNode": "p2-node-group-weekly-insights-002",
+      "position": {
+        "x": -300,
+        "y": 450
+      },
+      "data": {
+        "title": "Display Weekly Insights",
+        "description": "Render the weekly insights on the UI.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { displayedInsights: inputData.weeklyInsights };",
+            "nodeData": {
+              "inputData": {
+                "weeklyInsights": [
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedInsights": [
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  },
+                  {
+                    "week": "Week 1",
+                    "caloriesConsumed": 15000,
+                    "caloriesBurned": 12000,
+                    "macros": {
+                      "protein": 150,
+                      "carbs": 200,
+                      "fats": 50
+                    }
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Display weekly insights on diet and performance metrics.",
+          "rationale": "This task renders the insights for user visibility."
+        },
+        "testCases": [
+          {
+            "id": "test-4274adf2-9d29-4d95-8742-59f406cf6c47",
+            "name": "Success case",
+            "description": "Test successful execution of Display Weekly Insights",
+            "inputData": {
+              "weeklyInsights": [
+                {
+                  "week": "Week 1",
+                  "caloriesConsumed": 15000,
+                  "caloriesBurned": 12000,
+                  "macros": {
+                    "protein": 150,
+                    "carbs": 200,
+                    "fats": 50
+                  }
+                },
+                {
+                  "week": "Week 1",
+                  "caloriesConsumed": 15000,
+                  "caloriesBurned": 12000,
+                  "macros": {
+                    "protein": 150,
+                    "carbs": 200,
+                    "fats": 50
+                  }
+                },
+                {
+                  "week": "Week 1",
+                  "caloriesConsumed": 15000,
+                  "caloriesBurned": 12000,
+                  "macros": {
+                    "protein": 150,
+                    "carbs": 200,
+                    "fats": 50
+                  }
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-614df578-96c2-47dd-9838-9c2120c81ebf",
+            "name": "Failure case",
+            "description": "Test error handling in Display Weekly Insights",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-5def372d-e881-4922-8bad-cc8dbe6705dd",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Display Weekly Insights",
+            "inputData": {
+              "weeklyInsights": [
+                {
+                  "week": "Week 1",
+                  "caloriesConsumed": 15000,
+                  "caloriesBurned": 12000,
+                  "macros": {
+                    "protein": 150,
+                    "carbs": 200,
+                    "fats": 50
+                  }
+                },
+                {
+                  "week": "Week 1",
+                  "caloriesConsumed": 15000,
+                  "caloriesBurned": 12000,
+                  "macros": {
+                    "protein": 150,
+                    "carbs": 200,
+                    "fats": 50
+                  }
+                },
+                {
+                  "week": "Week 1",
+                  "caloriesConsumed": 15000,
+                  "caloriesBurned": 12000,
+                  "macros": {
+                    "protein": 150,
+                    "carbs": 200,
+                    "fats": 50
+                  }
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-group-goal-tracking-005",
+      "type": "group",
+      "parentNode": "p2-node-task-progress-analytics-001",
+      "position": {
+        "x": -100,
+        "y": 150
+      },
+      "data": {
+        "title": "Goal Tracking",
+        "description": "Allow users to set and track their fitness goals over time.",
+        "groups": [
+          {
+            "id": "p2-node-task-set-goal-006",
+            "type": "task",
+            "parentNode": "p2-node-group-goal-tracking-005",
+            "position": {
+              "x": -100,
+              "y": 300
+            },
+            "data": {
+              "title": "Set Fitness Goal",
+              "description": "Allow users to set a new fitness goal.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { goals: [...inputData.goals, { goal: 'Lose weight', target: 5, progress: 0 }] };",
+                  "nodeData": {
+                    "inputData": {
+                      "goals": []
+                    },
+                    "outputData": {
+                      "goals": [
+                        {
+                          "goal": "Lose weight",
+                          "target": 5,
+                          "progress": 0
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Allow users to set and track their fitness goals over time.",
+                "rationale": "This task enables users to add new fitness goals."
+              }
+            }
+          },
+          {
+            "id": "p2-node-task-update-goal-007",
+            "type": "task",
+            "parentNode": "p2-node-group-goal-tracking-005",
+            "position": {
+              "x": -100,
+              "y": 450
+            },
+            "data": {
+              "title": "Update Goal Progress",
+              "description": "Update the progress of a specific fitness goal.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { goals: inputData.goals.map(goal => goal.goal === 'Lose weight' ? { ...goal, progress: goal.progress + 1 } : goal) };",
+                  "nodeData": {
+                    "inputData": {
+                      "goals": [
+                        {
+                          "goal": "Lose weight",
+                          "target": 5,
+                          "progress": 2
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "goals": [
+                        {
+                          "goal": "Lose weight",
+                          "target": 5,
+                          "progress": 3
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Allow users to set and track their fitness goals over time.",
+                "rationale": "This task updates the progress of the user's goals."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "goals": [
+                  {
+                    "id": "goals-item-001"
+                  },
+                  {
+                    "id": "goals-item-002"
+                  },
+                  {
+                    "id": "goals-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "goals": [
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Allow users to set and track their fitness goals over time.",
+          "rationale": "This group node manages user fitness goals."
+        },
+        "testCases": [
+          {
+            "id": "test-cf580f41-031f-481c-9048-f4225597a866",
+            "name": "Success case",
+            "description": "Test successful execution of Goal Tracking",
+            "inputData": {
+              "goals": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-30cee3b1-44d9-4c25-887d-9694d42c1bf9",
+            "name": "Failure case",
+            "description": "Test error handling in Goal Tracking",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-bf7b4fe4-6a8b-45c3-ac85-b38b2353d3f2",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Goal Tracking",
+            "inputData": {
+              "goals": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-set-goal-006",
+      "type": "task",
+      "parentNode": "p2-node-group-goal-tracking-005",
+      "position": {
+        "x": -100,
+        "y": 300
+      },
+      "data": {
+        "title": "Set Fitness Goal",
+        "description": "Allow users to set a new fitness goal.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { goals: [...inputData.goals, { goal: 'Lose weight', target: 5, progress: 0 }] };",
+            "nodeData": {
+              "inputData": {
+                "goals": [
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  }
+                ]
+              },
+              "outputData": {
+                "goals": [
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 0
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 0
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 0
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Allow users to set and track their fitness goals over time.",
+          "rationale": "This task enables users to add new fitness goals."
+        },
+        "testCases": [
+          {
+            "id": "test-2af04a5b-6d06-4fd8-8a02-060fe05ee233",
+            "name": "Success case",
+            "description": "Test successful execution of Set Fitness Goal",
+            "inputData": {
+              "goals": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-7ec46a4d-bc60-48bc-8385-9f5693eb5ede",
+            "name": "Failure case",
+            "description": "Test error handling in Set Fitness Goal",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-dd62edea-b3f3-4967-9e2e-47bb88ebd39c",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Set Fitness Goal",
+            "inputData": {
+              "goals": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-update-goal-007",
+      "type": "task",
+      "parentNode": "p2-node-group-goal-tracking-005",
+      "position": {
+        "x": -100,
+        "y": 450
+      },
+      "data": {
+        "title": "Update Goal Progress",
+        "description": "Update the progress of a specific fitness goal.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { goals: inputData.goals.map(goal => goal.goal === 'Lose weight' ? { ...goal, progress: goal.progress + 1 } : goal) };",
+            "nodeData": {
+              "inputData": {
+                "goals": [
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 2
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 2
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 2
+                  }
+                ]
+              },
+              "outputData": {
+                "goals": [
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  },
+                  {
+                    "goal": "Lose weight",
+                    "target": 5,
+                    "progress": 3
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Allow users to set and track their fitness goals over time.",
+          "rationale": "This task updates the progress of the user's goals."
+        },
+        "testCases": [
+          {
+            "id": "test-fae3badf-44a5-4d41-b016-103945b7065b",
+            "name": "Success case",
+            "description": "Test successful execution of Update Goal Progress",
+            "inputData": {
+              "goals": [
+                {
+                  "goal": "Lose weight",
+                  "target": 5,
+                  "progress": 2
+                },
+                {
+                  "goal": "Lose weight",
+                  "target": 5,
+                  "progress": 2
+                },
+                {
+                  "goal": "Lose weight",
+                  "target": 5,
+                  "progress": 2
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-0a7d3f6c-d245-429d-acc0-6a9267a1a3e5",
+            "name": "Failure case",
+            "description": "Test error handling in Update Goal Progress",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-93b68e62-4d0f-47b2-857b-56b4931248a6",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Update Goal Progress",
+            "inputData": {
+              "goals": [
+                {
+                  "goal": "Lose weight",
+                  "target": 5,
+                  "progress": 2
+                },
+                {
+                  "goal": "Lose weight",
+                  "target": 5,
+                  "progress": 2
+                },
+                {
+                  "goal": "Lose weight",
+                  "target": 5,
+                  "progress": 2
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-group-data-visualization-008",
+      "type": "group",
+      "parentNode": "p2-node-task-progress-analytics-001",
+      "position": {
+        "x": 100,
+        "y": 150
+      },
+      "data": {
+        "title": "Data Visualization",
+        "description": "Provide visual representations of progress through charts and graphs.",
+        "groups": [
+          {
+            "id": "p2-node-task-generate-charts-009",
+            "type": "task",
+            "parentNode": "p2-node-group-data-visualization-008",
+            "position": {
+              "x": 100,
+              "y": 300
+            },
+            "data": {
+              "title": "Generate Charts",
+              "description": "Create visual charts based on user progress data.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { visualizations: [{ type: 'bar', data: [1, 2, 3, 4, 5] }] };",
+                  "nodeData": {
+                    "inputData": {
+                      "visualizations": []
+                    },
+                    "outputData": {
+                      "visualizations": [
+                        {
+                          "type": "bar",
+                          "data": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Provide visual representations of progress through charts and graphs.",
+                "rationale": "This task generates the visual charts for user progress."
+              }
+            }
+          },
+          {
+            "id": "p2-node-task-render-visualizations-010",
+            "type": "task",
+            "parentNode": "p2-node-group-data-visualization-008",
+            "position": {
+              "x": 100,
+              "y": 450
+            },
+            "data": {
+              "title": "Render Visualizations",
+              "description": "Display generated visualizations on the UI.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { displayedVisualizations: inputData.visualizations };",
+                  "nodeData": {
+                    "inputData": {
+                      "visualizations": [
+                        {
+                          "type": "bar",
+                          "data": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5
+                          ]
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "displayedVisualizations": [
+                        {
+                          "type": "bar",
+                          "data": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Provide visual representations of progress through charts and graphs.",
+                "rationale": "This task renders the visualizations for user visibility."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "visualizations": [
+                  {
+                    "id": "visualizations-item-001"
+                  },
+                  {
+                    "id": "visualizations-item-002"
+                  },
+                  {
+                    "id": "visualizations-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedVisualizations": [
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Provide visual representations of progress through charts and graphs.",
+          "rationale": "This group node manages data visualizations for user progress."
+        },
+        "testCases": [
+          {
+            "id": "test-2b5eb307-72b5-44cb-a95f-3a07f4185e7a",
+            "name": "Success case",
+            "description": "Test successful execution of Data Visualization",
+            "inputData": {
+              "visualizations": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-677b495c-2774-4cf6-9a89-3020a1f69859",
+            "name": "Failure case",
+            "description": "Test error handling in Data Visualization",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-0c49ad69-8a3c-47e2-a493-77529ebb486d",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Data Visualization",
+            "inputData": {
+              "visualizations": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-generate-charts-009",
+      "type": "task",
+      "parentNode": "p2-node-group-data-visualization-008",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "title": "Generate Charts",
+        "description": "Create visual charts based on user progress data.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { visualizations: [{ type: 'bar', data: [1, 2, 3, 4, 5] }] };",
+            "nodeData": {
+              "inputData": {
+                "visualizations": [
+                  {
+                    "id": "visualizations-item-001"
+                  },
+                  {
+                    "id": "visualizations-item-002"
+                  },
+                  {
+                    "id": "visualizations-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "visualizations": [
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Provide visual representations of progress through charts and graphs.",
+          "rationale": "This task generates the visual charts for user progress."
+        },
+        "testCases": [
+          {
+            "id": "test-c5e1436b-ad51-4db7-9e74-912fad62955c",
+            "name": "Success case",
+            "description": "Test successful execution of Generate Charts",
+            "inputData": {
+              "visualizations": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-679833d3-b142-47fd-81dd-b14024bbfff4",
+            "name": "Failure case",
+            "description": "Test error handling in Generate Charts",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-e0d7a5fd-683d-4168-9e6f-b34e8b0aa7dc",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Generate Charts",
+            "inputData": {
+              "visualizations": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-render-visualizations-010",
+      "type": "task",
+      "parentNode": "p2-node-group-data-visualization-008",
+      "position": {
+        "x": 100,
+        "y": 450
+      },
+      "data": {
+        "title": "Render Visualizations",
+        "description": "Display generated visualizations on the UI.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { displayedVisualizations: inputData.visualizations };",
+            "nodeData": {
+              "inputData": {
+                "visualizations": [
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  }
+                ]
+              },
+              "outputData": {
+                "displayedVisualizations": [
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  },
+                  {
+                    "type": "bar",
+                    "data": [
+                      1,
+                      2,
+                      3,
+                      4,
+                      5
+                    ]
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Provide visual representations of progress through charts and graphs.",
+          "rationale": "This task renders the visualizations for user visibility."
+        },
+        "testCases": [
+          {
+            "id": "test-e0ac4f91-04c1-4d2d-aee0-965ef42df64f",
+            "name": "Success case",
+            "description": "Test successful execution of Render Visualizations",
+            "inputData": {
+              "visualizations": [
+                {
+                  "type": "bar",
+                  "data": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                },
+                {
+                  "type": "bar",
+                  "data": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                },
+                {
+                  "type": "bar",
+                  "data": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-01f5e2b0-35cb-4b7c-9af4-df7e2c1aa9aa",
+            "name": "Failure case",
+            "description": "Test error handling in Render Visualizations",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-07996c19-8158-464f-aa4e-613126f508be",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Render Visualizations",
+            "inputData": {
+              "visualizations": [
+                {
+                  "type": "bar",
+                  "data": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                },
+                {
+                  "type": "bar",
+                  "data": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                },
+                {
+                  "type": "bar",
+                  "data": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-group-export-data-011",
+      "type": "group",
+      "parentNode": "p2-node-task-progress-analytics-001",
+      "position": {
+        "x": 300,
+        "y": 150
+      },
+      "data": {
+        "title": "Export Data",
+        "description": "Allow users to export their progress data for external analysis.",
+        "groups": [
+          {
+            "id": "p2-node-task-export-data-012",
+            "type": "task",
+            "parentNode": "p2-node-group-export-data-011",
+            "position": {
+              "x": 300,
+              "y": 300
+            },
+            "data": {
+              "title": "Export Progress Data",
+              "description": "Export user progress data in selected format.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { exportData: [{ format: 'CSV', data: 'week,caloriesConsumed,caloriesBurned\\n1,15000,12000' }] };",
+                  "nodeData": {
+                    "inputData": {
+                      "exportData": []
+                    },
+                    "outputData": {
+                      "exportData": [
+                        {
+                          "format": "CSV",
+                          "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Allow users to export their progress data for external analysis.",
+                "rationale": "This task executes the export of user progress data."
+              }
+            }
+          },
+          {
+            "id": "p2-node-task-download-export-013",
+            "type": "task",
+            "parentNode": "p2-node-group-export-data-011",
+            "position": {
+              "x": 300,
+              "y": 450
+            },
+            "data": {
+              "title": "Download Exported Data",
+              "description": "Trigger download of exported data file.",
+              "assignee": "",
+              "estimatedTime": 0,
+              "metadata": {},
+              "execution": {
+                "config": {
+                  "functionCode": "return { success: true, message: 'Data exported successfully.' };",
+                  "nodeData": {
+                    "inputData": {
+                      "exportData": [
+                        {
+                          "format": "CSV",
+                          "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                        }
+                      ]
+                    },
+                    "outputData": {
+                      "success": true,
+                      "message": "Data exported successfully."
+                    }
+                  }
+                }
+              },
+              "ports": [
+                {
+                  "id": "input",
+                  "position": "top",
+                  "type": "target"
+                },
+                {
+                  "id": "output",
+                  "position": "bottom",
+                  "type": "source"
+                }
+              ],
+              "prdReference": {
+                "section": "Progress Analytics",
+                "requirement": "Allow users to export their progress data for external analysis.",
+                "rationale": "This task manages the download of the exported data file."
+              }
+            }
+          }
+        ],
+        "metadata": {},
+        "collapsed": true,
+        "execution": {
+          "config": {
+            "initFunctionCode": "return inputData;",
+            "functionCode": "return inputData;",
+            "nodeData": {
+              "inputData": {
+                "exportData": [
+                  {
+                    "id": "exportData-item-001"
+                  },
+                  {
+                    "id": "exportData-item-002"
+                  },
+                  {
+                    "id": "exportData-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "success": true,
+                "message": "Data exported successfully."
+              }
+            }
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Allow users to export their progress data for external analysis.",
+          "rationale": "This group node manages the export functionality for user data."
+        },
+        "testCases": [
+          {
+            "id": "test-270f31b2-f35b-4049-a5fc-256c04f84937",
+            "name": "Success case",
+            "description": "Test successful execution of Export Data",
+            "inputData": {
+              "exportData": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-bcba4391-a42f-45db-a026-4cfd33e5c7bf",
+            "name": "Failure case",
+            "description": "Test error handling in Export Data",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-14a16340-b66a-403a-8c5d-ab3b3d7e110c",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Export Data",
+            "inputData": {
+              "exportData": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-export-data-012",
+      "type": "task",
+      "parentNode": "p2-node-group-export-data-011",
+      "position": {
+        "x": 300,
+        "y": 300
+      },
+      "data": {
+        "title": "Export Progress Data",
+        "description": "Export user progress data in selected format.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { exportData: [{ format: 'CSV', data: 'week,caloriesConsumed,caloriesBurned\\n1,15000,12000' }] };",
+            "nodeData": {
+              "inputData": {
+                "exportData": [
+                  {
+                    "id": "exportData-item-001"
+                  },
+                  {
+                    "id": "exportData-item-002"
+                  },
+                  {
+                    "id": "exportData-item-003"
+                  }
+                ]
+              },
+              "outputData": {
+                "exportData": [
+                  {
+                    "format": "CSV",
+                    "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                  },
+                  {
+                    "format": "CSV",
+                    "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                  },
+                  {
+                    "format": "CSV",
+                    "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                  }
+                ]
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Allow users to export their progress data for external analysis.",
+          "rationale": "This task executes the export of user progress data."
+        },
+        "testCases": [
+          {
+            "id": "test-3657d038-1b50-410a-b74f-8273c354d0ee",
+            "name": "Success case",
+            "description": "Test successful execution of Export Progress Data",
+            "inputData": {
+              "exportData": []
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-21c6148f-52cc-4296-a5b6-c18e8d0a0fb6",
+            "name": "Failure case",
+            "description": "Test error handling in Export Progress Data",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-16d944c1-debc-421f-b913-43a734cad6a2",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Export Progress Data",
+            "inputData": {
+              "exportData": []
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "p2-node-task-download-export-013",
+      "type": "task",
+      "parentNode": "p2-node-group-export-data-011",
+      "position": {
+        "x": 300,
+        "y": 450
+      },
+      "data": {
+        "title": "Download Exported Data",
+        "description": "Trigger download of exported data file.",
+        "assignee": "",
+        "estimatedTime": 0,
+        "metadata": {},
+        "execution": {
+          "config": {
+            "functionCode": "return { success: true, message: 'Data exported successfully.' };",
+            "nodeData": {
+              "inputData": {
+                "exportData": [
+                  {
+                    "format": "CSV",
+                    "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                  },
+                  {
+                    "format": "CSV",
+                    "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                  },
+                  {
+                    "format": "CSV",
+                    "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                  }
+                ]
+              },
+              "outputData": {
+                "success": true,
+                "message": "Data exported successfully."
+              }
+            },
+            "isAsync": false
+          }
+        },
+        "ports": [
+          {
+            "id": "input",
+            "position": "top",
+            "type": "target"
+          },
+          {
+            "id": "output",
+            "position": "bottom",
+            "type": "source"
+          }
+        ],
+        "prdReference": {
+          "section": "Progress Analytics",
+          "requirement": "Allow users to export their progress data for external analysis.",
+          "rationale": "This task manages the download of the exported data file."
+        },
+        "testCases": [
+          {
+            "id": "test-e1714fb7-c1a4-46da-8d9b-ad0996afa014",
+            "name": "Success case",
+            "description": "Test successful execution of Download Exported Data",
+            "inputData": {
+              "exportData": [
+                {
+                  "format": "CSV",
+                  "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                },
+                {
+                  "format": "CSV",
+                  "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                },
+                {
+                  "format": "CSV",
+                  "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                }
+              ]
+            },
+            "expectedOutput": {
+              "success": true
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-79c851d1-d9a3-4a96-8453-36cd6179bdc7",
+            "name": "Failure case",
+            "description": "Test error handling in Download Exported Data",
+            "inputData": null,
+            "expectedOutput": {
+              "success": false,
+              "error": "Invalid input"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "test-abeaa7f2-5ce1-42ee-852f-f81700edfadf",
+            "name": "Edge case",
+            "description": "Test boundary conditions in Download Exported Data",
+            "inputData": {
+              "exportData": [
+                {
+                  "format": "CSV",
+                  "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                },
+                {
+                  "format": "CSV",
+                  "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                },
+                {
+                  "format": "CSV",
+                  "data": "week,caloriesConsumed,caloriesBurned\n1,15000,12000"
+                }
+              ]
+            },
+            "expectedOutput": {},
+            "status": "pending"
+          }
+        ]
+      }
+    }
+  ]
+}

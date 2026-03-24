@@ -67,8 +67,8 @@ export const createWorkflow = (
         type: "end",
         parentNode: id,
         position: {
-          x: position.x,
-          y: position.y,
+          x: position?.x ?? 0,
+          y: position?.y ?? 0,
         },
       });
 
@@ -92,8 +92,8 @@ export const createWorkflow = (
         ...node,
         parentNode: startNode.id,
         position: {
-          x: node.position.x,
-          y: node.position.y,
+          x: node.position?.x ?? 0,
+          y: node.position?.y ?? 0,
         },
       };
 
@@ -115,8 +115,8 @@ export const createWorkflow = (
       return {
         ...node,
         position: {
-          x: node.position.x,
-          y: node.position.y,
+          x: node.position?.x ?? 0,
+          y: node.position?.y ?? 0,
         },
       };
     }
@@ -138,8 +138,8 @@ export const createWorkflow = (
     return {
       ...node,
       position: {
-        x: node.position.x,
-        y: node.position.y,
+        x: node.position?.x ?? 0,
+        y: node.position?.y ?? 0,
       },
     };
   });

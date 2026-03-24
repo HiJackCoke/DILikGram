@@ -4,11 +4,13 @@
  * Step 1 UI: PRD upload + prompt input → "분석하기"
  */
 
+import { useState } from "react";
 import { Search, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import FileUploader from "@/components/ui/FileUploader";
 import PromptInput from "./PromptInput";
 import InteractiveLoader from "./InteractiveLoader";
+import { SAMPLE_PRDS, type SamplePRD } from "@/fixtures/samples";
 
 type Mode = "pdf" | "text";
 
@@ -47,6 +49,45 @@ function Header({ step }: { step?: "input" | "review" }) {
   );
 }
 
+function SampleCard({
+  sample,
+  selected,
+  disabled,
+  onSelect,
+}: {
+  sample: SamplePRD;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      disabled={disabled}
+      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all w-full ${
+        selected
+          ? "border-palette-primary-bg bg-blue-50 shadow-sm"
+          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+      } disabled:opacity-50 disabled:cursor-not-allowed`}
+    >
+      <span className="text-xl shrink-0">{sample.emoji}</span>
+      <div className="min-w-0">
+        <p className={`text-sm font-medium truncate ${selected ? "text-blue-700" : "text-gray-800"}`}>
+          {sample.name}
+        </p>
+        <p className="text-xs text-gray-500 truncate">{sample.description}</p>
+      </div>
+      {selected && (
+        <div className="ml-auto shrink-0 w-4 h-4 rounded-full bg-palette-primary-bg flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12">
+            <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+        </div>
+      )}
+    </button>
+  );
+}
+
 function WorkflowGeneratorView({
   prompt,
   prdMode,
@@ -59,11 +100,58 @@ function WorkflowGeneratorView({
   onAnalyze,
   onClose,
 }: WorkflowGeneratorViewProps) {
+  const hasSamples = SAMPLE_PRDS.length > 0;
+  const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
+
+  const handleFileChange = (files: File[]) => {
+    setSelectedSampleId(null);
+    onFileChange(files);
+  };
+
   return (
     <>
       <div className="p-6 space-y-6 overflow-scroll">
+
+        {/* Sample PRDs */}
+        {hasSamples && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Sample PRDs
+              <span className="ml-1.5 text-xs font-normal text-gray-400">— API 없이 즉시 생성</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {SAMPLE_PRDS.map((sample) => (
+                <SampleCard
+                  key={sample.id}
+                  sample={sample}
+                  selected={selectedSampleId === sample.id}
+                  disabled={isAnalyzing}
+                  onSelect={() => {
+                    const newId = selectedSampleId === sample.id ? null : sample.id;
+                    setSelectedSampleId(newId);
+                    onFileChange(
+                      newId
+                        ? [new File([], `sample:${newId}`, { type: "application/octet-stream" })]
+                        : [],
+                    );
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Divider */}
+        {hasSamples && (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium">또는 직접 입력</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+        )}
+
         {/* PRD Document */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${selectedSampleId ? "opacity-50 pointer-events-none" : ""}`}>
           <label className="block text-sm font-medium text-gray-700">
             PRD Document
           </label>
@@ -97,7 +185,7 @@ function WorkflowGeneratorView({
               <FileUploader
                 maxFiles={2}
                 accept=".pdf"
-                onFileChange={onFileChange}
+                onFileChange={handleFileChange}
               />
             ) : (
               <textarea
@@ -114,18 +202,13 @@ function WorkflowGeneratorView({
           </p>
         </div>
 
-        {prdMode === "pdf" && (
-          <>
-            {prdMode === "pdf" && (
-              <PromptInput
-                value={prompt}
-                onChange={onPromptChange}
-                disabled={isAnalyzing}
-              />
-            )}
-          </>
+        {prdMode === "pdf" && !selectedSampleId && (
+          <PromptInput
+            value={prompt}
+            onChange={onPromptChange}
+            disabled={isAnalyzing}
+          />
         )}
-        {/* Prompt Input */}
 
         {/* Error Display */}
         {error && (

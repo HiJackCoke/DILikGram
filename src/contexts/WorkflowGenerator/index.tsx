@@ -42,6 +42,7 @@ import WorkflowGeneratorModal from "./WorkflowGeneratorModal";
 import { runValidationPipeline } from "./validators";
 
 import { analyzePRD } from "@/ai";
+import { getSampleById } from "@/fixtures/samples";
 
 interface WorkflowGeneratorProviderProps {
   children: ReactNode;
@@ -58,6 +59,7 @@ export function WorkflowGeneratorProvider({
 
   // Persisted across both steps so handleGenerate can use them
   const pendingPromptRef = useRef<string>("");
+  const selectedSampleIdRef = useRef<string | null>(null);
 
   const [show, setShow] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -80,6 +82,7 @@ export function WorkflowGeneratorProvider({
     setError(null);
     setAnalysisResult(null);
     pendingPromptRef.current = "";
+    selectedSampleIdRef.current = null;
   }, []);
 
   const clearAnalysis = useCallback(() => {
@@ -106,6 +109,8 @@ export function WorkflowGeneratorProvider({
 
   /**
    * Step 1: Analyze PRD → extract pages & features
+   * If pdfFiles contains a synthetic sample file (name starts with "sample:"),
+   * bypass API and use pre-sampled analysis result.
    */
   const handleAnalyze = useCallback(
     async ({ pdfFiles, prompt }: AnalyzePRDParams) => {
@@ -113,7 +118,30 @@ export function WorkflowGeneratorProvider({
       setError(null);
       setAnalysisResult(null);
 
+      // Sample bypass: detect synthetic file "sample:{id}" created by sample card click
+      const sampleFile = pdfFiles?.[0];
+      const sampleId = sampleFile?.name.startsWith("sample:")
+        ? sampleFile.name.slice("sample:".length)
+        : null;
+
+      if (sampleId) {
+        const sample = getSampleById(sampleId);
+        if (!sample) {
+          setError(`Sample not found: ${sampleId}`);
+          setIsAnalyzing(false);
+          return;
+        }
+        selectedSampleIdRef.current = sampleId;
+        pendingPromptRef.current = "";
+        // Simulate PDF parsing + AI analysis time (2.5s feels realistic)
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        setAnalysisResult(sample.analysisResult);
+        setIsAnalyzing(false);
+        return;
+      }
+
       // Persist for use in step 2
+      selectedSampleIdRef.current = null;
       pendingPromptRef.current = prompt ?? "";
 
       try {
@@ -137,10 +165,75 @@ export function WorkflowGeneratorProvider({
 
   /**
    * Step 2: Generate workflow using analysis result + original PRD
+   * If sample was selected in step 1, bypass API + validation and use pre-sampled nodes.
    */
   const handleGenerate = useCallback(async () => {
     setIsGenerating(true);
     setError(null);
+
+    // Sample bypass: skip API + validation, use pre-sampled nodes directly
+    if (selectedSampleIdRef.current) {
+      const sample = getSampleById(selectedSampleIdRef.current);
+      if (sample) {
+        const totalPages = sample.analysisResult.pages.length;
+
+        try {
+          // Phase 1: AI generation phase (~2s) — no currentPageIndex shown in loader
+          setValidationProgress({
+            completedValidators: 0,
+            status: "validating",
+            totalPages,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          // Phase 2: Per-page validation simulation
+          // Ramp completedValidators 0→18 over ~1.2s per page
+          const TOTAL_VALIDATORS = 18;
+          const STEPS_PER_PAGE = 6; // checkpoint counts shown in loader
+          const STEP_DELAY = Math.round(1200 / STEPS_PER_PAGE);
+
+          for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+            for (let step = 0; step <= STEPS_PER_PAGE; step++) {
+              const completedValidators = Math.round(
+                (step / STEPS_PER_PAGE) * TOTAL_VALIDATORS,
+              );
+              setValidationProgress({
+                completedValidators,
+                status: "validating",
+                currentPageIndex: pageIdx,
+                totalPages,
+              });
+              await new Promise((resolve) => setTimeout(resolve, STEP_DELAY));
+            }
+          }
+
+          // Phase 3: Finalizing
+          setValidationProgress((prev) =>
+            prev ? { ...prev, status: "finalizing" } : null,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 600));
+
+          const sanitized = sanitizeNewNodeIds(sample.nodes);
+          const { nodes: allFinalNodes, edges: allFinalEdges } = createWorkflow(
+            sanitized,
+            existingNodesRef.current,
+          );
+
+          listeners.current.forEach((listener) =>
+            listener(allFinalNodes, allFinalEdges),
+          );
+          close();
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Failed to load sample workflow";
+          setError(errorMessage);
+        } finally {
+          setIsGenerating(false);
+          setValidationProgress(null);
+        }
+        return;
+      }
+    }
 
     const expectedTreeCount = analysisResult?.pages?.length ?? 1;
 

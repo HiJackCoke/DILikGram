@@ -1,7 +1,7 @@
 /**
  * WorkflowGeneratorModal - Main modal component for AI workflow generation
  *
- * Step 1 (input): User uploads PRD and enters prompt → "분석하기"
+ * Step 1 (input): User uploads PRD or selects sample → "분석하기"
  * Step 2 (review): Show analysis result → "워크플로우 생성"
  */
 
@@ -57,16 +57,10 @@ export default function WorkflowGeneratorModal({
   const handleAnalyze = async () => {
     if (!canAnalyze) return;
 
-    if (prdMode === "pdf") {
-      await onAnalyze({
-        pdfFiles: prdFiles,
-        prompt: prompt.trim(),
-      });
-    } else {
-      await onAnalyze({
-        prompt: prompt.trim(),
-      });
-    }
+    await onAnalyze({
+      pdfFiles: prdMode === "pdf" ? prdFiles : undefined,
+      prompt: prompt.trim(),
+    });
   };
 
   const handleClose = () => {
