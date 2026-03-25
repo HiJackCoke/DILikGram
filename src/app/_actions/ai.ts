@@ -453,36 +453,148 @@ import {
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Build the prompt context for one page by extracting field names and
- * service endpoints from the workflow nodes (shared across all pages —
- * provides data-shape hints to the model).
+ * Compact a value for display in nodeFlow:
+ * - Arrays: show shape of first element only → [{field1, field2, ...}]
+ * - Objects: show keys inline → {field1, field2, ...}
+ * - Primitives: show as-is
+ */
+function compactShape(value: unknown, depth = 0): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    const item = value[0];
+    return `[${compactShape(item, depth + 1)}]`;
+  }
+  if (typeof value === "object") {
+    const keys = Object.keys(value as object);
+    if (depth >= 1 || keys.length <= 4) {
+      // Show key:value pairs for shallow objects
+      const pairs = keys
+        .slice(0, 6)
+        .map((k) => {
+          const v = (value as Record<string, unknown>)[k];
+          if (typeof v === "object" && v !== null) return k;
+          return `${k}: ${JSON.stringify(v)}`;
+        })
+        .join(", ");
+      return `{${pairs}${keys.length > 6 ? ", ..." : ""}}`;
+    }
+    return `{${keys.slice(0, 8).join(", ")}${keys.length > 8 ? ", ..." : ""}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * Build a structured nodeFlow string for one page.
+ * Filters nodes belonging to this page via prdReference.section,
+ * then formats each node's type, title, PRD requirement, outputData shape,
+ * and (for task nodes) a brief functionCode summary.
+ */
+function buildNodeFlow(
+  page: AnalyzePRDResult["pages"][number],
+  pageIndex: number,
+  nodes: WorkflowNode[],
+): string {
+  const sectionAliases = new Set([
+    page.name,
+    page.name.toLowerCase(),
+    `p${pageIndex + 1}`,
+  ]);
+
+  const pageNodes = nodes.filter((n) => {
+    const section = n.data.prdReference?.section;
+    return section && sectionAliases.has(section);
+  });
+
+  if (pageNodes.length === 0) return "";
+
+  // Skip pure start/end nodes — they carry no meaningful data shape
+  const meaningfulNodes = pageNodes.filter(
+    (n) => n.type !== "start" && n.type !== "end",
+  );
+
+  const lines: string[] = [];
+
+  for (const node of meaningfulNodes) {
+    const nodeData = node.data.execution?.config?.nodeData;
+    const outputData = nodeData?.outputData;
+    const functionCode = node.data.execution?.config?.functionCode;
+    const prdReq = node.data.prdReference?.requirement;
+
+    // Header: [type] title
+    lines.push(`[${node.type}] ${node.data.title}`);
+
+    // PRD requirement (the "why" — what user need this implements)
+    if (prdReq) {
+      lines.push(`  PRD: "${prdReq}"`);
+    }
+
+    // Service node: show HTTP method + endpoint
+    if (node.type === "service") {
+      const http = (node.data as ServiceNodeData).http;
+      if (http?.endpoint) {
+        lines.push(`  → ${http.method ?? "POST"} ${http.endpoint}`);
+      }
+    }
+
+    // outputData shape (most valuable for mock data)
+    if (outputData && typeof outputData === "object") {
+      lines.push(`  → outputData: ${compactShape(outputData)}`);
+    }
+
+    // functionCode summary for task nodes (first 100 chars, trimmed)
+    if (
+      node.type === "task" &&
+      functionCode &&
+      typeof functionCode === "string"
+    ) {
+      const summary = functionCode.replace(/\s+/g, " ").trim().slice(0, 100);
+      lines.push(
+        `  → logic: ${summary}${functionCode.length > 100 ? "..." : ""}`,
+      );
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Build the prompt context for one page.
+ * When workflow nodes are available, extracts a structured nodeFlow
+ * (type, PRD requirement, outputData shape, logic summary per node)
+ * for the page. Falls back to flat dataFields/endpoints when no nodes match.
  */
 function buildPageContext(
   page: AnalyzePRDResult["pages"][number],
+  pageIndex: number,
   goal: string,
   nodes: WorkflowNode[],
 ): UIPageContext {
+  const nodeFlow = buildNodeFlow(page, pageIndex, nodes);
+
+  // Fallback fields (used only when nodeFlow is empty)
   const dataFieldsSet = new Set<string>();
   const endpoints: UIPageContext["endpoints"] = [];
 
-  for (const node of nodes) {
-    const nodeData = node.data.execution?.config?.nodeData;
-    if (nodeData?.inputData && typeof nodeData.inputData === "object") {
-      Object.keys(nodeData.inputData as object).forEach((k) =>
-        dataFieldsSet.add(k),
-      );
-    }
-    if (nodeData?.outputData && typeof nodeData.outputData === "object") {
-      Object.keys(nodeData.outputData as object).forEach((k) =>
-        dataFieldsSet.add(k),
-      );
-    }
-
-    if (node.type === "service") {
-      const http = (node.data as ServiceNodeData).http;
-      const endpoint = http?.endpoint;
-      if (endpoint && !endpoints.some((e) => e.endpoint === endpoint)) {
-        endpoints.push({ method: http?.method ?? "POST", endpoint });
+  if (!nodeFlow) {
+    for (const node of nodes) {
+      const nodeData = node.data.execution?.config?.nodeData;
+      if (nodeData?.inputData && typeof nodeData.inputData === "object") {
+        Object.keys(nodeData.inputData as object).forEach((k) =>
+          dataFieldsSet.add(k),
+        );
+      }
+      if (nodeData?.outputData && typeof nodeData.outputData === "object") {
+        Object.keys(nodeData.outputData as object).forEach((k) =>
+          dataFieldsSet.add(k),
+        );
+      }
+      if (node.type === "service") {
+        const http = (node.data as ServiceNodeData).http;
+        const endpoint = http?.endpoint;
+        if (endpoint && !endpoints.some((e) => e.endpoint === endpoint)) {
+          endpoints.push({ method: http?.method ?? "POST", endpoint });
+        }
       }
     }
   }
@@ -492,6 +604,7 @@ function buildPageContext(
     pagePath: page.path,
     goal,
     features: page.features,
+    nodeFlow: nodeFlow || undefined,
     dataFields: [...dataFieldsSet].slice(0, 20),
     endpoints: endpoints.slice(0, 10),
   };
@@ -543,8 +656,8 @@ export const generateUIAction = async ({
   const openai = getOpenAIClient();
   const pages: GeneratedUIPage[] = [];
 
-  for (const page of analysisResult.pages) {
-    const ctx = buildPageContext(page, analysisResult.goal, nodes);
+  for (const [i, page] of analysisResult.pages.entries()) {
+    const ctx = buildPageContext(page, i, analysisResult.goal, nodes);
     try {
       const code = await generatePageCode(openai, ctx);
       pages.push({

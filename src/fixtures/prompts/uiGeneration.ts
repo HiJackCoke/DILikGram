@@ -53,11 +53,19 @@ export const UI_GENERATION_SYSTEM_PROMPT = `You are a senior mobile UI developer
 - Muted/meta: text-xs text-slate-400
 - Emphasis: font-semibold text-slate-800
 
-## Required Interactive Patterns (implement AT LEAST 2)
+## Feature Grounding Rule (CRITICAL — read before writing any UI element)
+Every button, FAB, form, toggle, or interactive element MUST correspond to a specific feature listed in the Features section or a specific node in the workflow.
+- ❌ FORBIDDEN: decorative buttons with no onClick, FABs that do nothing, placeholder "+" buttons
+- ❌ FORBIDDEN: adding UI elements just because they look nice or fit a page-type pattern
+- ✅ REQUIRED: every onClick handler must call a real state update or action derived from the features
+- Example: a FAB is only valid if an "add/create" feature exists AND the FAB's onClick opens a form or adds an item
+- Example: filter chips are only valid if a "filter" or "view by category" feature exists
+
+## Interactive Pattern Library (use ONLY when a feature justifies it)
 - Tab bar: pill-style tabs in a bg-slate-100 rounded-xl p-1 container, active tab bg-white rounded-lg shadow-sm
 - Filter chips: horizontal scrollable row of rounded-full buttons
 - Favorite/bookmark toggle: heart or bookmark icon that toggles color
-- FAB (Floating Action Button): fixed bottom-6 right-6 w-14 h-14 rounded-full bg-{color}-500 shadow-lg text-white text-2xl
+- FAB (Floating Action Button): fixed bottom-6 right-6 w-14 h-14 rounded-full bg-{color}-500 shadow-lg text-white text-2xl — ONLY if create/add feature exists and no inline form already serves that purpose
 - Bottom sheet modal: fixed inset-0 bg-black/40 flex items-end → inner div bg-white rounded-t-3xl p-6
 - Progress bar: h-2 bg-slate-100 rounded-full overflow-hidden → inner div bg-{color}-500 rounded-full
 - Expandable card: clicking a card reveals more detail (useState toggle)
@@ -72,11 +80,11 @@ export const UI_GENERATION_SYSTEM_PROMPT = `You are a senior mobile UI developer
 - Define mock data as a const array INSIDE the component
 - Each item should have 4-6 fields to enable rich card rendering
 
-## Patterns by Page Type
-- List/Discovery pages: search bar + filter chips + card list + FAB to create
-- Dashboard/Home: stat cards grid + recent activity list + progress indicators
-- Detail/Profile pages: hero section + tabbed content + action buttons
-- Timer/Focus pages: large centered display + control buttons + session stats
+## Layout Patterns by Page Type (structural hints only — do NOT add elements not backed by features)
+- List/Discovery pages: search bar (if search feature exists) + filter chips (if filter feature exists) + card list + FAB (only if add feature exists and no inline form is present)
+- Dashboard/Home: stat cards grid + recent activity list + progress indicators (only if stats/progress features exist)
+- Detail/Profile pages: hero section + tabbed content (only if multiple content sections exist) + action buttons backed by features
+- Timer/Focus pages: large centered display + play/pause/stop controls + session stats
 - Form/Input pages: clean inputs with labels + primary CTA button at bottom
 
 Output ONLY the JavaScript code for function App() { ... }`;
@@ -90,9 +98,15 @@ export interface UIPageContext {
     description: string;
     priority: "must" | "should" | "could";
   }>;
-  /** Key field names from node inputData/outputData — hints for mock data structure */
+  /**
+   * Structured node flow for this page — type, title, PRD requirement,
+   * outputData shape, and functionCode summary per node.
+   * When present, supersedes dataFields/endpoints as the primary context.
+   */
+  nodeFlow?: string;
+  /** Fallback: key field names when nodeFlow is unavailable */
   dataFields: string[];
-  /** API endpoints from ServiceNodes — hints for data shape */
+  /** Fallback: API endpoints when nodeFlow is unavailable */
   endpoints: Array<{ method: string; endpoint: string }>;
 }
 
@@ -115,15 +129,19 @@ export function getUIGenerationContent(ctx: UIPageContext): string {
     .filter(Boolean)
     .join("\n\n");
 
-  const dataHints =
-    ctx.dataFields.length > 0
-      ? `\nData fields to use in mock data: ${ctx.dataFields.join(", ")}`
-      : "";
-
-  const endpointHints =
-    ctx.endpoints.length > 0
-      ? `\nAPI endpoints (for context only — use mock data): ${ctx.endpoints.map((e) => `${e.method} ${e.endpoint}`).join(", ")}`
-      : "";
+  // Prefer nodeFlow (rich workflow context) over flat dataFields/endpoints fallback
+  const contextSection = ctx.nodeFlow
+    ? `\nData flow from workflow nodes:\n${ctx.nodeFlow}`
+    : [
+        ctx.dataFields.length > 0
+          ? `\nData fields to use in mock data: ${ctx.dataFields.join(", ")}`
+          : "",
+        ctx.endpoints.length > 0
+          ? `\nAPI endpoints (for context only — use mock data): ${ctx.endpoints.map((e) => `${e.method} ${e.endpoint}`).join(", ")}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
   const pageTypeHint = inferPageTypeHint(ctx.pageName, ctx.features);
 
@@ -133,12 +151,11 @@ App goal: ${ctx.goal}
 
 Features:
 ${featuresText}
-${dataHints}
-${endpointHints}
+${contextSection}
 
 Page type hint: ${pageTypeHint}
 
-REMINDER: Use Tailwind classes only. At least 3 realistic mock data items. At least 2 interactive patterns (tabs, filters, favorites, FAB, modal, etc.). Cards must use bg-white rounded-2xl shadow-sm.
+REMINDER: Use Tailwind classes only. Use the data shapes above for mock data (do NOT invent field names). Every button/FAB/toggle must have a real onClick wired to a state action — NO decorative/non-functional elements. Cards must use bg-white rounded-2xl shadow-sm.
 
 Return ONLY the JavaScript code for function App() { ... }`;
 }
