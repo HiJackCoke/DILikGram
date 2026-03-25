@@ -28,7 +28,7 @@ export const UI_GENERATION_SYSTEM_PROMPT = `You are a senior mobile UI developer
 - Header: white background, bottom border, padding px-5 pt-5 pb-4
 - Page title: className="text-2xl font-bold text-slate-900"
 - Section labels: className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-2"
-- Body padding: px-4 pb-24 (leave room for FAB)
+- Body padding: px-4 pb-6 (use pb-24 ONLY if a FAB is present)
 
 ## Card Design (use for every list item)
 - className="bg-white rounded-2xl shadow-sm p-4 mb-3"
@@ -66,6 +66,9 @@ Every button, FAB, form, toggle, or interactive element MUST correspond to a spe
 - Filter chips: horizontal scrollable row of rounded-full buttons
 - Favorite/bookmark toggle: heart or bookmark icon that toggles color
 - FAB (Floating Action Button): fixed bottom-6 right-6 w-14 h-14 rounded-full bg-{color}-500 shadow-lg text-white text-2xl — ONLY if create/add feature exists and no inline form already serves that purpose
+  - FAB MUST use a showForm toggle: onClick={() => setShowForm(p => !p)}, show "+" when closed, "×" when open
+  - The form MUST appear as an inline card (bg-white rounded-2xl shadow-sm p-4) at the bottom of the scrollable content — NEVER as a fixed/absolute positioned element
+  - Use pb-24 on the body container only when a FAB is present (to prevent FAB covering content)
 - Bottom sheet modal: fixed inset-0 bg-black/40 flex items-end → inner div bg-white rounded-t-3xl p-6
 - Progress bar: h-2 bg-slate-100 rounded-full overflow-hidden → inner div bg-{color}-500 rounded-full
 - Expandable card: clicking a card reveals more detail (useState toggle)
@@ -210,7 +213,7 @@ function inferPageTypeHint(
     combined.includes("meal") ||
     combined.includes("exercise")
   ) {
-    return "Logging — summary card with totals + scrollable log list + FAB to add entry";
+    return "Logging — summary card with totals + scrollable log list + FAB that toggles inline add-entry form card (showForm state)";
   }
   if (
     combined.includes("game") ||
