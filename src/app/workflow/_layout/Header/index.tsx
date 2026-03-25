@@ -132,6 +132,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
                   nodes,
                   analysisResult: generationMeta.analysisResult,
                   sampleId: generationMeta.sampleId,
+                  versionId: currentVersion?.id,
                 });
                 router.push("/workflow/ui-preview");
               } finally {
