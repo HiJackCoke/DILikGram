@@ -18,6 +18,7 @@ export function buildSrcdoc(code: string): string {
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }

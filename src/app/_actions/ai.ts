@@ -41,7 +41,10 @@ import {
   applyDeterministicCodeGeneration,
   deterministicRepairEmptyDataShape,
 } from "@/contexts/WorkflowGenerator/utils/validationUtils";
-import { deterministicRepairGroupBoundaries, deterministicRepairPipelineStrategyA } from "@/contexts/WorkflowGenerator/validators/groupNodePipeline";
+import {
+  deterministicRepairGroupBoundaries,
+  deterministicRepairPipelineStrategyA,
+} from "@/contexts/WorkflowGenerator/validators/groupNodePipeline";
 
 /**
  * Generate workflow from prompt using GPT-4o-mini
@@ -74,11 +77,7 @@ export const generateWorkflowAction: GenerateWorkflowAction = async ({
           `[generateWorkflowAction] Generating page ${i + 1}/${contexts.length}: ${analysisResult!.pages[i].name}`,
         );
       }
-      const nodes = await generatePageNodes(
-        openai,
-        prompt,
-        contexts[i],
-      );
+      const nodes = await generatePageNodes(openai, prompt, contexts[i]);
       allNodes.push(...nodes);
     }
 
@@ -202,9 +201,13 @@ function normalizeNodeDefaults(nodes: WorkflowNode[]): WorkflowNode[] {
       // Use last child's outputData when available; fall back to existing; use null (not {})
       // {} would fail Empty Data Shape validator since empty objects cannot be type-inferred
       const effectiveOutputData =
-        lastOutputData && typeof lastOutputData === "object" && Object.keys(lastOutputData as object).length > 0
+        lastOutputData &&
+        typeof lastOutputData === "object" &&
+        Object.keys(lastOutputData as object).length > 0
           ? lastOutputData
-          : existingOutputData && typeof existingOutputData === "object" && Object.keys(existingOutputData as object).length > 0
+          : existingOutputData &&
+              typeof existingOutputData === "object" &&
+              Object.keys(existingOutputData as object).length > 0
             ? existingOutputData
             : null;
 
