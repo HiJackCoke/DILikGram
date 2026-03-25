@@ -156,57 +156,8 @@ PRD-BASED WORKFLOW GENERATION RULES
      - ✅ Correct: \`"nodeData": { "inputData": { "tasks": ["Task 1", "Task 2", "Task 3"] } }\`
 
 4. PRD REFERENCES (REQUIRED FOR EVERY NODE)
-   - Every node MUST include prdReference field with:
-     * section: Section title from PRD (e.g., "User Authentication", "Payment Flow")
-     * requirement: Exact requirement text from PRD
-     * rationale: Clear explanation of why this node implements this requirement
-   - Example:
-     {
-       "prdReference": {
-         "section": "User Authentication",
-         "requirement": "System must validate user email and password",
-         "rationale": "This task node validates input before API call to ensure data integrity"
-       }
-     }
-
-5. TEST CASES (MINIMUM 3 PER NODE)
-   - Every node MUST include testCases array with at least 3 test cases
-   - Cover: success case, failure case, edge case
-   - Format:
-     {
-       "testCases": [
-         {
-           "id": "test-550e8400-e29b-41d4-a716-446655440001",
-           "name": "Valid credentials",
-           "description": "Test successful login with correct email/password",
-           "inputData": { "email": "user@test.com", "password": "Pass123!" },
-           "expectedOutput": { "success": true, "token": "mock-token" }
-         },
-         {
-           "id": "test-550e8400-e29b-41d4-a716-446655440002",
-           "name": "Invalid password",
-           "description": "Test login failure with wrong password",
-           "inputData": { "email": "user@test.com", "password": "wrong" },
-           "expectedOutput": { "success": false, "error": "Invalid credentials" }
-         },
-         {
-           "id": "test-550e8400-e29b-41d4-a716-446655440003",
-           "name": "Missing email",
-           "description": "Test validation with missing required field",
-           "inputData": { "password": "Pass123!" },
-           "expectedOutput": { "success": false, "error": "Email is required" }
-         }
-       ]
-     }
-   CRITICAL: testCase.inputData MUST have the same keys as nodeData.inputData.
-   testCase.expectedOutput MUST have the same keys as nodeData.outputData.
-   - ❌ Wrong: inputData: {} or inputData: null when nodeData.inputData has fields
-   - ❌ Wrong: expectedOutput: { "success": true } when nodeData.outputData is { "tasks": [...] }
-   - ✅ Correct: inputData uses SAME KEYS as nodeData.inputData with different/realistic values
-   - ✅ Correct: expectedOutput uses SAME KEYS as nodeData.outputData
-   - Success case: valid inputData → expected outputData
-   - Failure case: invalid/edge inputData → error condition (can add "error" key to expectedOutput)
-   - Edge case: boundary inputData values → boundary outputData
+   - Every node MUST include prdReference.section: the PRD page/section this node belongs to
+   - Example: { "prdReference": { "section": "User Authentication" } }
 
 7. FUNCTIONAL PROGRAMMING STYLE
    - GroupNode = Feature unit (stateless, composable)
@@ -294,13 +245,7 @@ PRD-BASED WORKFLOW GENERATION RULES
      }
      \`\`\`
 
-9. TEST CASE inputData MUST MATCH EXECUTION CONFIG STRUCTURE (MANDATORY)
-   - The success case testCase.inputData MUST match execution.config.nodeData.inputData — NOT just \`{}\`
-   - A testCase with \`"inputData": {}\` while the functionCode references \`inputData.userId\` will fail
-   - ❌ WRONG: \`"inputData": {}\` for a node whose functionCode uses \`inputData.userId\`
-   - ✅ CORRECT: \`"inputData": { "userId": "user-001" }\` matching the actual inputData structure
-
-10. GROUP NODE INTERNAL DATA CHAIN (MANDATORY)
+9. GROUP NODE INTERNAL DATA CHAIN (MANDATORY)
    - GroupNode internal nodes pass data sequentially: node[0] → node[1] → ... → node[N]
    - CHAINING CONTRACT (only applies when parent has non-null outputData):
      * node[0].nodeData.inputData = GroupNode.nodeData.inputData = parent node's outputData
@@ -517,154 +462,36 @@ PRD-BASED WORKFLOW GENERATION RULES
 const GENERATION_EXAMPLES = `
 ═══════════════════════════════════════════════════════════════
 EXAMPLE OUTPUTS (JSON)
+NOTE: ports/assignee/estimatedTime/metadata omitted for brevity — always include them in your output.
 ═══════════════════════════════════════════════════════════════
 
 User: "Create a document review process where if approved it goes to shipping, otherwise back to draft."
 
 {
   "nodes": [
-    // 1. Root Node (No parentNode)
-    {
-      "id": "node-task-review-001",
-      "type": "task",
-      "position": { "x": 0, "y": 0 },
-      "data": {
-        "title": "Review Document",
-        "description": "Check for errors",
-        "assignee": "Manager",
-        "estimatedTime": 30,
-        "metadata": {},
-        "execution": {
-          "config": {
-            "functionCode": "return { documentId: 'DOC-001', status: 'pending_review', isApproved: true };",
-            "nodeData": {
-              "inputData": null,
-              "outputData": { "documentId": "DOC-001", "status": "pending_review", "isApproved": true }
-            }
-          }
-        },
-        "ports": [
-          {
-              "id": "input",
-              "position": "top",
-              "type": "target"
-          },
-          {
-              "id": "output",
-              "position": "bottom",
-              "type": "source"
-          }
-        ]
+    { "id": "node-task-review-001", "type": "task", "position": {"x":0,"y":0},
+      "data": { "title": "Review Document", "description": "Check for errors",
+        "execution": { "config": {
+          "functionCode": "return { documentId: 'DOC-001', status: 'pending_review', isApproved: true };",
+          "nodeData": { "inputData": null, "outputData": { "documentId": "DOC-001", "status": "pending_review", "isApproved": true } }
+        }}
       }
     },
-    // 2. Decision Node (Parent is Review → parentNode matches node 1's id exactly)
-    {
-      "id": "node-decision-check-002",
-      "type": "decision",
-      "parentNode": "node-task-review-001",
-      "position": { "x": 0, "y": 150 },
-      "data": {
-        "title": "Approved?",
-        "description": "Is document valid?",
-        "condition": { "truthy": "isApproved" },
-        "mode": "panel",
-        "ports": [
-          {
-              "id": "input",
-              "position": "top",
-              "type": "target"
-          },
-          {
-              "id": "yes",
-              "position": "right",
-              "type": "source",
-              "label": "Yes"
-          },
-          {
-              "id": "no",
-              "position": "bottom",
-              "type": "source",
-              "label": "No"
-          }
-        ]
+    { "id": "node-decision-check-002", "type": "decision", "parentNode": "node-task-review-001", "position": {"x":0,"y":150},
+      "data": { "title": "Approved?", "description": "Is document valid?", "condition": { "truthy": "isApproved" }, "mode": "panel" }
+    },
+    { "id": "node-service-ship-003", "type": "service", "parentNode": "node-decision-check-002", "position": {"x":200,"y":300},
+      "data": { "branchLabel": "yes", "title": "Initiate Shipping", "description": "Call shipping API",
+        "http": { "method": "POST", "endpoint": "/api/shipping", "headers": {"Content-Type":"application/json"}, "body": {"orderId":"{{inputData.orderId}}","address":"{{inputData.address}}"} },
+        "execution": { "config": { "isAsync": true,
+          "nodeData": { "inputData": { "orderId": "ORD-123", "address": "123 Main St" }, "outputData": { "success": true, "trackingNumber": "TRACK-456" } }
+        }}
       }
     },
-    // 3. Yes Branch (Parent is Decision → parentNode matches node 2's id exactly)
-    {
-      "id": "node-service-ship-003",
-      "type": "service",
-      "parentNode": "node-decision-check-002",
-      "position": { "x": 200, "y": 300 },
-      "data": {
-        "branchLabel": "yes",  // REQUIRED
-        "title": "Initiate Shipping",
-        "description": "Call shipping API to create shipment",
-        "mode": "panel",
-        "serviceType": "api",
-        "timeout": 10000,
-        "retry": { "retry": 0, "delay": 3000 },
-        "http": {
-          "method": "POST",
-          "endpoint": "/api/shipping",
-          "headers": { "Content-Type": "application/json" },
-          "body": { "orderId": "{{inputData.orderId}}", "address": "{{inputData.address}}" }
-        },
-        "execution": {
-          "config": {
-            "functionCode": "const headers = { \\"Content-Type\\": \\"application/json\\" }\\nconst body = { orderId: inputData.orderId, address: inputData.address }\\nconst endpoint = \\"/api/shipping\\"\\nconst method = \\"POST\\"\\n\\ntry {\\n  const response = await fetch(endpoint, {\\n    method,\\n    headers,\\n    body: JSON.stringify(body),\\n  })\\n\\n  if (!response.ok) {\\n    throw new Error(\`HTTP Error: \${response.status} \${response.statusText}\`)\\n  }\\n\\n  return await response.json()\\n} catch (error) {\\n  throw new Error(\`API Request Failed: \${error.message}\`)\\n}",
-            "isAsync": true,
-            "nodeData": {
-              "inputData": { "orderId": "ORD-123", "address": "123 Main St" },
-              "outputData": { "success": true, "trackingNumber": "TRACK-456" }
-            }
-          }
-        },
-        "ports": [
-          {
-              "id": "input",
-              "position": "top",
-              "type": "target"
-          },
-          {
-              "id": "output",
-              "position": "bottom",
-              "type": "source"
-          }
-        ]
-      }
-    },
-    // 4. No Branch (Parent is Decision → parentNode matches node 2's id exactly)
-    {
-      "id": "node-task-draft-004",
-      "type": "task",
-      "parentNode": "node-decision-check-002",
-      "position": { "x": -200, "y": 300 },
-      "data": {
-        "branchLabel": "no",   // REQUIRED
-        "title": "Return to Draft",
-        "description": "Send back to author",
-        "assignee": "Author",
-        "estimatedTime": 0,
-        "metadata": {},
-        "ports": [
-          {
-              "id": "input",
-              "position": "top",
-              "type": "target"
-          },
-          {
-              "id": "output",
-              "position": "bottom",
-              "type": "source"
-          }
-        ]
-      }
+    { "id": "node-task-draft-004", "type": "task", "parentNode": "node-decision-check-002", "position": {"x":-200,"y":300},
+      "data": { "branchLabel": "no", "title": "Return to Draft", "description": "Send back to author" }
     }
-  ],
-  "metadata": {
-    "description": "Review process with approval logic",
-    "estimatedComplexity": "moderate"
-  }
+  ]
 }
 
 ---------------------------------------------------------------
@@ -673,118 +500,57 @@ User: "Create a user registration feature."
 
 {
   "nodes": [
-    // 1. Root initializer (parentNode omitted = root)
-    {
-      "id": "node-task-init-001",
-      "type": "task",
-      "position": { "x": 0, "y": 0 },
-      "data": {
-        "title": "Initialize Registration",
-        "description": "Set up registration context",
-        "assignee": "",
-        "estimatedTime": 0,
-        "metadata": {},
-        "execution": {
-          "config": {
-            "functionCode": "return { email: 'user@example.com', password: 'Pass123!', username: 'john_doe' };",
-            "nodeData": {
-              "inputData": null,
-              "outputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe" }
-            }
-          }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+    { "id": "node-task-init-001", "type": "task", "position": {"x":0,"y":0},
+      "data": { "title": "Initialize Registration", "description": "Set up registration context",
+        "execution": { "config": {
+          "functionCode": "return { email: 'user@example.com', password: 'Pass123!', username: 'john_doe' };",
+          "nodeData": { "inputData": null, "outputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe" } }
+        }}
       }
     },
-    // 2. GroupNode (child of root task)
-    {
-      "id": "node-group-register-002",
-      "type": "group",
-      "parentNode": "node-task-init-001",
-      "position": { "x": 0, "y": 150 },
-      "data": {
-        "title": "Register User Feature",
-        "description": "Validate input, call API, and process response",
-        "groups": [],
-        "metadata": {},
-        "collapsed": true,
-        "execution": {
-          "config": {
-            "initFunctionCode": "return inputData;",
-            "functionCode": "return inputData;",
-            "nodeData": {
-              "inputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe" },
-              "outputData": { "userId": "user-001", "token": "jwt-token-abc" }
-            }
+    { "id": "node-group-register-002", "type": "group", "parentNode": "node-task-init-001", "position": {"x":0,"y":150},
+      "data": { "title": "Register User Feature", "description": "Validate input, call API, and process response", "groups": [], "collapsed": true,
+        "execution": { "config": {
+          "initFunctionCode": "return inputData;",
+          "functionCode": "return inputData;",
+          "nodeData": {
+            "inputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe" },
+            "outputData": { "userId": "user-001", "token": "jwt-token-abc" }
           }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+        }}
       }
     },
-    // 3. First child of GroupNode — groups[0].inputData MUST MATCH GroupNode.inputData
-    {
-      "id": "node-task-validate-003",
-      "type": "task",
-      "parentNode": "node-group-register-002",
-      "position": { "x": 0, "y": 300 },
-      "data": {
-        "title": "Validate Registration Input",
-        "description": "Check email format and password strength",
-        "assignee": "",
-        "estimatedTime": 0,
-        "metadata": {},
-        "execution": {
-          "config": {
-            "functionCode": "const emailValid = typeof inputData.email === 'string' && inputData.email.includes('@'); const passValid = typeof inputData.password === 'string' && inputData.password.length >= 8; return { email: inputData.email, password: inputData.password, username: inputData.username, isValid: emailValid && passValid };",
-            "nodeData": {
-              "inputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe" },
-              "outputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe", "isValid": true }
-            }
+    { "id": "node-task-validate-003", "type": "task", "parentNode": "node-group-register-002", "position": {"x":0,"y":300},
+      "data": { "title": "Validate Registration Input", "description": "Check email format and password strength",
+        "execution": { "config": {
+          "functionCode": "const emailValid = inputData.email.includes('@'); const passValid = inputData.password.length >= 8; return { email: inputData.email, password: inputData.password, username: inputData.username, isValid: emailValid && passValid };",
+          "nodeData": {
+            "inputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe" },
+            "outputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe", "isValid": true }
           }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+        }}
       }
     },
-    // 4. Second child of GroupNode — groups[1].inputData MUST MATCH groups[0].outputData
-    {
-      "id": "node-service-register-004",
-      "type": "service",
-      "parentNode": "node-group-register-002",
-      "position": { "x": 0, "y": 450 },
-      "data": {
-        "title": "Call Register API",
-        "description": "POST /api/users to create account",
-        "mode": "panel",
-        "serviceType": "api",
-        "timeout": 10000,
-        "retry": { "count": 3, "delay": 1000 },
-        "http": {
-          "method": "POST",
-          "endpoint": "/api/users",
-          "headers": { "Content-Type": "application/json" },
-          "body": { "email": "{{inputData.email}}", "password": "{{inputData.password}}", "username": "{{inputData.username}}" }
-        },
-        "execution": {
-          "config": {
-            "isAsync": true,
-            "nodeData": {
-              "inputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe", "isValid": true },
-              "outputData": { "userId": "user-001", "token": "jwt-token-abc" }
-            }
+    { "id": "node-service-register-004", "type": "service", "parentNode": "node-group-register-002", "position": {"x":0,"y":450},
+      "data": { "title": "Call Register API", "description": "POST /api/users to create account",
+        "http": { "method": "POST", "endpoint": "/api/users", "headers": {"Content-Type":"application/json"}, "body": {"email":"{{inputData.email}}","password":"{{inputData.password}}","username":"{{inputData.username}}"} },
+        "execution": { "config": { "isAsync": true,
+          "nodeData": {
+            "inputData": { "email": "user@example.com", "password": "Pass123!", "username": "john_doe", "isValid": true },
+            "outputData": { "userId": "user-001", "token": "jwt-token-abc" }
           }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+        }}
       }
     }
   ]
 }
 
 KEY RULES DEMONSTRATED:
-- GroupNode.inputData = { email, password, username } = parent (init-001) outputData ✅
-- groups[0] (validate-003).inputData = { email, password, username } = GroupNode.inputData ✅
-- groups[1] (register-004).inputData = { email, password, username, isValid } = groups[0].outputData ✅
-- GroupNode.outputData = { userId, token } = groups[1].outputData ✅
-- Service node has NO functionCode (auto-generated from data.http) ✅
+- GroupNode.inputData = parent outputData ✅
+- groups[0].inputData = GroupNode.inputData ✅
+- groups[1].inputData = groups[0].outputData ✅
+- GroupNode.outputData = lastChild.outputData ✅
+- Service node has NO functionCode (auto-generated) ✅
 - initFunctionCode is ALWAYS "return inputData;" ✅
 
 ---------------------------------------------------------------
@@ -796,160 +562,98 @@ User: "Create a daily focus app with date display, task list, and energy score f
 
 {
   "nodes": [
-    // ─── ROOT TASK (no parentNode) ────────────────────────────────
-    {
-      "id": "node-task-root-001",
-      "type": "task",
-      "position": { "x": 0, "y": 0 },
-      "data": {
-        "title": "Daily Focus App",
-        "description": "Initialize app state",
-        "assignee": "", "estimatedTime": 0, "metadata": {},
-        "execution": {
-          "config": {
-            "functionCode": "return { currentDate: '2026-01-15', tasks: [{id:'t1',content:'Buy groceries',completed:false},{id:'t2',content:'Read book',completed:true},{id:'t3',content:'Exercise',completed:false}] };",
-            "nodeData": {
-              "inputData": null,
-              "outputData": { "currentDate": "2026-01-15", "tasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t2","content":"Read book","completed":true},{"id":"t3","content":"Exercise","completed":false}] }
-            }
-          }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+    // ROOT TASK (no parentNode)
+    { "id": "node-task-root-001", "type": "task", "position": {"x":0,"y":0},
+      "data": { "title": "Daily Focus App", "description": "Initialize app state",
+        "execution": { "config": {
+          "functionCode": "return { currentDate: '2026-01-15', tasks: [{id:'t1',content:'Buy groceries',completed:false},{id:'t2',content:'Read book',completed:true},{id:'t3',content:'Exercise',completed:false}] };",
+          "nodeData": { "inputData": null, "outputData": { "currentDate": "2026-01-15", "tasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t2","content":"Read book","completed":true},{"id":"t3","content":"Exercise","completed":false}] } }
+        }}
       }
     },
 
-    // ─── FEATURE 1: Display Date ──────────────────────────────────
-    // parentNode = ROOT TASK (node-task-root-001)
-    {
-      "id": "node-group-display-date-002",
-      "type": "group",
-      "parentNode": "node-task-root-001",
-      "position": { "x": -300, "y": 200 },
-      "data": {
-        "title": "Display Date",
-        "description": "Show current date to user",
-        "groups": [], "metadata": {}, "collapsed": true,
-        "execution": {
-          "config": {
-            "initFunctionCode": "return inputData;",
-            "functionCode": "return inputData;",
-            "nodeData": {
-              "inputData": { "currentDate": "2026-01-15" },
-              "outputData": { "formattedDate": "Wednesday, Jan 15 2026" }
-            }
-          }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+    // FEATURE 1: Display Date — parentNode = ROOT TASK
+    { "id": "node-group-display-date-002", "type": "group", "parentNode": "node-task-root-001", "position": {"x":-300,"y":200},
+      "data": { "title": "Display Date", "description": "Show current date to user", "groups": [], "collapsed": true,
+        "execution": { "config": { "initFunctionCode": "return inputData;", "functionCode": "return inputData;",
+          "nodeData": { "inputData": { "currentDate": "2026-01-15" }, "outputData": { "formattedDate": "Wednesday, Jan 15 2026", "label": "Today" } }
+        }}
       }
     },
-    { "id": "node-task-format-date-003", "type": "task", "parentNode": "node-group-display-date-002",
-      "position": { "x": -300, "y": 350 },
-      "data": { "title": "Format Date", "description": "Format ISO date to readable string", "assignee": "", "estimatedTime": 0, "metadata": {},
+    { "id": "node-task-format-date-003", "type": "task", "parentNode": "node-group-display-date-002", "position": {"x":-300,"y":350},
+      "data": { "title": "Format Date", "description": "Format ISO date to readable string",
         "execution": { "config": {
           "functionCode": "const d = new Date(inputData.currentDate); return { formattedDate: d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',year:'numeric'}) };",
           "nodeData": { "inputData": { "currentDate": "2026-01-15" }, "outputData": { "formattedDate": "Wednesday, Jan 15 2026" } }
-        }},
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}] } },
-    { "id": "node-task-display-date-004", "type": "task", "parentNode": "node-group-display-date-002",
-      "position": { "x": -300, "y": 500 },
-      "data": { "title": "Render Date UI", "description": "Prepare date for display", "assignee": "", "estimatedTime": 0, "metadata": {},
+        }}
+      }
+    },
+    { "id": "node-task-display-date-004", "type": "task", "parentNode": "node-group-display-date-002", "position": {"x":-300,"y":500},
+      "data": { "title": "Render Date UI", "description": "Add label to formatted date",
         "execution": { "config": {
           "functionCode": "return { formattedDate: inputData.formattedDate, label: 'Today' };",
           "nodeData": { "inputData": { "formattedDate": "Wednesday, Jan 15 2026" }, "outputData": { "formattedDate": "Wednesday, Jan 15 2026", "label": "Today" } }
-        }},
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}] } },
-
-    // ─── FEATURE 2: Task List ─────────────────────────────────────
-    // parentNode = ROOT TASK (node-task-root-001) ← SAME as Feature 1!
-    {
-      "id": "node-group-task-list-005",
-      "type": "group",
-      "parentNode": "node-task-root-001",
-      "position": { "x": 0, "y": 200 },
-      "data": {
-        "title": "Task List",
-        "description": "Display and manage daily tasks",
-        "groups": [], "metadata": {}, "collapsed": true,
-        "execution": {
-          "config": {
-            "initFunctionCode": "return inputData;",
-            "functionCode": "return inputData;",
-            "nodeData": {
-              "inputData": { "tasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t2","content":"Read book","completed":true},{"id":"t3","content":"Exercise","completed":false}] },
-              "outputData": { "displayedTasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t2","content":"Read book","completed":true},{"id":"t3","content":"Exercise","completed":false}] }
-            }
-          }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+        }}
       }
     },
-    { "id": "node-task-filter-tasks-006", "type": "task", "parentNode": "node-group-task-list-005",
-      "position": { "x": 0, "y": 350 },
-      "data": { "title": "Filter Active Tasks", "description": "Filter incomplete tasks", "assignee": "", "estimatedTime": 0, "metadata": {},
+
+    // FEATURE 2: Task List — parentNode = ROOT TASK ← SAME as Feature 1!
+    { "id": "node-group-task-list-005", "type": "group", "parentNode": "node-task-root-001", "position": {"x":0,"y":200},
+      "data": { "title": "Task List", "description": "Display and manage daily tasks", "groups": [], "collapsed": true,
+        "execution": { "config": { "initFunctionCode": "return inputData;", "functionCode": "return inputData;",
+          "nodeData": { "inputData": { "tasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t2","content":"Read book","completed":true},{"id":"t3","content":"Exercise","completed":false}] }, "outputData": { "displayedTasks": [{"id":"t1","content":"Buy groceries","completed":false,"label":"Buy groceries"},{"id":"t3","content":"Exercise","completed":false,"label":"Exercise"}] } }
+        }}
+      }
+    },
+    { "id": "node-task-filter-tasks-006", "type": "task", "parentNode": "node-group-task-list-005", "position": {"x":0,"y":350},
+      "data": { "title": "Filter Active Tasks", "description": "Filter incomplete tasks",
         "execution": { "config": {
-          "functionCode": "const active = Array.isArray(inputData?.tasks) ? inputData.tasks.filter(t => !t.completed) : []; return { activeTasks: active, total: inputData?.tasks?.length ?? 0 };",
+          "functionCode": "const active = inputData.tasks.filter(t => !t.completed); return { activeTasks: active, total: inputData.tasks.length };",
           "nodeData": { "inputData": { "tasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t2","content":"Read book","completed":true},{"id":"t3","content":"Exercise","completed":false}] }, "outputData": { "activeTasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t3","content":"Exercise","completed":false}], "total": 3 } }
-        }},
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}] } },
-    { "id": "node-task-display-tasks-007", "type": "task", "parentNode": "node-group-task-list-005",
-      "position": { "x": 0, "y": 500 },
-      "data": { "title": "Prepare Task Display", "description": "Add display metadata to tasks", "assignee": "", "estimatedTime": 0, "metadata": {},
-        "execution": { "config": {
-          "functionCode": "return { displayedTasks: Array.isArray(inputData?.activeTasks) ? inputData.activeTasks.map(t => ({...t, label: t.content})) : [] };",
-          "nodeData": { "inputData": { "activeTasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t3","content":"Exercise","completed":false}], "total": 3 }, "outputData": { "displayedTasks": [{"id":"t1","content":"Buy groceries","completed":false,"label":"Buy groceries"},{"id":"t3","content":"Exercise","completed":false,"label":"Exercise"}] } }
-        }},
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}] } },
-
-    // ─── FEATURE 3: Energy Score ──────────────────────────────────
-    // parentNode = ROOT TASK (node-task-root-001) ← SAME as Features 1 and 2!
-    {
-      "id": "node-group-energy-score-008",
-      "type": "group",
-      "parentNode": "node-task-root-001",
-      "position": { "x": 300, "y": 200 },
-      "data": {
-        "title": "Energy Score",
-        "description": "Calculate and display user energy score",
-        "groups": [], "metadata": {}, "collapsed": true,
-        "execution": {
-          "config": {
-            "initFunctionCode": "return inputData;",
-            "functionCode": "return inputData;",
-            "nodeData": {
-              "inputData": null,
-              "outputData": { "score": 75, "label": "Good", "message": "Energy score: 75/100" }
-            }
-          }
-        },
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}]
+        }}
       }
     },
-    { "id": "node-task-calc-energy-009", "type": "task", "parentNode": "node-group-energy-score-008",
-      "position": { "x": 300, "y": 350 },
-      "data": { "title": "Calculate Energy Score", "description": "Compute energy score from internal state", "assignee": "", "estimatedTime": 0, "metadata": {},
+    { "id": "node-task-display-tasks-007", "type": "task", "parentNode": "node-group-task-list-005", "position": {"x":0,"y":500},
+      "data": { "title": "Prepare Task Display", "description": "Add label metadata to tasks",
+        "execution": { "config": {
+          "functionCode": "return { displayedTasks: inputData.activeTasks.map(t => ({...t, label: t.content})) };",
+          "nodeData": { "inputData": { "activeTasks": [{"id":"t1","content":"Buy groceries","completed":false},{"id":"t3","content":"Exercise","completed":false}], "total": 3 }, "outputData": { "displayedTasks": [{"id":"t1","content":"Buy groceries","completed":false,"label":"Buy groceries"},{"id":"t3","content":"Exercise","completed":false,"label":"Exercise"}] } }
+        }}
+      }
+    },
+
+    // FEATURE 3: Energy Score — parentNode = ROOT TASK ← SAME as Features 1 and 2!
+    { "id": "node-group-energy-score-008", "type": "group", "parentNode": "node-task-root-001", "position": {"x":300,"y":200},
+      "data": { "title": "Energy Score", "description": "Calculate and display user energy score", "groups": [], "collapsed": true,
+        "execution": { "config": { "initFunctionCode": "return inputData;", "functionCode": "return inputData;",
+          "nodeData": { "inputData": null, "outputData": { "score": 75, "label": "Good", "message": "Energy score: 75/100" } }
+        }}
+      }
+    },
+    { "id": "node-task-calc-energy-009", "type": "task", "parentNode": "node-group-energy-score-008", "position": {"x":300,"y":350},
+      "data": { "title": "Calculate Energy Score", "description": "Compute energy score from internal state",
         "execution": { "config": {
           "functionCode": "const score = Math.floor(Math.random() * 40) + 60; const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Low'; return { score, label };",
           "nodeData": { "inputData": null, "outputData": { "score": 75, "label": "Good" } }
-        }},
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}] } },
-    { "id": "node-task-display-energy-010", "type": "task", "parentNode": "node-group-energy-score-008",
-      "position": { "x": 300, "y": 500 },
-      "data": { "title": "Format Energy Message", "description": "Format score into display message", "assignee": "", "estimatedTime": 0, "metadata": {},
+        }}
+      }
+    },
+    { "id": "node-task-display-energy-010", "type": "task", "parentNode": "node-group-energy-score-008", "position": {"x":300,"y":500},
+      "data": { "title": "Format Energy Message", "description": "Format score into display message",
         "execution": { "config": {
           "functionCode": "return { score: inputData.score, label: inputData.label, message: \`Energy score: \${inputData.score}/100\` };",
           "nodeData": { "inputData": { "score": 75, "label": "Good" }, "outputData": { "score": 75, "label": "Good", "message": "Energy score: 75/100" } }
-        }},
-        "ports": [{"id":"input","position":"top","type":"target"},{"id":"output","position":"bottom","type":"source"}] } }
+        }}
+      }
+    }
   ]
 }
 
-CRITICAL RULES DEMONSTRATED IN THIS EXAMPLE:
-- node-group-display-date-002.parentNode = "node-task-root-001" (root) ✅
-- node-group-task-list-005.parentNode   = "node-task-root-001" (root) ✅  ← SAME PARENT!
-- node-group-energy-score-008.parentNode= "node-task-root-001" (root) ✅  ← SAME PARENT!
-- NO GroupNode has another GroupNode as parentNode ✅
-- Energy Score group has inputData:null (trigger-style — generates score internally) ✅
+CRITICAL RULES DEMONSTRATED:
+- ALL 3 GroupNodes share parentNode = "node-task-root-001" ✅  ← NEVER chain GroupNodes sequentially
+- Energy Score group: inputData=null (trigger-style, generates data internally) ✅
 - Each GroupNode has exactly 2 task children ✅
+- GroupNode.outputData = lastChild.outputData (exact copy) ✅
 `;
 
 const GENERATION_RESPONSE_FORMAT = `
