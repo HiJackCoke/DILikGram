@@ -14,11 +14,19 @@
  */
 
 import { useState } from "react";
+import { Monitor, Tablet, Smartphone } from "lucide-react";
 import { generateUIAction } from "@/app/_actions/ai";
 import { SAMPLE_PRDS } from "@/fixtures/samples";
 import type { GeneratedUIPage } from "@/types/ai/uiGeneration";
 import UIPreviewFrame, { VIEWPORT } from "@/components/ui/UIPreviewFrame";
 import type { ViewportSize } from "@/components/ui/UIPreviewFrame";
+import Button from "@/components/ui/Button";
+
+const VIEWPORT_ICONS: Record<ViewportSize, React.ReactNode> = {
+  mobile: <Smartphone className="w-3.5 h-3.5" />,
+  tablet: <Tablet className="w-3.5 h-3.5" />,
+  desktop: <Monitor className="w-3.5 h-3.5" />,
+};
 
 export default function UIPreviewDevPage() {
   const [pages, setPages] = useState<GeneratedUIPage[]>([]);
@@ -63,200 +71,105 @@ export default function UIPreviewDevPage() {
   const activePageData = pages[activePage];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        fontFamily: "system-ui, sans-serif",
-        background: "#f8fafc",
-      }}
-    >
-      {/* Sidebar */}
-      <div
-        style={{
-          width: 220,
-          background: "#1e293b",
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            padding: "16px 16px 8px",
-            color: "#94a3b8",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: 1,
-          }}
-        >
+    <div className="flex h-screen font-sans bg-slate-50">
+      {/* ── Sidebar ── */}
+      <div className="w-[220px] bg-slate-800 flex flex-col shrink-0">
+        <div className="px-4 pt-4 pb-2 text-slate-400 text-[11px] font-bold tracking-widest uppercase">
           DEV / UI PREVIEW
         </div>
 
         {/* Sample buttons */}
-        <div
-          style={{ padding: "0 10px 16px", borderBottom: "1px solid #334155" }}
-        >
+        <div className="px-2.5 pb-4 border-b border-slate-700">
           {SAMPLE_PRDS.map((s) => (
-            <button
+            <Button
               key={s.id}
-              onClick={() => handleTest(s.id)}
+              variant={activeSample === s.id ? "solid" : "ghost"}
+              palette={activeSample === s.id ? "primary" : "neutral"}
+              size="sm"
+              fullWidth
               disabled={loading}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "9px 12px",
-                marginBottom: 4,
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-                background: activeSample === s.id ? "#3b82f6" : "#334155",
-                color: activeSample === s.id ? "#fff" : "#cbd5e1",
-                transition: "all 0.15s",
-              }}
+              onClick={() => handleTest(s.id)}
+              className="!justify-start mb-1"
             >
               {s.emoji} {s.name}
-            </button>
+            </Button>
           ))}
         </div>
 
         {/* Page tabs */}
         {pages.length > 0 && (
-          <div style={{ padding: "12px 10px 0" }}>
-            <div
-              style={{
-                color: "#64748b",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: 1,
-                marginBottom: 8,
-                paddingLeft: 4,
-              }}
-            >
-              PAGES
+          <div className="px-2.5 pt-3">
+            <div className="text-slate-500 text-[11px] font-bold tracking-widest uppercase mb-2 pl-1">
+              Pages
             </div>
             {pages.map((p, i) => (
-              <button
+              <Button
                 key={p.pageId}
+                variant={activePage === i ? "solid" : "ghost"}
+                palette={activePage === i ? "primary" : "neutral"}
+                size="sm"
+                fullWidth
                 onClick={() => setActivePage(i)}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "8px 12px",
-                  marginBottom: 3,
-                  borderRadius: 8,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  background: activePage === i ? "#1d4ed8" : "transparent",
-                  color: activePage === i ? "#fff" : "#94a3b8",
-                }}
+                className="!justify-start mb-0.5"
               >
                 {i + 1}. {p.pageName}
-              </button>
+              </Button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Main area */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
+      {/* ── Main area ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
-        <div
-          style={{
-            background: "#fff",
-            borderBottom: "1px solid #e2e8f0",
-            padding: "10px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+        <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center gap-3 shrink-0">
+          <span className="text-sm font-bold text-slate-900">
             {activePageData
               ? `${activeSample} / ${activePageData.pageName}`
               : "Select a sample →"}
           </span>
+
           {loading && (
-            <span style={{ fontSize: 13, color: "#6366f1" }}>
-              ⏳ Loading...
-            </span>
+            <span className="text-sm text-indigo-500">⏳ Loading...</span>
           )}
+
           {activePageData && (
-            <>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                {(Object.keys(VIEWPORT) as ViewportSize[]).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setViewport(v)}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: 8,
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      background: viewport === v ? "#6366f1" : "#f1f5f9",
-                      color: viewport === v ? "#fff" : "#64748b",
-                    }}
-                  >
-                    {VIEWPORT[v].label}
-                  </button>
-                ))}
-              </div>
-              <button
+            <div className="ml-auto flex items-center gap-1.5">
+              {(Object.keys(VIEWPORT) as ViewportSize[]).map((v) => (
+                <Button
+                  key={v}
+                  size="sm"
+                  variant={viewport === v ? "solid" : "ghost"}
+                  palette={viewport === v ? "primary" : "neutral"}
+                  icon={VIEWPORT_ICONS[v]}
+                  onClick={() => setViewport(v)}
+                  aria-label={VIEWPORT[v].label}
+                />
+              ))}
+
+              <Button
+                size="sm"
+                variant={showCode ? "solid" : "ghost"}
+                palette="neutral"
                 onClick={() => setShowCode((p) => !p)}
-                style={{
-                  padding: "5px 12px",
-                  borderRadius: 8,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: showCode ? "#0f172a" : "#f1f5f9",
-                  color: showCode ? "#e2e8f0" : "#64748b",
-                }}
               >
                 {"</>"}
-              </button>
-            </>
+              </Button>
+            </div>
           )}
         </div>
 
         {/* Preview + code split */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div className="flex-1 flex overflow-hidden">
           {/* iframe preview */}
-          <div
-            style={{
-              flex: 1,
-              background: "#e2e8f0",
-              padding: 24,
-              overflow: "hidden",
-            }}
-          >
+          <div className="flex-1 bg-slate-200 p-6 overflow-hidden">
             {activePageData ? (
               <UIPreviewFrame code={activePageData.code} viewport={viewport} />
             ) : (
-              <div
-                style={{
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div style={{ textAlign: "center", color: "#94a3b8" }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>📱</div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center text-slate-400">
+                  <div className="text-5xl mb-3">📱</div>
+                  <div className="text-[15px] font-semibold">
                     Select a sample to preview
                   </div>
                 </div>
@@ -266,25 +179,8 @@ export default function UIPreviewDevPage() {
 
           {/* Code panel */}
           {activePageData && showCode && (
-            <div
-              style={{
-                width: 380,
-                background: "#0f172a",
-                overflow: "auto",
-                padding: "16px",
-                flexShrink: 0,
-              }}
-            >
-              <pre
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  color: "#e2e8f0",
-                  lineHeight: 1.6,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
+            <div className="w-[380px] bg-slate-950 overflow-auto p-4 shrink-0">
+              <pre className="m-0 text-[11px] text-slate-200 leading-relaxed whitespace-pre-wrap break-words">
                 {activePageData.code}
               </pre>
             </div>
@@ -292,25 +188,14 @@ export default function UIPreviewDevPage() {
         </div>
 
         {/* Log panel */}
-        <div
-          style={{
-            height: 100,
-            background: "#0f172a",
-            borderTop: "1px solid #1e293b",
-            padding: "8px 16px",
-            overflow: "auto",
-          }}
-        >
+        <div className="h-[100px] bg-slate-950 border-t border-slate-800 px-4 py-2 overflow-auto shrink-0">
           {log.length === 0 ? (
-            <div style={{ color: "#475569", fontSize: 12 }}>
+            <div className="text-slate-600 text-xs">
               Click a sample to test generateUIAction...
             </div>
           ) : (
             log.map((l, i) => (
-              <div
-                key={i}
-                style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.8 }}
-              >
+              <div key={i} className="text-xs text-slate-400 leading-relaxed">
                 {l}
               </div>
             ))
