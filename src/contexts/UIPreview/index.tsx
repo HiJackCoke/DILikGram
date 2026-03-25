@@ -9,6 +9,8 @@ import { uiPreviewCache } from "@/utils/workflow/uiPreviewCache";
 
 /** sessionStorage key used to persist generated pages across navigation */
 export const UI_PREVIEW_SESSION_KEY = "dg:ui-preview-pages";
+/** sessionStorage key for the workflow versionId that produced the current pages */
+export const UI_PREVIEW_VERSION_KEY = "dg:ui-preview-version";
 
 export interface OpenUIPreviewParams {
   nodes: WorkflowNode[];
@@ -38,12 +40,22 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
   const open = useCallback(async (params: OpenUIPreviewParams) => {
     setError(null);
 
-    // Cache hit — restore from localStorage and skip API call
     if (params.versionId) {
-      const cached = uiPreviewCache.get(params.versionId);
+      // sessionStorage is always the most up-to-date source (refinements update it
+      // in real-time). If it already holds pages for this exact version, reuse them
+      // directly — this preserves any AI-refined code the user made previously.
+      const storedVersionId = sessionStorage.getItem(UI_PREVIEW_VERSION_KEY);
+      const storedPages = sessionStorage.getItem(UI_PREVIEW_SESSION_KEY);
+      if (storedVersionId === params.versionId && storedPages) {
+        return;
+      }
 
+      // sessionStorage has pages for a different version (or is empty) →
+      // restore from localStorage cache if available.
+      const cached = uiPreviewCache.get(params.versionId);
       if (cached) {
         sessionStorage.setItem(UI_PREVIEW_SESSION_KEY, JSON.stringify(cached));
+        sessionStorage.setItem(UI_PREVIEW_VERSION_KEY, params.versionId);
         return;
       }
     }
@@ -62,8 +74,9 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
         JSON.stringify(result.pages),
       );
 
-      // Persist to localStorage cache for future visits
+      // Persist versionId and cache for future visits
       if (params.versionId) {
+        sessionStorage.setItem(UI_PREVIEW_VERSION_KEY, params.versionId);
         uiPreviewCache.set(params.versionId, result.pages);
       }
     } catch (err) {

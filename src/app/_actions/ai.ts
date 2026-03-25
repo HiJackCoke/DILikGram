@@ -681,3 +681,71 @@ export const generateUIAction = async ({
 
   return { pages };
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const UI_REFINEMENT_SYSTEM_PROMPT = `You are editing an existing self-contained React component (function App() { ... }).
+Apply ONLY the changes the user requests. Preserve all unrelated code.
+
+Same rules as the original:
+- Single function named App: function App() { ... }
+- NO import statements. React is available as global.
+- Use React.useState, React.useEffect (always prefix hooks with React.)
+- Tailwind CSS classes ONLY — no style={{}} except for dynamic values
+- NEVER use alert(), confirm(), or prompt()
+- Output ONLY the complete updated JavaScript code — no markdown fences, no explanation`;
+
+export interface RefineChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface RefineUIPageActionParams {
+  /** Current component code to refine */
+  currentCode: string;
+  /** Full conversation history (user asks → assistant replies → user asks again …) */
+  messages: RefineChatMessage[];
+  pageName: string;
+}
+
+/**
+ * Refines an existing generated UI page via a multi-turn chat conversation.
+ * The caller maintains the message history and appends each new user message
+ * before calling this action. Returns the full updated component code.
+ */
+export const refineUIPageAction = async ({
+  currentCode,
+  messages,
+  pageName,
+}: RefineUIPageActionParams): Promise<{ code: string }> => {
+  const openai = getOpenAIClient();
+
+  // Build multi-turn input: start with the current code as context,
+  // then replay the conversation so the model has full history.
+  const conversationInput = [
+    {
+      role: "user" as const,
+      content: `Here is the current code for the "${pageName}" page:\n\`\`\`\n${currentCode}\n\`\`\``,
+    },
+    {
+      role: "assistant" as const,
+      content: "Understood. I have the current code. What would you like to change?",
+    },
+    ...messages.map((m) => ({ role: m.role, content: m.content })),
+  ];
+
+  const response = await openai.responses.create({
+    model: "gpt-4o-mini",
+    temperature: 0.3,
+    instructions: UI_REFINEMENT_SYSTEM_PROMPT,
+    input: conversationInput,
+  });
+
+  const raw = response.output_text ?? "";
+  const code = raw
+    .replace(/^```(?:jsx?|tsx?|javascript)?\n?/m, "")
+    .replace(/\n?```\s*$/m, "")
+    .trim();
+
+  return { code };
+};

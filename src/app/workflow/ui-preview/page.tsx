@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Monitor, Tablet, Smartphone } from "lucide-react";
-import { generateUIAction } from "@/app/_actions/ai";
+import { ArrowLeft, Monitor, Tablet, Smartphone, RotateCcw, MessageSquare } from "lucide-react";
+import { generateUIAction, refineUIPageAction } from "@/app/_actions/ai";
+import type { RefineChatMessage } from "@/app/_actions/ai";
 import { SAMPLE_PRDS } from "@/fixtures/samples";
 import type { GeneratedUIPage } from "@/types/ai/uiGeneration";
 import UIPreviewFrame, { VIEWPORT } from "@/components/ui/UIPreviewFrame";
 import type { ViewportSize } from "@/components/ui/UIPreviewFrame";
-import { UI_PREVIEW_SESSION_KEY } from "@/contexts/UIPreview";
+import { UI_PREVIEW_SESSION_KEY, UI_PREVIEW_VERSION_KEY } from "@/contexts/UIPreview";
+import { uiPreviewCache } from "@/utils/workflow/uiPreviewCache";
 
 const VIEWPORT_ICONS: Record<ViewportSize, React.ReactNode> = {
   mobile: <Smartphone className="w-3.5 h-3.5" />,
@@ -18,15 +20,24 @@ const VIEWPORT_ICONS: Record<ViewportSize, React.ReactNode> = {
 
 export default function UIPreviewPage() {
   // null = not yet read from sessionStorage (SSR phase)
-  const [storedPages, setStoredPages] = useState<GeneratedUIPage[] | null>(
-    null,
-  );
+  const [storedPages, setStoredPages] = useState<GeneratedUIPage[] | null>(null);
+  const [versionId, setVersionId] = useState<string | null>(null);
 
   // Shared state for both modes
   const [pages, setPages] = useState<GeneratedUIPage[]>([]);
   const [activePage, setActivePage] = useState(0);
   const [viewport, setViewport] = useState<ViewportSize>("mobile");
   const [showCode, setShowCode] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+
+  // Chat state — keyed by pageId
+  const [chatHistories, setChatHistories] = useState<Record<string, RefineChatMessage[]>>({});
+  const [chatInput, setChatInput] = useState("");
+  const [isRefining, setIsRefining] = useState(false);
+  // Original code per pageId (set on first refinement to allow reset)
+  const [originalCodes, setOriginalCodes] = useState<Record<string, string>>({});
+
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Dev-mode only state
   const [loading, setLoading] = useState(false);
@@ -36,6 +47,7 @@ export default function UIPreviewPage() {
   // Read sessionStorage once on mount
   useEffect(() => {
     const raw = sessionStorage.getItem(UI_PREVIEW_SESSION_KEY);
+    const vid = sessionStorage.getItem(UI_PREVIEW_VERSION_KEY);
     if (raw) {
       try {
         const parsed: GeneratedUIPage[] = JSON.parse(raw);
@@ -47,7 +59,13 @@ export default function UIPreviewPage() {
     } else {
       setStoredPages([]);
     }
+    if (vid) setVersionId(vid);
   }, []);
+
+  // Scroll chat to bottom when messages change
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistories, activePage]);
 
   const addLog = (msg: string) =>
     setLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
@@ -83,16 +101,108 @@ export default function UIPreviewPage() {
 
   const handleClearAndUseSamples = () => {
     sessionStorage.removeItem(UI_PREVIEW_SESSION_KEY);
+    sessionStorage.removeItem(UI_PREVIEW_VERSION_KEY);
     setStoredPages([]);
     setPages([]);
     setActivePage(0);
     setActiveSample(null);
   };
 
+  // Send a chat message to refine the current page
+  const handleSendChat = async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || isRefining || !activePageData) return;
+
+    const pageId = activePageData.pageId;
+    const currentCode = activePageData.code;
+
+    // Save original code on first refinement
+    if (!originalCodes[pageId]) {
+      setOriginalCodes((prev) => ({ ...prev, [pageId]: currentCode }));
+    }
+
+    const userMsg: RefineChatMessage = { role: "user", content: trimmed };
+    const prevHistory = chatHistories[pageId] ?? [];
+    const nextHistory = [...prevHistory, userMsg];
+
+    setChatHistories((prev) => ({ ...prev, [pageId]: nextHistory }));
+    setChatInput("");
+    setIsRefining(true);
+
+    try {
+      const result = await refineUIPageAction({
+        currentCode,
+        messages: nextHistory,
+        pageName: activePageData.pageName,
+      });
+
+      const assistantMsg: RefineChatMessage = {
+        role: "assistant",
+        content: "UI를 업데이트했습니다.",
+      };
+
+      setChatHistories((prev) => ({
+        ...prev,
+        [pageId]: [...nextHistory, assistantMsg],
+      }));
+
+      // Apply refined code to pages
+      const updatedPages = pages.map((p) =>
+        p.pageId === pageId ? { ...p, code: result.code } : p,
+      );
+      setPages(updatedPages);
+
+      // Update sessionStorage
+      sessionStorage.setItem(UI_PREVIEW_SESSION_KEY, JSON.stringify(updatedPages));
+
+      // Update localStorage cache so refinement persists across navigations
+      if (versionId) {
+        uiPreviewCache.set(versionId, updatedPages);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "수정 실패";
+      setChatHistories((prev) => ({
+        ...prev,
+        [pageId]: [
+          ...nextHistory,
+          { role: "assistant", content: `❌ 오류: ${errMsg}` },
+        ],
+      }));
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  // Reset current page to original generated code
+  const handleReset = () => {
+    if (!activePageData) return;
+    const pageId = activePageData.pageId;
+    const original = originalCodes[pageId];
+    if (!original) return;
+
+    const updatedPages = pages.map((p) =>
+      p.pageId === pageId ? { ...p, code: original } : p,
+    );
+    setPages(updatedPages);
+    sessionStorage.setItem(UI_PREVIEW_SESSION_KEY, JSON.stringify(updatedPages));
+    if (versionId) uiPreviewCache.set(versionId, updatedPages);
+
+    // Clear chat history for this page
+    setChatHistories((prev) => ({ ...prev, [pageId]: [] }));
+    setOriginalCodes((prev) => {
+      const next = { ...prev };
+      delete next[pageId];
+      return next;
+    });
+  };
+
   const safeActivePage =
     pages.length > 0 ? Math.min(activePage, pages.length - 1) : 0;
   const activePageData = pages[safeActivePage];
   const isWorkflowMode = storedPages !== null && storedPages.length > 0;
+  const activePageId = activePageData?.pageId ?? "";
+  const activeHistory = chatHistories[activePageId] ?? [];
+  const hasOriginal = !!originalCodes[activePageId];
 
   // Still reading sessionStorage
   if (storedPages === null) return null;
@@ -179,6 +289,9 @@ export default function UIPreviewPage() {
                   }}
                 >
                   {i + 1}. {p.pageName}
+                  {chatHistories[p.pageId]?.length ? (
+                    <span style={{ marginLeft: 6, color: "#818cf8", fontSize: 10 }}>●</span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -342,9 +455,37 @@ export default function UIPreviewPage() {
                 </button>
               ))}
 
+              {/* Chat toggle */}
+              <button
+                onClick={() => {
+                  setShowChat((p) => !p);
+                  setShowCode(false);
+                }}
+                title="AI로 UI 수정"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "5px 10px",
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: showChat ? "#059669" : "#334155",
+                  color: showChat ? "#fff" : "#64748b",
+                }}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>AI 수정</span>
+              </button>
+
               {/* Code toggle */}
               <button
-                onClick={() => setShowCode((p) => !p)}
+                onClick={() => {
+                  setShowCode((p) => !p);
+                  setShowChat(false);
+                }}
                 style={{
                   padding: "5px 12px",
                   borderRadius: 8,
@@ -362,7 +503,7 @@ export default function UIPreviewPage() {
           )}
         </div>
 
-        {/* Preview + code split */}
+        {/* Preview + right panel split */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
           {/* iframe */}
           <div
@@ -422,6 +563,169 @@ export default function UIPreviewPage() {
               >
                 {activePageData.code}
               </pre>
+            </div>
+          )}
+
+          {/* Chat panel */}
+          {activePageData && showChat && (
+            <div
+              style={{
+                width: 360,
+                background: "#0f172a",
+                display: "flex",
+                flexDirection: "column",
+                flexShrink: 0,
+                borderLeft: "1px solid #1e293b",
+              }}
+            >
+              {/* Chat header */}
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderBottom: "1px solid #1e293b",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>
+                  AI UI 수정
+                </span>
+                {hasOriginal && (
+                  <button
+                    onClick={handleReset}
+                    title="원본으로 되돌리기"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      border: "1px solid #334155",
+                      background: "transparent",
+                      color: "#64748b",
+                      fontSize: 11,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <RotateCcw size={11} />
+                    원본으로
+                  </button>
+                )}
+              </div>
+
+              {/* Messages */}
+              <div
+                style={{
+                  flex: 1,
+                  overflow: "auto",
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {activeHistory.length === 0 && (
+                  <div style={{ color: "#334155", fontSize: 12, textAlign: "center", marginTop: 40 }}>
+                    수정하고 싶은 내용을 입력하세요.<br />
+                    <span style={{ color: "#1e3a5f", fontSize: 11, marginTop: 8, display: "block" }}>
+                      예: "카드 색상을 초록색으로 바꿔줘"<br />
+                      예: "필터 칩 추가해줘"
+                    </span>
+                  </div>
+                )}
+                {activeHistory.map((msg, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: "85%",
+                        padding: "8px 12px",
+                        borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                        background: msg.role === "user" ? "#1d4ed8" : "#1e293b",
+                        color: msg.role === "user" ? "#fff" : "#94a3b8",
+                        fontSize: 12,
+                        lineHeight: 1.6,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {isRefining && (
+                  <div style={{ display: "flex", alignItems: "flex-start" }}>
+                    <div
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "12px 12px 12px 2px",
+                        background: "#1e293b",
+                        color: "#818cf8",
+                        fontSize: 12,
+                      }}
+                    >
+                      ⏳ 수정 중...
+                    </div>
+                  </div>
+                )}
+                <div ref={chatBottomRef} />
+              </div>
+
+              {/* Input */}
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderTop: "1px solid #1e293b",
+                  display: "flex",
+                  gap: 8,
+                }}
+              >
+                <input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendChat();
+                    }
+                  }}
+                  placeholder="수정 내용을 입력하세요..."
+                  disabled={isRefining}
+                  style={{
+                    flex: 1,
+                    background: "#1e293b",
+                    border: "1px solid #334155",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                    fontSize: 12,
+                    color: "#e2e8f0",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  onClick={handleSendChat}
+                  disabled={isRefining || !chatInput.trim()}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: isRefining || !chatInput.trim() ? "#334155" : "#1d4ed8",
+                    color: isRefining || !chatInput.trim() ? "#475569" : "#fff",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: isRefining || !chatInput.trim() ? "not-allowed" : "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  전송
+                </button>
+              </div>
             </div>
           )}
         </div>
