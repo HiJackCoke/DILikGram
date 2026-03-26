@@ -54,16 +54,19 @@ function SampleCard({
   selected,
   disabled,
   onSelect,
+  tutorialId,
 }: {
   sample: SamplePRD;
   selected: boolean;
   disabled: boolean;
   onSelect: () => void;
+  tutorialId?: string;
 }) {
   return (
     <button
       onClick={onSelect}
       disabled={disabled}
+      data-tutorial={tutorialId}
       className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all w-full ${
         selected
           ? "border-palette-primary-bg bg-blue-50 shadow-sm"
@@ -120,12 +123,13 @@ function WorkflowGeneratorView({
               <span className="ml-1.5 text-xs font-normal text-gray-400">— API 없이 즉시 생성</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {SAMPLE_PRDS.map((sample) => (
+              {SAMPLE_PRDS.map((sample, index) => (
                 <SampleCard
                   key={sample.id}
                   sample={sample}
                   selected={selectedSampleId === sample.id}
                   disabled={isAnalyzing}
+                  tutorialId={index === 0 ? "sample-prd-first" : undefined}
                   onSelect={() => {
                     const newId = selectedSampleId === sample.id ? null : sample.id;
                     setSelectedSampleId(newId);

@@ -74,10 +74,13 @@ import { generateEdgeId, createDefaultEdge } from "@/utils/graph/edges";
 import { PALETTE } from "@/constants/palette";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useExecutorEditor } from "@/contexts/ExecutorEditor";
+import { useOnboardingGuide } from "@/hooks/useOnboardingGuide";
+import OnboardingGuide from "@/app/workflow/_components/OnboardingGuide";
 // import { initialNodes } from "@/mocks/nodes";
 // import { initialEdges } from "@/mocks/edges";
 
 export default function WorkflowPage() {
+  const guide = useOnboardingGuide();
   const edgeUpdateSuccessful = useRef(true);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -423,6 +426,8 @@ export default function WorkflowPage() {
       { changeType: "generated", description: "Generated workflow from AI" },
       generationMeta,
     );
+
+    guide.markWorkflowGenerated();
   }
 
   // Handle execution config save
@@ -762,6 +767,11 @@ export default function WorkflowPage() {
           nodes={nodes}
           setNodes={setNodes}
           setEdges={setEdges}
+          onViewUIClick={guide.markUIViewed}
+        />
+        <OnboardingGuide
+          workflowGenerated={guide.workflowGenerated}
+          uiViewed={guide.uiViewed}
         />
       </ReactDiagram>
     </div>

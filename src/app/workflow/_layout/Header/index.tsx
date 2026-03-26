@@ -24,12 +24,13 @@ import { Switch } from "@/components/ui/Switch";
 
 interface Props {
   nodes: WorkflowNode[];
-
   setNodes: Dispatch<SetStateAction<WorkflowNode[]>>;
   setEdges: Dispatch<SetStateAction<WorkflowEdge[]>>;
+  /** Called when the user clicks "View UI" (used for onboarding guide tracking) */
+  onViewUIClick?: () => void;
 }
 
-export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
+export default function ExecutionHeader({ nodes, setNodes, setEdges, onViewUIClick }: Props) {
   const { open: openGenerator } = useWorkflowGenerator();
   const { open: openHistory, currentVersion } = useWorkflowVersioning();
   const generationMeta = currentVersion?.generationMeta ?? null;
@@ -108,6 +109,7 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
           iconPosition="left"
           onClick={openGenerator}
           disabled={isExecuting}
+          data-tutorial="generate-btn"
         >
           Generate with AI
         </Button>
@@ -125,8 +127,10 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges }: Props) {
               )
             }
             iconPosition="left"
+            data-tutorial="view-ui-btn"
             onClick={async () => {
               setIsGeneratingUI(true);
+              onViewUIClick?.();
               try {
                 await openUIPreview({
                   nodes,

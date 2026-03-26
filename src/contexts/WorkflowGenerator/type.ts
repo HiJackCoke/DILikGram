@@ -24,6 +24,7 @@ export type RegisterOnWorkflowGenerated = (
  * WorkflowGenerator context value exposed to consumers
  */
 export interface WorkflowGeneratorContextValue {
+  isOpen: boolean;
   isGenerating: boolean;
   error: string | null;
   /**

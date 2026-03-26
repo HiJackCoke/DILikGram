@@ -321,6 +321,7 @@ export function WorkflowGeneratorProvider({
   return (
     <WorkflowGeneratorContext
       value={{
+        isOpen: show,
         open,
         close,
         registerOnGenerate,
