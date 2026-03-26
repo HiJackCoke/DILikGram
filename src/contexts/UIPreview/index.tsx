@@ -11,6 +11,8 @@ import { uiPreviewCache } from "@/utils/workflow/uiPreviewCache";
 export const UI_PREVIEW_SESSION_KEY = "dg:ui-preview-pages";
 /** sessionStorage key for the workflow versionId that produced the current pages */
 export const UI_PREVIEW_VERSION_KEY = "dg:ui-preview-version";
+/** sessionStorage key for per-page chat histories (pageId → RefineChatMessage[]) */
+export const UI_PREVIEW_CHAT_KEY = "dg:ui-preview-chat";
 
 export interface OpenUIPreviewParams {
   nodes: WorkflowNode[];

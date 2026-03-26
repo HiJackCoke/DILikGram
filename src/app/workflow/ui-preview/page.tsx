@@ -20,6 +20,7 @@ import type { ViewportSize } from "@/components/ui/UIPreviewFrame";
 import {
   UI_PREVIEW_SESSION_KEY,
   UI_PREVIEW_VERSION_KEY,
+  UI_PREVIEW_CHAT_KEY,
 } from "@/contexts/UIPreview";
 import { uiPreviewCache } from "@/utils/workflow/uiPreviewCache";
 import Button from "@/components/ui/Button";
@@ -53,6 +54,7 @@ export default function UIPreviewPage() {
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const chatHistoriesInitialized = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [activeSample, setActiveSample] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export default function UIPreviewPage() {
   useEffect(() => {
     const raw = sessionStorage.getItem(UI_PREVIEW_SESSION_KEY);
     const vid = sessionStorage.getItem(UI_PREVIEW_VERSION_KEY);
+    const rawChat = sessionStorage.getItem(UI_PREVIEW_CHAT_KEY);
     if (raw) {
       try {
         const parsed: GeneratedUIPage[] = JSON.parse(raw);
@@ -73,7 +76,25 @@ export default function UIPreviewPage() {
       setStoredPages([]);
     }
     if (vid) setVersionId(vid);
+    if (rawChat) {
+      try {
+        setChatHistories(JSON.parse(rawChat));
+      } catch {
+        // ignore
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    // Skip the initial mount run — the load effect restores chatHistories from
+    // sessionStorage, and we must not overwrite it with the empty initial value {}
+    // before that state update is applied.
+    if (!chatHistoriesInitialized.current) {
+      chatHistoriesInitialized.current = true;
+      return;
+    }
+    sessionStorage.setItem(UI_PREVIEW_CHAT_KEY, JSON.stringify(chatHistories));
+  }, [chatHistories]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,10 +135,13 @@ export default function UIPreviewPage() {
   const handleClearAndUseSamples = () => {
     sessionStorage.removeItem(UI_PREVIEW_SESSION_KEY);
     sessionStorage.removeItem(UI_PREVIEW_VERSION_KEY);
+    sessionStorage.removeItem(UI_PREVIEW_CHAT_KEY);
     setStoredPages([]);
     setPages([]);
     setActivePage(0);
     setActiveSample(null);
+    setChatHistories({});
+    setOriginalCodes({});
   };
 
   const handleSendChat = async () => {
