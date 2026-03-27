@@ -153,8 +153,8 @@ export default function ExecutorEditorContentView({
                       <CodeEditor
                         value={code}
                         language="javascript"
-                        onChange={onCodeChange}
                         className="w-full min-h-[200px]"
+                        onChange={onCodeChange}
                       />
                       {/* Closing brace — decorative */}
                       <div className="px-4 py-2 bg-[#1e1e1e] text-[#6a9955] border-t border-[#3c3c3c] select-none text-xs font-mono leading-relaxed">
