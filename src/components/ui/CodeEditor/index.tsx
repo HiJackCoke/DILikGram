@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import Editor, { type OnMount } from "@monaco-editor/react";
+import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import * as prettier from "prettier/standalone";
 import babelPlugin from "prettier/plugins/babel";
 import estreePlugin from "prettier/plugins/estree";
@@ -20,7 +20,11 @@ async function formatCode(code: string, language: "javascript" | "typescript") {
   const isTS = language === "typescript";
   return prettier.format(code, {
     parser: isTS ? "typescript" : "babel",
-    plugins: isTS ? [typescriptPlugin, estreePlugin] : [babelPlugin, estreePlugin],
+    plugins: isTS
+      ? [typescriptPlugin, estreePlugin]
+      : [babelPlugin, estreePlugin],
+    // filepath hint so Prettier enables JSX support in both parsers
+    filepath: isTS ? "file.tsx" : "file.jsx",
     semi: true,
     singleQuote: false,
     tabWidth: 2,
@@ -43,6 +47,26 @@ export default function CodeEditor({
 }: CodeEditorProps) {
   const formatted = useRef(false);
 
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    // Configure TypeScript language service for React JSX (new transform).
+    // This suppresses "Cannot find name 'React'" and JSX-related type errors
+    // that appear when editing generated component code without full type defs.
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      jsx: monaco.languages.typescript.JsxEmit.ReactJSX,
+      allowJs: true,
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+    });
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true, // suppress missing-import type errors
+      noSyntaxValidation: false,  // keep syntax errors visible
+    });
+    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true,
+      noSyntaxValidation: false,
+    });
+  };
+
   const handleMount: OnMount = async (editor) => {
     if (formatted.current) return;
     formatted.current = true;
@@ -62,6 +86,7 @@ export default function CodeEditor({
         value={value}
         language={language}
         theme={theme}
+        beforeMount={handleBeforeMount}
         onMount={handleMount}
         options={{
           readOnly,
