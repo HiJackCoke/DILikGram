@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Play, AlertTriangle, Zap, Code } from "lucide-react";
 
-import { inferType, stringifyForDisplay } from "@/utils/workflow";
+import { inferType } from "@/utils/workflow";
 import Button from "@/components/ui/Button";
+import CodeEditor from "@/components/ui/CodeEditor";
 import TestCasesTab from "./TestCasesTab";
 
 import GroupDataFlow from "./GroupDataFlow";
@@ -142,29 +143,21 @@ export default function ExecutorEditorContentView({
                       )}
                     </div>
 
-                    <div className="flex flex-col font-mono text-sm border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                      {/* Function signature — decorative, not editable */}
-                      <div className="px-4 py-2 bg-gray-50 text-gray-400 border-b select-none text-xs leading-relaxed">
-                        {nodeType === "service" &&
-                          "async " + "function(inputData) {"}
+                    <div className="flex flex-col rounded-lg overflow-hidden border border-[#3c3c3c]">
+                      {/* Function signature — decorative, matches vs-dark theme */}
+                      <div className="px-4 py-2 bg-[#1e1e1e] text-[#6a9955] border-b border-[#3c3c3c] select-none text-xs font-mono leading-relaxed">
+                        {nodeType === "service"
+                          ? "async function(inputData, fetch) {"
+                          : "function(inputData) {"}
                       </div>
-                      <textarea
+                      <CodeEditor
                         value={code}
-                        onChange={(e) => onCodeChange(e.target.value)}
-                        placeholder={
-                          nodeType === "decision"
-                            ? `  // Decision evaluator\n  const isValid = inputData && inputData.isValid === true;\n\n  return {\n    outputData: { ...inputData, checked: true },\n    success: isValid\n  };`
-                            : nodeType === "task"
-                              ? `  // SYNC ONLY — no await/async\n\n  return { ...inputData };`
-                              : meta
-                                ? `  // Returns: ${stringifyForDisplay(meta.outputData)}\n\n  return outputData;`
-                                : `  return inputData;`
-                        }
-                        className="w-full min-h-[200px] px-8 py-3 font-mono text-sm resize-none focus:outline-none bg-white"
-                        spellCheck={false}
+                        language="javascript"
+                        onChange={onCodeChange}
+                        className="w-full min-h-[200px]"
                       />
                       {/* Closing brace — decorative */}
-                      <div className="px-4 py-2 bg-gray-50 text-gray-400 border-t select-none text-xs leading-relaxed">
+                      <div className="px-4 py-2 bg-[#1e1e1e] text-[#6a9955] border-t border-[#3c3c3c] select-none text-xs font-mono leading-relaxed">
                         {"}"}
                       </div>
                     </div>

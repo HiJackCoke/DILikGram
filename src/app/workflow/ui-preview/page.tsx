@@ -24,6 +24,7 @@ import {
 } from "@/contexts/UIPreview";
 import { uiPreviewCache } from "@/utils/workflow/uiPreviewCache";
 import Button from "@/components/ui/Button";
+import CodeEditor from "@/components/ui/CodeEditor";
 
 const VIEWPORT_ICONS: Record<ViewportSize, React.ReactNode> = {
   mobile: <Smartphone className="w-3.5 h-3.5" />,
@@ -422,10 +423,13 @@ export default function UIPreviewPage() {
 
           {/* Code panel */}
           {activePageData && showCode && (
-            <div className="w-[380px] bg-slate-950 overflow-auto p-4 shrink-0 border-l border-slate-800">
-              <pre className="m-0 text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap break-words">
-                {activePageData.code}
-              </pre>
+            <div className="w-[420px] shrink-0 border-l border-slate-800">
+              <CodeEditor
+                value={activePageData.code}
+                language="typescript"
+                readOnly
+                className="h-full"
+              />
             </div>
           )}
 
