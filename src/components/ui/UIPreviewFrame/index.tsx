@@ -14,14 +14,19 @@ const VIEWPORT: Record<ViewportSize, { width: number; height: number; label: str
 interface UIPreviewFrameProps {
   code: string;
   viewport?: ViewportSize;
+  highlightComponentKey?: string;
+  highlightIsPhantom?: boolean;
 }
 
 export default function UIPreviewFrame({
   code,
   viewport = "mobile",
+  highlightComponentKey,
+  highlightIsPhantom = false,
 }: UIPreviewFrameProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const deviceRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Store the code that caused the error — error overlay is only shown when
   // the current code matches. This avoids both setState-in-useEffect and
@@ -41,6 +46,18 @@ export default function UIPreviewFrame({
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, [code]);
+
+  // Send highlight message to iframe when highlightComponentKey or type changes
+  useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "DG_HIGHLIGHT",
+        componentKey: highlightComponentKey ?? null,
+        highlightType: highlightIsPhantom ? "phantom" : "valid",
+      },
+      "*",
+    );
+  }, [highlightComponentKey, highlightIsPhantom]);
 
   // Scale device frame to fit container — direct DOM mutation avoids setState re-render
   useLayoutEffect(() => {
@@ -86,6 +103,7 @@ export default function UIPreviewFrame({
         }}
       >
         <iframe
+          ref={iframeRef}
           srcDoc={buildSrcdoc(code)}
           title="UI Preview"
           sandbox="allow-scripts"

@@ -13,6 +13,8 @@ export const UI_PREVIEW_SESSION_KEY = "dg:ui-preview-pages";
 export const UI_PREVIEW_VERSION_KEY = "dg:ui-preview-version";
 /** sessionStorage key for per-page chat histories (pageId → RefineChatMessage[]) */
 export const UI_PREVIEW_CHAT_KEY = "dg:ui-preview-chat";
+/** sessionStorage key for workflow nodes used to generate the current pages */
+export const UI_PREVIEW_NODES_KEY = "dg:ui-preview-nodes";
 
 export interface OpenUIPreviewParams {
   nodes: WorkflowNode[];
@@ -49,6 +51,8 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
       const storedVersionId = sessionStorage.getItem(UI_PREVIEW_VERSION_KEY);
       const storedPages = sessionStorage.getItem(UI_PREVIEW_SESSION_KEY);
       if (storedVersionId === params.versionId && storedPages) {
+        // Always update nodes (workflow may have changed between visits)
+        sessionStorage.setItem(UI_PREVIEW_NODES_KEY, JSON.stringify(params.nodes));
         return;
       }
 
@@ -58,6 +62,7 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
       if (cached) {
         sessionStorage.setItem(UI_PREVIEW_SESSION_KEY, JSON.stringify(cached));
         sessionStorage.setItem(UI_PREVIEW_VERSION_KEY, params.versionId);
+        sessionStorage.setItem(UI_PREVIEW_NODES_KEY, JSON.stringify(params.nodes));
         return;
       }
     }
@@ -75,6 +80,7 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
         UI_PREVIEW_SESSION_KEY,
         JSON.stringify(result.pages),
       );
+      sessionStorage.setItem(UI_PREVIEW_NODES_KEY, JSON.stringify(params.nodes));
 
       // Persist versionId and cache for future visits
       if (params.versionId) {

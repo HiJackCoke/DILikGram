@@ -10,17 +10,21 @@ import {
   RotateCcw,
   MessageSquare,
   Send,
+  Network,
 } from "lucide-react";
 import { generateUIAction, refineUIPageAction } from "@/app/_actions/ai";
 import type { RefineChatMessage } from "@/app/_actions/ai";
 import { SAMPLE_PRDS } from "@/fixtures/samples";
 import type { GeneratedUIPage } from "@/types/ai/uiGeneration";
+import type { WorkflowNode } from "@/types/nodes";
+import CoveragePanel from "./_components/CoveragePanel";
 import UIPreviewFrame, { VIEWPORT } from "@/components/ui/UIPreviewFrame";
 import type { ViewportSize } from "@/components/ui/UIPreviewFrame";
 import {
   UI_PREVIEW_SESSION_KEY,
   UI_PREVIEW_VERSION_KEY,
   UI_PREVIEW_CHAT_KEY,
+  UI_PREVIEW_NODES_KEY,
 } from "@/contexts/UIPreview";
 import { uiPreviewCache } from "@/utils/workflow/uiPreviewCache";
 import Button from "@/components/ui/Button";
@@ -56,6 +60,11 @@ export default function UIPreviewPage() {
   // Per-page unsaved code edits (pageId → edited code)
   const [codeEdits, setCodeEdits] = useState<Record<string, string>>({});
 
+  const [workflowNodes, setWorkflowNodes] = useState<WorkflowNode[]>([]);
+  const [showCoverage, setShowCoverage] = useState(false);
+  const [hoveredComponentKey, setHoveredComponentKey] = useState<string | null>(null);
+  const [hoveredIsPhantom, setHoveredIsPhantom] = useState(false);
+
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const chatHistoriesInitialized = useRef(false);
@@ -86,6 +95,10 @@ export default function UIPreviewPage() {
       } catch {
         // ignore
       }
+    }
+    const rawNodes = sessionStorage.getItem(UI_PREVIEW_NODES_KEY);
+    if (rawNodes) {
+      try { setWorkflowNodes(JSON.parse(rawNodes)); } catch { /* ignore */ }
     }
   }, []);
 
@@ -125,6 +138,7 @@ export default function UIPreviewPage() {
       });
 
       setPages(result.pages);
+      setWorkflowNodes(sample.nodes);
       setActivePage(0);
       addLog(
         `✅ Got ${result.pages.length} pages: ${result.pages.map((p) => p.pageName).join(", ")}`,
@@ -424,12 +438,19 @@ export default function UIPreviewPage() {
 
               <Button
                 size="sm"
+                variant={showCoverage ? "solid" : "ghost"}
+                palette={showCoverage ? "primary" : "neutral"}
+                icon={<Network className="w-3.5 h-3.5" />}
+                onClick={() => setShowCoverage((p) => !p)}
+              >
+                Coverage
+              </Button>
+
+              <Button
+                size="sm"
                 variant={showCode ? "solid" : "ghost"}
                 palette="neutral"
-                onClick={() => {
-                  setShowCode((p) => !p);
-                  setShowChat(false);
-                }}
+                onClick={() => setShowCode((p) => !p)}
               >
                 {"</>"}
               </Button>
@@ -442,7 +463,12 @@ export default function UIPreviewPage() {
           {/* iframe */}
           <div className="flex-1 bg-slate-700 p-6 overflow-hidden">
             {activePageData ? (
-              <UIPreviewFrame code={activePageData.code} viewport={viewport} />
+              <UIPreviewFrame
+                code={activePageData.code}
+                viewport={viewport}
+                highlightComponentKey={hoveredComponentKey ?? undefined}
+                highlightIsPhantom={hoveredIsPhantom}
+              />
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center text-slate-600">
@@ -499,6 +525,19 @@ export default function UIPreviewPage() {
                 onSave={handleSaveCode}
               />
             </div>
+          )}
+
+          {/* Coverage panel */}
+          {activePageData && showCoverage && (
+            <CoveragePanel
+              components={activePageData.components ?? []}
+              workflowNodes={workflowNodes}
+              pageName={activePageData.pageName}
+              onHoverComponent={(key, isPhantom) => {
+                setHoveredComponentKey(key);
+                setHoveredIsPhantom(isPhantom ?? false);
+              }}
+            />
           )}
 
           {/* Chat panel */}

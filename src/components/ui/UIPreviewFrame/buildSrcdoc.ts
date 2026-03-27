@@ -26,6 +26,9 @@ export function buildSrcdoc(code: string): string {
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 99px; }
+    [data-dg-component] { transition: box-shadow 0.15s, background-color 0.15s; }
+    [data-dg-highlighted="valid"]   { box-shadow: inset 0 0 0 3px rgba(99,102,241,0.9) !important; background-color: rgba(99,102,241,0.06) !important; }
+    [data-dg-highlighted="phantom"] { box-shadow: inset 0 0 0 3px rgba(239,68,68,0.9) !important;  background-color: rgba(239,68,68,0.06) !important; }
   </style>
 </head>
 <body>
@@ -33,6 +36,15 @@ export function buildSrcdoc(code: string): string {
   <script type="text/babel">
     ${code}
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+  <script>
+    window.addEventListener('message', function(e) {
+      document.querySelectorAll('[data-dg-highlighted]').forEach(function(el) { el.removeAttribute('data-dg-highlighted'); });
+      if (e.data && e.data.type === 'DG_HIGHLIGHT' && e.data.componentKey) {
+        var els = document.querySelectorAll('[data-dg-component="' + e.data.componentKey + '"]');
+        els.forEach(function(el) { el.setAttribute('data-dg-highlighted', e.data.highlightType || 'valid'); });
+      }
+    });
   </script>
   <script>
     // Relay runtime errors back to parent for display in dev page

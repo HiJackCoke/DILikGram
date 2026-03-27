@@ -90,6 +90,31 @@ Every button, FAB, form, toggle, or interactive element MUST correspond to a spe
 - Timer/Focus pages: large centered display + play/pause/stop controls + session stats
 - Form/Input pages: clean inputs with labels + primary CTA button at bottom
 
+## Component Traceability (REQUIRED — do not skip)
+After function App() { ... }, append a metadata block on a new line:
+
+/* @dg-components
+[
+  {"componentKey": "camelCaseKey", "componentName": "Human Name", "nodeIds": ["nodeId1", "nodeId2"]}
+]
+*/
+
+Rules:
+- Add data-dg-component="componentKey" to the OUTERMOST wrapper div of each meaningful UI section
+- Group semantically related nodes: e.g. fetch + display nodes for a task list = one component
+- componentKey must be camelCase and unique within the page
+- Every node ID listed in the workflow (nodeId: ...) MUST appear in at least one component's nodeIds
+- If a section has no direct node mapping, omit it (do NOT invent nodeIds)
+
+## nodeIds Strict Validation (CRITICAL — violations are caught and flagged)
+- nodeIds values MUST be copied EXACTLY from the nodeId values provided in "Data flow from workflow nodes" above
+  - ✅ Correct: the workflow lists "(nodeId: task-abc-123)" → use "task-abc-123"
+  - ❌ Forbidden: inventing IDs like "node-1", "fetchTasks", or any string not in the workflow
+- A UI section (data-dg-component) MUST NOT exist if it has no valid nodeId backing
+  - ❌ Forbidden: a header card, stats section, or button with no corresponding workflow node
+  - ✅ Only add data-dg-component to sections that directly implement a workflow node's responsibility
+- If ALL nodeIds in a component are invalid, the component is "phantom" — it will be flagged as having no node basis in the coverage panel
+
 Output ONLY the JavaScript code for function App() { ... }`;
 
 export interface UIPageContext {

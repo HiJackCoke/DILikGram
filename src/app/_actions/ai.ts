@@ -441,6 +441,7 @@ import type {
   GenerateUIActionParams,
   GenerateUIResponse,
   GeneratedUIPage,
+  UIComponent,
 } from "@/types/ai/uiGeneration";
 import type { AnalyzePRDResult } from "@/types/ai/prdAnalysis";
 import { getUIPreviewBySampleId } from "@/fixtures/uiPreviews";
@@ -494,7 +495,7 @@ function buildNodeFlow(
   page: AnalyzePRDResult["pages"][number],
   pageIndex: number,
   nodes: WorkflowNode[],
-): string {
+): { flow: string; pageNodeIds: Set<string> } {
   const sectionAliases = new Set([
     page.name,
     page.name.toLowerCase(),
@@ -506,7 +507,9 @@ function buildNodeFlow(
     return section && sectionAliases.has(section);
   });
 
-  if (pageNodes.length === 0) return "";
+  const pageNodeIds = new Set(pageNodes.map((n) => n.id));
+
+  if (pageNodes.length === 0) return { flow: "", pageNodeIds };
 
   // Skip pure start/end nodes — they carry no meaningful data shape
   const meaningfulNodes = pageNodes.filter(
@@ -522,7 +525,7 @@ function buildNodeFlow(
     const prdReq = node.data.prdReference?.requirement;
 
     // Header: [type] title
-    lines.push(`[${node.type}] ${node.data.title}`);
+    lines.push(`[${node.type}] ${node.data.title} (nodeId: ${node.id})`);
 
     // PRD requirement (the "why" — what user need this implements)
     if (prdReq) {
@@ -555,7 +558,7 @@ function buildNodeFlow(
     }
   }
 
-  return lines.join("\n");
+  return { flow: lines.join("\n"), pageNodeIds };
 }
 
 /**
@@ -569,8 +572,8 @@ function buildPageContext(
   pageIndex: number,
   goal: string,
   nodes: WorkflowNode[],
-): UIPageContext {
-  const nodeFlow = buildNodeFlow(page, pageIndex, nodes);
+): { ctx: UIPageContext; pageNodeIds: Set<string> } {
+  const { flow: nodeFlow, pageNodeIds } = buildNodeFlow(page, pageIndex, nodes);
 
   // Fallback fields (used only when nodeFlow is empty)
   const dataFieldsSet = new Set<string>();
@@ -599,7 +602,7 @@ function buildPageContext(
     }
   }
 
-  return {
+  const ctx: UIPageContext = {
     pageName: page.name,
     pagePath: page.path,
     goal,
@@ -608,16 +611,20 @@ function buildPageContext(
     dataFields: [...dataFieldsSet].slice(0, 20),
     endpoints: endpoints.slice(0, 10),
   };
+
+  return { ctx, pageNodeIds };
 }
 
 /**
- * Call OpenAI once for the given page context and return the generated code.
+ * Call OpenAI once for the given page context and return the generated code
+ * along with extracted component traceability metadata.
  * Strips markdown fences in case the model includes them despite instructions.
  */
 async function generatePageCode(
   openai: OpenAI,
   ctx: UIPageContext,
-): Promise<string> {
+  pageNodeIds: Set<string>,
+): Promise<{ code: string; components: UIComponent[] }> {
   const response = await openai.responses.create({
     model: "gpt-4o-mini",
     temperature: 0.4,
@@ -625,12 +632,34 @@ async function generatePageCode(
     input: getUIGenerationContent(ctx),
   });
 
-  const raw = response.output_text ?? "";
-  // Strip markdown fences if the model included them
-  return raw
+  const raw = (response.output_text ?? "")
     .replace(/^```(?:jsx?|tsx?|javascript)?\n?/m, "")
     .replace(/\n?```\s*$/m, "")
     .trim();
+
+  // Extract @dg-components metadata block
+  const metaMatch = raw.match(/\/\*\s*@dg-components\s*([\s\S]*?)\*\//);
+  let components: UIComponent[] = [];
+  let code = raw;
+
+  if (metaMatch) {
+    try {
+      const parsed = JSON.parse(metaMatch[1].trim()) as UIComponent[];
+
+      // Filter out node IDs that don't exist in this page's workflow.
+      // Components with no valid nodeIds are "phantom" — rendered in the UI
+      // but backed by no workflow node.
+      components = parsed.map((comp) => ({
+        ...comp,
+        nodeIds: comp.nodeIds.filter((id) => pageNodeIds.has(id)),
+      }));
+    } catch {
+      // malformed JSON — skip
+    }
+    code = raw.replace(/\/\*\s*@dg-components[\s\S]*?\*\//, "").trim();
+  }
+
+  return { code, components };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -657,14 +686,15 @@ export const generateUIAction = async ({
   const pages: GeneratedUIPage[] = [];
 
   for (const [i, page] of analysisResult.pages.entries()) {
-    const ctx = buildPageContext(page, i, analysisResult.goal, nodes);
+    const { ctx, pageNodeIds } = buildPageContext(page, i, analysisResult.goal, nodes);
     try {
-      const code = await generatePageCode(openai, ctx);
+      const { code, components } = await generatePageCode(openai, ctx, pageNodeIds);
       pages.push({
         pageId: page.id,
         pageName: page.name,
         pagePath: page.path,
         code,
+        components,
         status: "done",
       });
     } catch (err) {
@@ -673,6 +703,7 @@ export const generateUIAction = async ({
         pageName: page.name,
         pagePath: page.path,
         code: `function App() { return <div style={{padding:32,fontFamily:'system-ui',color:'#ef4444'}}><h2>${page.name}</h2><p>${err instanceof Error ? err.message : "Generation failed"}</p></div>; }`,
+        components: [],
         status: "error",
         error: err instanceof Error ? err.message : "Generation failed",
       });
