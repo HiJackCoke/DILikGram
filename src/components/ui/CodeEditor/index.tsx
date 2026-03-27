@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import * as prettier from "prettier/standalone";
 import babelPlugin from "prettier/plugins/babel";
@@ -14,6 +14,8 @@ interface CodeEditorProps {
   readOnly?: boolean;
   className?: string;
   onChange?: (value: string) => void;
+  /** Called on Cmd+S / Ctrl+S */
+  onSave?: () => void;
 }
 
 async function formatCode(code: string, language: "javascript" | "typescript") {
@@ -44,8 +46,14 @@ export default function CodeEditor({
   readOnly = false,
   className,
   onChange,
+  onSave,
 }: CodeEditorProps) {
   const formatted = useRef(false);
+  // Keep a stable ref so the Cmd+S command always calls the latest onSave
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const handleBeforeMount: BeforeMount = (monaco) => {
     // Configure TypeScript language service for React JSX (new transform).
@@ -67,7 +75,12 @@ export default function CodeEditor({
     });
   };
 
-  const handleMount: OnMount = async (editor) => {
+  const handleMount: OnMount = async (editor, monaco) => {
+    // Cmd+S (Mac) / Ctrl+S (Windows/Linux) → save
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      onSaveRef.current?.();
+    });
+
     if (formatted.current) return;
     formatted.current = true;
 

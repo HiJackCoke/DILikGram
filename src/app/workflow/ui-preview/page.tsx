@@ -53,6 +53,9 @@ export default function UIPreviewPage() {
     {},
   );
 
+  // Per-page unsaved code edits (pageId → edited code)
+  const [codeEdits, setCodeEdits] = useState<Record<string, string>>({});
+
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const chatHistoriesInitialized = useRef(false);
@@ -232,6 +235,34 @@ export default function UIPreviewPage() {
     });
   };
 
+  const handleSaveCode = () => {
+    if (!activePageData) return;
+    const pageId = activePageData.pageId;
+    const newCode = codeEdits[pageId];
+    if (!newCode || newCode === activePageData.code) return;
+
+    const updatedPages = pages.map((p) =>
+      p.pageId === pageId ? { ...p, code: newCode } : p,
+    );
+    setPages(updatedPages);
+    sessionStorage.setItem(UI_PREVIEW_SESSION_KEY, JSON.stringify(updatedPages));
+    if (versionId) uiPreviewCache.set(versionId, updatedPages);
+    setCodeEdits((prev) => {
+      const next = { ...prev };
+      delete next[pageId];
+      return next;
+    });
+  };
+
+  const handleDiscardCode = () => {
+    if (!activePageData) return;
+    setCodeEdits((prev) => {
+      const next = { ...prev };
+      delete next[activePageData.pageId];
+      return next;
+    });
+  };
+
   const safeActivePage =
     pages.length > 0 ? Math.min(activePage, pages.length - 1) : 0;
   const activePageData = pages[safeActivePage];
@@ -239,6 +270,11 @@ export default function UIPreviewPage() {
   const activePageId = activePageData?.pageId ?? "";
   const activeHistory = chatHistories[activePageId] ?? [];
   const hasOriginal = !!originalCodes[activePageId];
+  const activeEditorCode = codeEdits[activePageId] ?? activePageData?.code ?? "";
+  const isCodeDirty =
+    activePageData !== undefined &&
+    codeEdits[activePageId] !== undefined &&
+    codeEdits[activePageId] !== activePageData.code;
 
   if (storedPages === null) return null;
 
@@ -423,12 +459,44 @@ export default function UIPreviewPage() {
 
           {/* Code panel */}
           {activePageData && showCode && (
-            <div className="w-[420px] shrink-0 border-l border-slate-800">
+            <div className="w-[420px] shrink-0 border-l border-slate-800 flex flex-col">
+              {/* Code panel header */}
+              <div className="px-3.5 py-2.5 border-b border-slate-800 bg-slate-900 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-200">Code</span>
+                  {isCodeDirty && (
+                    <span className="text-[10px] text-amber-400 font-medium">● unsaved</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    palette="neutral"
+                    disabled={!isCodeDirty}
+                    onClick={handleDiscardCode}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="solid"
+                    palette="primary"
+                    disabled={!isCodeDirty}
+                    onClick={handleSaveCode}
+                  >
+                    Apply & Save
+                  </Button>
+                </div>
+              </div>
               <CodeEditor
-                value={activePageData.code}
+                value={activeEditorCode}
                 language="typescript"
-                readOnly
-                className="h-full"
+                className="flex-1"
+                onChange={(val) =>
+                  setCodeEdits((prev) => ({ ...prev, [activePageId]: val }))
+                }
+                onSave={handleSaveCode}
               />
             </div>
           )}
