@@ -77,16 +77,16 @@ export default function ExecutorEditorContentView({
 
       {/* Tab Content */}
       <div
-        className={`flex-1 overflow-y-auto ${activeTab === "code" ? "px-6" : ""} ${nodeType === "group" && activeTab === "code" ? "pt-6" : ""}`}
+        className={`flex-1 overflow-y-scroll ${activeTab === "code" ? "px-6" : ""} ${nodeType === "group" && activeTab === "code" ? "pt-6" : ""}`}
       >
         {/* Code Tab Content */}
         {activeTab === "code" && (
           <>
             {/* Code Editor + Test Panel */}
-            <section className="flex h-full">
+            <section className="flex min-h-full">
               {/* Editor */}
               <div
-                className={`flex-1 flex flex-col py-6  ${isVisibleTestExecutor ? "border-r pr-6" : ""} `}
+                className={`flex-1 flex flex-col py-6 ${isVisibleTestExecutor ? "border-r pr-6" : ""} `}
               >
                 {/* Type Hints - always shown */}
                 {isVisibleTypeHint && (
@@ -142,21 +142,32 @@ export default function ExecutorEditorContentView({
                       )}
                     </div>
 
-                    <textarea
-                      value={code}
-                      onChange={(e) => onCodeChange(e.target.value)}
-                      placeholder={
-                        nodeType === "decision"
-                          ? `// Decision evaluator - return structured output\n// Example:\nconst isValid = inputData && inputData.isValid === true;\n\nreturn {\n  outputData: { ...inputData, checked: true },\n  success: isValid  // true = Yes, false = No\n};`
-                          : nodeType === "task"
-                            ? `// Task function (SYNC ONLY - no await/async)\n// Receives: inputData, fetch\n// Returns: transformed data\n\nreturn { ...inputData };`
-                            : meta
-                              ? `// Receives: inputData (${stringifyForDisplay(meta.inputData)})\n// Returns: ${stringifyForDisplay(meta.outputData)}\n\nreturn outputData;`
-                              : `// Your function code here\n// Receives: inputData, fetch\n// Return: output data\n\nreturn inputData;`
-                      }
-                      className="flex-1 w-full p-4 font-mono text-sm border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      spellCheck={false}
-                    />
+                    <div className="flex flex-col font-mono text-sm border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                      {/* Function signature — decorative, not editable */}
+                      <div className="px-4 py-2 bg-gray-50 text-gray-400 border-b select-none text-xs leading-relaxed">
+                        {nodeType === "service" &&
+                          "async " + "function(inputData) {"}
+                      </div>
+                      <textarea
+                        value={code}
+                        onChange={(e) => onCodeChange(e.target.value)}
+                        placeholder={
+                          nodeType === "decision"
+                            ? `  // Decision evaluator\n  const isValid = inputData && inputData.isValid === true;\n\n  return {\n    outputData: { ...inputData, checked: true },\n    success: isValid\n  };`
+                            : nodeType === "task"
+                              ? `  // SYNC ONLY — no await/async\n\n  return { ...inputData };`
+                              : meta
+                                ? `  // Returns: ${stringifyForDisplay(meta.outputData)}\n\n  return outputData;`
+                                : `  return inputData;`
+                        }
+                        className="w-full min-h-[200px] px-8 py-3 font-mono text-sm resize-none focus:outline-none bg-white"
+                        spellCheck={false}
+                      />
+                      {/* Closing brace — decorative */}
+                      <div className="px-4 py-2 bg-gray-50 text-gray-400 border-t select-none text-xs leading-relaxed">
+                        {"}"}
+                      </div>
+                    </div>
 
                     {error && (
                       <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
