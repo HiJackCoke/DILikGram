@@ -64,6 +64,8 @@ export default function UIPreviewPage() {
   const [showCoverage, setShowCoverage] = useState(false);
   const [hoveredComponentKey, setHoveredComponentKey] = useState<string | null>(null);
   const [hoveredIsPhantom, setHoveredIsPhantom] = useState(false);
+  const [selectedComponentKey, setSelectedComponentKey] = useState<string | null>(null);
+  const [selectedIsPhantom, setSelectedIsPhantom] = useState(false);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
@@ -279,6 +281,13 @@ export default function UIPreviewPage() {
 
   const safeActivePage =
     pages.length > 0 ? Math.min(activePage, pages.length - 1) : 0;
+
+  // Clear selection when switching pages
+  const handleSetActivePage = (i: number) => {
+    setActivePage(i);
+    setSelectedComponentKey(null);
+    setSelectedIsPhantom(false);
+  };
   const activePageData = pages[safeActivePage];
   const isWorkflowMode = storedPages !== null && storedPages.length > 0;
   const activePageId = activePageData?.pageId ?? "";
@@ -323,7 +332,7 @@ export default function UIPreviewPage() {
                   palette={safeActivePage === i ? "primary" : "neutral"}
                   size="sm"
                   fullWidth
-                  onClick={() => setActivePage(i)}
+                  onClick={() => handleSetActivePage(i)}
                   className="!justify-start mb-0.5"
                 >
                   {i + 1}. {p.pageName}
@@ -381,7 +390,7 @@ export default function UIPreviewPage() {
                     palette={safeActivePage === i ? "primary" : "neutral"}
                     size="sm"
                     fullWidth
-                    onClick={() => setActivePage(i)}
+                    onClick={() => handleSetActivePage(i)}
                     className="!justify-start mb-0.5"
                   >
                     {i + 1}. {p.pageName}
@@ -466,8 +475,8 @@ export default function UIPreviewPage() {
               <UIPreviewFrame
                 code={activePageData.code}
                 viewport={viewport}
-                highlightComponentKey={hoveredComponentKey ?? undefined}
-                highlightIsPhantom={hoveredIsPhantom}
+                highlightComponentKey={(hoveredComponentKey ?? selectedComponentKey) ?? undefined}
+                highlightIsPhantom={hoveredComponentKey ? hoveredIsPhantom : selectedIsPhantom}
               />
             ) : (
               <div className="h-full flex items-center justify-center">
@@ -533,9 +542,15 @@ export default function UIPreviewPage() {
               components={activePageData.components ?? []}
               workflowNodes={workflowNodes}
               pageName={activePageData.pageName}
+              pageIndex={safeActivePage}
+              selectedComponentKey={selectedComponentKey}
               onHoverComponent={(key, isPhantom) => {
                 setHoveredComponentKey(key);
                 setHoveredIsPhantom(isPhantom ?? false);
+              }}
+              onSelectComponent={(key, isPhantom) => {
+                setSelectedComponentKey(key);
+                setSelectedIsPhantom(isPhantom ?? false);
               }}
             />
           )}

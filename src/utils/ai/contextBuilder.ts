@@ -97,6 +97,11 @@ IMPORTANT: Implement every feature above with the following MANDATORY structure:
    Example: "${pagePrefix}-node-task-daily-focus-001", "${pagePrefix}-node-group-add-task-002"
    This prevents ID collisions when multiple pages are merged. MANDATORY for every node.
 
+⚠️ PRDREFERENCE SECTION (CRITICAL): Every node MUST have:
+   prdReference.section = "${page.name}"  ← copy this string EXACTLY, verbatim
+   ✅ Correct: { "section": "${page.name}", "requirement": "...", "rationale": "..." }
+   ❌ Wrong: "section": "p1" / "Unknown" / any other value — ONLY "${page.name}" is valid
+
 Step 1 — Root node:
   Create ONE root Task node for "${page.name}" (no parentNode, inputData: null)
 
