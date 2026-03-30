@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { ReactDiagramProvider } from "react-cosmos-diagram";
 import { AIWorkflowEditorProvider } from "@/contexts/AIWorkflowEditor";
 import { ExecutorEditorProvider } from "@/contexts/ExecutorEditor";
@@ -17,6 +18,13 @@ export default function WorkflowLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   return (
     <ReactDiagramProvider>
       <PropertiesPanelProvider>
