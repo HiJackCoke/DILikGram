@@ -29,8 +29,11 @@ export interface OpenUIPreviewParams {
 }
 
 interface UIPreviewContextValue {
-  /** Load or generate pages, store in sessionStorage, then caller can navigate */
-  open: (params: OpenUIPreviewParams) => Promise<void>;
+  /**
+   * Load or generate pages, store in sessionStorage.
+   * Returns true if pages were freshly generated via API, false if served from cache.
+   */
+  open: (params: OpenUIPreviewParams) => Promise<boolean>;
   isLoading: boolean;
   error: string | null;
 }
@@ -53,7 +56,7 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
       if (storedVersionId === params.versionId && storedPages) {
         // Always update nodes (workflow may have changed between visits)
         sessionStorage.setItem(UI_PREVIEW_NODES_KEY, JSON.stringify(params.nodes));
-        return;
+        return false;
       }
 
       // sessionStorage has pages for a different version (or is empty) →
@@ -63,7 +66,7 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem(UI_PREVIEW_SESSION_KEY, JSON.stringify(cached));
         sessionStorage.setItem(UI_PREVIEW_VERSION_KEY, params.versionId);
         sessionStorage.setItem(UI_PREVIEW_NODES_KEY, JSON.stringify(params.nodes));
-        return;
+        return false;
       }
     }
 
@@ -87,6 +90,8 @@ export function UIPreviewProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem(UI_PREVIEW_VERSION_KEY, params.versionId);
         uiPreviewCache.set(params.versionId, result.pages);
       }
+
+      return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "UI 생성에 실패했습니다";
       setError(msg);

@@ -8,9 +8,10 @@ import {
   Monitor,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
+import toast from "@/components/ui/Toast";
 import { useWorkflowExecution } from "@/contexts/WorkflowExecution";
 import { useWorkflowGenerator } from "@/contexts/WorkflowGenerator";
 import { useWorkflowVersioning } from "@/contexts/WorkflowVersioning";
@@ -37,6 +38,39 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges, onViewUICli
   const { open: openUIPreview } = useUIPreview();
   const router = useRouter();
   const [isGeneratingUI, setIsGeneratingUI] = useState(false);
+
+  useEffect(() => {
+    if (!isGeneratingUI) return;
+
+    // Push a dummy history entry so the back button fires popstate instead of navigating
+    window.history.pushState(null, "", window.location.href);
+
+    const handlePopState = async () => {
+      // Re-push to hold position while the dialog is open
+      window.history.pushState(null, "", window.location.href);
+      const confirmed = await dialog.confirm(
+        "Leave page?",
+        "UI generation is in progress. Leaving now will cancel it.",
+      );
+      if (confirmed) {
+        // Go back 2 entries: the re-push above + the dummy entry
+        window.history.go(-2);
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isGeneratingUI]);
+
   const handleNodeUpdate = (nodeId: string, executionData: ExecutionData) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) =>
@@ -132,13 +166,19 @@ export default function ExecutionHeader({ nodes, setNodes, setEdges, onViewUICli
               setIsGeneratingUI(true);
               onViewUIClick?.();
               try {
-                await openUIPreview({
+                const generated = await openUIPreview({
                   nodes,
                   analysisResult: generationMeta.analysisResult,
                   sampleId: generationMeta.sampleId,
                   versionId: currentVersion?.id,
                 });
-                router.push("/workflow/ui-preview");
+                if (generated) {
+                  toast.success("UI generated! Click to view", () =>
+                    router.push("/workflow/ui-preview"),
+                  );
+                } else {
+                  router.push("/workflow/ui-preview");
+                }
               } finally {
                 setIsGeneratingUI(false);
               }
